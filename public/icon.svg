@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="ConstructFlow">
+  <rect width="512" height="512" rx="96" fill="#12233a"/>
+  <path d="M96 344h320v48H96z" fill="#f4c542"/>
+  <path d="M128 304h256l-48-128H176z" fill="#f4f6f8"/>
+  <path d="M184 176h144l-24-56h-96z" fill="#7fb069"/>
+  <path d="M176 304l48-128M256 304V176M336 304l-48-128" fill="none" stroke="#12233a" stroke-width="18" stroke-linecap="round"/>
+  <path d="M116 394h280" fill="none" stroke="#7fb069" stroke-width="18" stroke-linecap="round"/>
+</svg>

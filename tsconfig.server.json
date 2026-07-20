@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true
+  },
+  "include": [
+    "server/src/**/*.ts",
+    "src/core/contracts/**/*.ts",
+    "src/core/types/**/*.ts",
+    "src/core/modules/**/*.ts",
+    "src/modules/**/moduleManifest.ts"
+  ]
+}

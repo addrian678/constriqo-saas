@@ -1,0 +1,37 @@
+{
+  "artifactType": "managed-saas-deployment-bundle",
+  "recommendedDelivery": "provider-managed-saas",
+  "privateContainerAlternative": true,
+  "clientMustNotReceiveRepository": true,
+  "include": [
+    "dist",
+    "server/runtime",
+    "scripts",
+    "database/migrations",
+    "database/seeds/install_seed_template.sql",
+    "release/manifest.json",
+    "release/RELEASE_NOTES.md",
+    "docs/runbooks",
+    "package.json",
+    "package-lock.json"
+  ],
+  "excludeAlways": [
+    ".env",
+    ".env.*",
+    ".git",
+    "node_modules",
+    "backups",
+    ".local-data",
+    "tmp",
+    "coverage",
+    "output",
+    "src",
+    "server/src",
+    "database/seeds/00*.sql"
+  ],
+  "secretRules": {
+    "frontendSecretsAllowed": false,
+    "databaseUrlAllowedInArtifact": false,
+    "apiKeysAllowedInArtifact": false
+  }
+}

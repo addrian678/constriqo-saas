@@ -1,0 +1,36 @@
+{
+  "product": "ConstructFlow",
+  "version": "0.1.0",
+  "phase": "F4.1-update-foundation",
+  "deploymentModel": "multi-tenant-saas",
+  "database": {
+    "engine": "postgresql",
+    "migrationTable": "schema_migrations",
+    "migrationsPath": "database/migrations",
+    "backupRequiredBeforeMigration": true,
+    "tenantScopedIntegrityMigration": "database/migrations/0020_tenant_integrity_hardening.sql"
+  },
+  "rollout": {
+    "strategy": "saas-progressive",
+    "modes": ["canary", "tenant", "all-tenants"],
+    "tenantSmokeTestRequired": true,
+    "rollbackByTenantRequiredWhenSupported": true
+  },
+  "commands": {
+    "backup": "npm run db:backup",
+    "migrate": "npm run db:migrate",
+    "smokeTest": "npm run smoke:test",
+    "update": "npm run release:update -- --apply --canary",
+    "artifact": "npm run release:artifact"
+  },
+  "rollback": {
+    "codeRollbackRequired": true,
+    "databaseRestoreRequiredOnFailedMigration": true,
+    "runbook": "docs/runbooks/update-and-rollback.md"
+  },
+  "security": {
+    "secretsInEnvironmentOnly": true,
+    "noSourceDeliveryRecommended": true,
+    "releaseNotesRequired": true
+  }
+}

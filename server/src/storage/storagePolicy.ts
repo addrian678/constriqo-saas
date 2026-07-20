@@ -1,0 +1,22 @@
+export const storagePolicy = {
+  provider: "not-configured",
+  supportedProviders: ["supabase-storage", "s3-compatible", "local-dev"],
+  requiredEnvironment: ["STORAGE_PROVIDER", "STORAGE_BUCKET_DOCUMENTS"],
+  deliveryMode: "saas-managed-object-storage",
+  maxFileSizeMb: 25,
+  tenantQuotaMbDefault: 1024,
+  allowedMimeTypes: [
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ],
+  signedUrlExpiryMinutes: 10,
+  archiveReminderMonths: 6,
+  heavyFileCleanupRequires: ["password", "2fa", "download-confirmation"],
+  virusScan: "required-before-production",
+  tenantIsolation: "required",
+  auditEvents: ["storage.object.created", "storage.object.read", "storage.object.revoked", "storage.object.deleted"],
+} as const;
