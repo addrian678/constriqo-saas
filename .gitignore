@@ -11,4 +11,4 @@ coverage/
 backups/
 tmp/
 output/
-reports/
+/reports/
