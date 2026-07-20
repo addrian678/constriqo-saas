@@ -1,4 +1,4 @@
-name: ConstructFlow CI
+name: Constriqo CI
 
 on:
   pull_request:
