@@ -2300,7 +2300,8 @@ export function createRuntimeAuthServiceFromEnv(env = process.env, providedPool 
 
 export function startRuntimeServer(options = {}) {
   const port = Number(options.port ?? process.env.PORT ?? DEFAULT_PORT);
-  const host = options.host ?? process.env.HOST ?? "127.0.0.1";
+  const defaultHost = ["staging", "production"].includes(process.env.APP_ENV) ? "0.0.0.0" : "127.0.0.1";
+  const host = options.host ?? process.env.HOST ?? defaultHost;
   const sharedPool =
     options.postgresPool === undefined && process.env.DATABASE_URL
       ? createPostgresPoolFromEnv(process.env)

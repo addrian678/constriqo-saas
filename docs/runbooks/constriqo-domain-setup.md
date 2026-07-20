@@ -52,6 +52,7 @@ Backend/API:
 APP_ENV=staging
 APP_BASE_URL=https://app.constriqo.com
 APP_ALLOWED_ORIGIN_DOMAINS=constriqo.com
+HOST=0.0.0.0
 DATABASE_URL=postgresql://constructflow_app.iusgqqewvkpjpebxjzbx:...@aws-1-us-west-2.pooler.supabase.com:5432/postgres
 DATABASE_SSL=true
 DATABASE_SSL_REJECT_UNAUTHORIZED=false
@@ -72,6 +73,23 @@ No activar `APP_ENV=production` hasta configurar email real, storage real y prov
 7. Probar login admin/trabajador desde `app.constriqo.com`.
 8. Probar que cookies, CORS y MFA funcionan en HTTPS.
 9. Dejar `constriqo.com` para landing comercial.
+
+## Render
+
+Configuracion del Web Service:
+
+```text
+Name: constriqo-api
+Language: Node
+Branch: main
+Root Directory: vacio
+Build Command: npm install
+Start Command: npm run server:dev
+Health Check Path: /health
+Instance: Free para piloto; Starter cuando haya pago/mantenimiento.
+```
+
+En Render, `HOST=0.0.0.0` permite que la plataforma detecte el puerto del servicio. En local se mantiene `127.0.0.1`.
 
 ## Subdominios por cliente
 
