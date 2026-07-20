@@ -1,8 +1,8 @@
-# ConstructFlow - Preparacion PWA y Android
+# Constriqo - Preparacion PWA y Android
 
 ## Decision
 
-ConstructFlow debe estabilizar primero la web/PWA, pero debe quedar preparado desde ahora para Android nativo/hibrido.
+Constriqo debe estabilizar primero la web/PWA, pero debe quedar preparado desde ahora para Android nativo/hibrido.
 
 La estrategia recomendada es:
 

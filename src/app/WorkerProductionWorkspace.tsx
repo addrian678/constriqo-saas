@@ -121,9 +121,9 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
       refreshTenantWorkspaceCache(session);
     }
 
-    window.addEventListener("constructflow:data-changed", handleDataChanged);
+    window.addEventListener("constriqo:data-changed", handleDataChanged);
     return () => {
-      window.removeEventListener("constructflow:data-changed", handleDataChanged);
+      window.removeEventListener("constriqo:data-changed", handleDataChanged);
     };
   }, [session]);
 
@@ -280,7 +280,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
         <div className="brand-lockup">
           <span className="brand-mark">CF</span>
           <div>
-            <p className="brand-name">ConstructFlow</p>
+            <p className="brand-name">Constriqo</p>
             <p className="brand-subtitle">{session.tenant.companyName}</p>
           </div>
         </div>
@@ -398,7 +398,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
       </BasicModal>
 
       <ToastViewport />
-      <footer className="powered-footer">Software impulsado por ConstructFlow</footer>
+      <footer className="powered-footer">Software impulsado por Constriqo</footer>
     </main>
   );
 }
@@ -759,5 +759,5 @@ function calculatePercent(completed: number, total: number) {
 }
 
 function dispatchDataChanged(module: string) {
-  window.dispatchEvent(new CustomEvent("constructflow:data-changed", { detail: { module } }));
+  window.dispatchEvent(new CustomEvent("constriqo:data-changed", { detail: { module } }));
 }

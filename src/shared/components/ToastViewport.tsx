@@ -24,9 +24,9 @@ export function ToastViewport() {
       }, 3600);
     }
 
-    window.addEventListener("constructflow:toast", handleToast);
+    window.addEventListener("constriqo:toast", handleToast);
     return () => {
-      window.removeEventListener("constructflow:toast", handleToast);
+      window.removeEventListener("constriqo:toast", handleToast);
     };
   }, []);
 

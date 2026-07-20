@@ -1,8 +1,8 @@
-# ConstructFlow - Despliegue SaaS y tenants
+# Constriqo - Despliegue SaaS y tenants
 
 ## Modelo
 
-ConstructFlow inicia como SaaS multi-tenant gestionado por proveedor.
+Constriqo inicia como SaaS multi-tenant gestionado por proveedor.
 
 Cada cliente debe tener:
 

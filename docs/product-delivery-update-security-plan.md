@@ -1,8 +1,8 @@
-# ConstructFlow - Plan de entrega comercial, actualizaciones, seguridad y Marketing
+# Constriqo - Plan de entrega comercial, actualizaciones, seguridad y Marketing
 
 ## Decision principal
 
-ConstructFlow se debe construir inicialmente como SaaS web/PWA multi-tenant gestionado por proveedor.
+Constriqo se debe construir inicialmente como SaaS web/PWA multi-tenant gestionado por proveedor.
 
 Modelo recomendado:
 
@@ -60,7 +60,7 @@ No se debe construir Android nativo separado hasta que la web este estable.
 
 ### Decision Android
 
-ConstructFlow debe construirse con estrategia web-first, native-ready:
+Constriqo debe construirse con estrategia web-first, native-ready:
 
 - Una sola experiencia funcional y responsive.
 - Una sola API/backend.
@@ -101,7 +101,7 @@ No se debe activar:
 
 ## Cumplimiento legal, privacidad, cookies y consentimiento
 
-ConstructFlow debe disenarse como SaaS privado con enfoque privacy-by-design y security-by-design.
+Constriqo debe disenarse como SaaS privado con enfoque privacy-by-design y security-by-design.
 
 Importante: el sistema debe estar preparado tecnicamente para cumplir normativas de Colombia, Union Europea/Espana y Estados Unidos/Utah, pero antes de produccion comercial se requiere revision legal profesional de textos, contratos, DPA, politicas y terminos.
 
@@ -234,7 +234,7 @@ Debe existir un modulo/pantalla de privacidad para admins y usuarios autorizados
 
 ### Datos sensibles y datos de trabajadores
 
-ConstructFlow puede manejar datos laborales, ubicacion puntual y documentos. Por tanto:
+Constriqo puede manejar datos laborales, ubicacion puntual y documentos. Por tanto:
 
 - GPS solo puntual al registrar entrada/salida/pausa o accion justificada.
 - No tracking continuo.
@@ -255,7 +255,7 @@ El sistema debe preparar:
 
 ## Arquitectura de datos, documentos y retencion
 
-ConstructFlow debe soportar un modo inicial economico y migrable:
+Constriqo debe soportar un modo inicial economico y migrable:
 
 - PostgreSQL/Supabase para datos estructurados.
 - Storage de archivos para PDFs, fotos, comprobantes y documentos.
@@ -441,7 +441,7 @@ Regla:
 
 ## Modulo de notificaciones
 
-ConstructFlow debe tener un modulo central de notificaciones basado en eventos.
+Constriqo debe tener un modulo central de notificaciones basado en eventos.
 
 Objetivo:
 
@@ -802,7 +802,7 @@ Reglas:
 
 ## Dominios, tenants y acceso privado
 
-ConstructFlow debe operar como SaaS privado con dominio principal y subdominios por cliente.
+Constriqo debe operar como SaaS privado con dominio principal y subdominios por cliente.
 
 ### Dominio recomendado
 
@@ -810,7 +810,7 @@ Comprar un dominio corto, profesional y facil de recordar.
 
 Preferencia:
 
-- `constructflow.com` si esta disponible.
+- `Constriqo.com` si esta disponible.
 - Alternativas aceptables: `.app`, `.io`, `.cloud`, `.software`, `.co`.
 - Para confianza comercial general, `.com` sigue siendo la opcion mas reconocible.
 
@@ -818,19 +818,19 @@ Preferencia:
 
 Usar subdominios por tenant:
 
-- `app.constructflow.com` para login general.
-- `andres.constructflow.com` para un cliente/tenant.
-- `empresa-demo.constructflow.com` para demo privada.
+- `app.Constriqo.com` para login general.
+- `andres.Constriqo.com` para un cliente/tenant.
+- `empresa-demo.Constriqo.com` para demo privada.
 
 No usar:
 
-- `constructflow/andres.com`
+- `Constriqo/andres.com`
 
-Motivo: eso no es un dominio valido como subdominio SaaS. Si se usa ruta, seria `constructflow.com/andres`, pero para SaaS multi-tenant es mas limpio y seguro usar subdominios.
+Motivo: eso no es un dominio valido como subdominio SaaS. Si se usa ruta, seria `Constriqo.com/andres`, pero para SaaS multi-tenant es mas limpio y seguro usar subdominios.
 
 ### Flujo de tenant por dominio
 
-1. Usuario abre `andres.constructflow.com`.
+1. Usuario abre `andres.Constriqo.com`.
 2. Backend identifica `tenant_slug = andres` desde el host.
 3. Login muestra nombre/logo del tenant si esta permitido.
 4. Usuario ingresa email/password.
@@ -852,7 +852,7 @@ Motivo: eso no es un dominio valido como subdominio SaaS. Si se usa ruta, seria 
 Se puede permitir en planes superiores:
 
 - `app.empresa.com`
-- CNAME hacia ConstructFlow.
+- CNAME hacia Constriqo.
 - Certificado TLS gestionado.
 - Validacion DNS.
 
@@ -860,7 +860,7 @@ Esto no debe hacerse en MVP si aumenta demasiado el soporte.
 
 ## Idioma, pais, moneda y documentos
 
-ConstructFlow debe manejar idioma y pais como configuraciones separadas.
+Constriqo debe manejar idioma y pais como configuraciones separadas.
 
 ### Reglas base
 
@@ -1088,7 +1088,7 @@ Recomendacion inicial:
 
 ## Super Admin y licenciamiento SaaS del proveedor
 
-ConstructFlow debe incluir un panel separado para el proveedor del software. Este panel no pertenece a ningun tenant cliente y no debe aparecer para administradores, gerentes ni trabajadores de empresas cliente.
+Constriqo debe incluir un panel separado para el proveedor del software. Este panel no pertenece a ningun tenant cliente y no debe aparecer para administradores, gerentes ni trabajadores de empresas cliente.
 
 ### Objetivo
 
@@ -1235,7 +1235,7 @@ Reglas:
 
 Dominio principal recomendado:
 
-- `constructflow.com` o marca final elegida.
+- `Constriqo.com` o marca final elegida.
 
 Subdominios:
 
@@ -1316,7 +1316,7 @@ Cada cliente debe tener:
 
 Ejemplo:
 
-- `cliente-a.constructflow.app`
+- `cliente-a.Constriqo.app`
 - tenant: `cliente-a`
 - storage path: `tenants/cliente-a/...`
 - DB compartida con aislamiento por `tenant_id`
@@ -1333,7 +1333,7 @@ Cuando un cliente pague plan dedicado o por requerimientos legales/seguridad:
 
 ## Arquitectura evolutiva: monolito modular primero, microservicios despues
 
-Decision: ConstructFlow debe construirse inicialmente como monolito modular, no como microservicios completos desde el primer dia.
+Decision: Constriqo debe construirse inicialmente como monolito modular, no como microservicios completos desde el primer dia.
 
 Motivo:
 
@@ -1545,15 +1545,15 @@ Se usan como referencia funcional, no como dependencia ni como fuente de codigo:
 
 1. ERPNext (`https://github.com/frappe/erpnext`)
    - Refuerza que contabilidad, proyectos, activos, ventas, compras, CRM y reportes deben compartir documentos, estados, historial y trazabilidad.
-   - Para ConstructFlow esto se traduce en ledger, facturas/cobros, anticipos, costos por obra, activos/equipos y balance general conectados por tenant.
+   - Para Constriqo esto se traduce en ledger, facturas/cobros, anticipos, costos por obra, activos/equipos y balance general conectados por tenant.
 
 2. OCA Field Service (`https://github.com/OCA/field-service`)
    - Refuerza operaciones de campo: ubicaciones, trabajadores, ordenes, calendario, equipos, gastos, compras, ventas, inventario, tiempos y portal.
-   - Para ConstructFlow esto se traduce en obra/proyecto como entidad central, trabajadores asignados, checklist visible solo al asignado, asistencia GPS puntual, incidencias, costos y evidencias controladas.
+   - Para Constriqo esto se traduce en obra/proyecto como entidad central, trabajadores asignados, checklist visible solo al asignado, asistencia GPS puntual, incidencias, costos y evidencias controladas.
 
 3. OpenProject (`https://github.com/opf/openproject`)
    - Refuerza gestion de proyectos, tareas, roadmaps, Kanban/Scrum, Gantt, time tracking, costos, presupuestos y colaboracion.
-   - Para ConstructFlow esto se traduce en fases, tareas, responsables, avance real, calendario, reportes por obra, rentabilidad y trazabilidad de cambios.
+   - Para Constriqo esto se traduce en fases, tareas, responsables, avance real, calendario, reportes por obra, rentabilidad y trazabilidad de cambios.
 
 ### Regla UI obligatoria para formularios
 
@@ -1793,7 +1793,7 @@ Durante la auditoria de seguridad A1, `smoke:auth-local` no se completo con el a
 Antes de produccion externa o antes de declarar cerrado el flujo de autenticacion real, se debe ejecutar manualmente:
 
 ```powershell
-$env:DATABASE_URL="postgresql://constructflow_user:change-me@127.0.0.1:5432/constructflow_dev"
+$env:DATABASE_URL="postgresql://constriqo_user:change-me@127.0.0.1:5432/constriqo_dev"
 $env:DATABASE_SSL="false"
 $env:TEST_TENANT_ID="043eb358-87d0-48e1-a8de-8b82a5b31e09"
 $env:TEST_ADMIN_EMAIL="admin-visual@local.test"
@@ -1816,7 +1816,7 @@ Si aparece un mensaje equivalente a `Unsupported state or unable to authenticate
 Para desarrollo local se permite restablecer MFA de un usuario concreto, revocando tambien sesiones activas:
 
 ```powershell
-$env:DATABASE_URL="postgresql://constructflow_user:change-me@127.0.0.1:5432/constructflow_dev"
+$env:DATABASE_URL="postgresql://constriqo_user:change-me@127.0.0.1:5432/constriqo_dev"
 $env:DATABASE_SSL="false"
 $env:RESET_MFA_TENANT_ID="043eb358-87d0-48e1-a8de-8b82a5b31e09"
 $env:RESET_MFA_EMAIL="admin-visual@local.test"

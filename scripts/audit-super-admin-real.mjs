@@ -37,7 +37,7 @@ const initialAdminInstall = readProjectFile("scripts/install-initial-admin.mjs")
 const smoke = readProjectFile("scripts/super-admin-local-smoke.mjs");
 const packageJson = JSON.parse(readProjectFile("package.json"));
 
-check("Migration crea tenant proveedor", migration.includes("ConstructFlow Provider") && migration.includes("00000000-0000-4000-8000-000000000001"), "provider tenant");
+check("Migration crea tenant proveedor", migration.includes("Constriqo Provider") && migration.includes("00000000-0000-4000-8000-000000000001"), "provider tenant");
 check("Migration crea licencias", migration.includes("CREATE TABLE IF NOT EXISTS tenant_licenses") && migration.includes("trial_7d") && migration.includes("two_years"), "tenant_licenses");
 check("Migration crea auditoria global", migration.includes("CREATE TABLE IF NOT EXISTS super_admin_audit_events"), "super admin audit");
 check("Migration registra capacidades Super Admin", migration.includes("superadmin.read") && migration.includes("superadmin.manage"), "capabilities");

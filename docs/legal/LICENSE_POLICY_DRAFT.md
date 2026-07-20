@@ -1,4 +1,4 @@
-# ConstructFlow - Borrador de politica de licencia
+# Constriqo - Borrador de politica de licencia
 
 Este documento no sustituye asesoria legal.
 

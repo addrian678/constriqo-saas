@@ -15,7 +15,7 @@ export type ServerAppContract = {
 
 export function createServerApp(modules: BackendModuleContract[] = backendModules): ServerAppContract {
   return {
-    name: "ConstructFlow API",
+    name: "Constriqo API",
     version: "F1.2-contract",
     modules,
     routes: modules.flatMap((module) => module.routes),

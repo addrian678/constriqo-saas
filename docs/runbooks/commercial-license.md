@@ -1,4 +1,4 @@
-# ConstructFlow - Licencia comercial y control de codigo
+# Constriqo - Licencia comercial y control de codigo
 
 ## Decision
 

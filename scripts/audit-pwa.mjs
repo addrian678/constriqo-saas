@@ -37,7 +37,7 @@ if (existsSync(indexPath)) {
 const manifestPath = join(root, "public/manifest.json");
 if (existsSync(manifestPath)) {
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  check("Manifest name ConstructFlow", manifest.name === "ConstructFlow", manifest.name);
+  check("Manifest name Constriqo", manifest.name === "Constriqo", manifest.name);
   check("Manifest display standalone", manifest.display === "standalone", manifest.display);
   check("Manifest scope root", manifest.scope === "/", manifest.scope);
   check("Manifest tiene icono any", manifest.icons?.some((icon) => icon.purpose === "any"), "any icon");

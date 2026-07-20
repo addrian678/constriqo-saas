@@ -19,11 +19,11 @@ from reportlab.platypus import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "output" / "pdf" / "ConstructFlow_Plan_Actualizado.pdf"
+OUTPUT = ROOT / "output" / "pdf" / "Constriqo_Plan_Actualizado.pdf"
 
 SOURCES = [
     ROOT / "docs" / "product-delivery-update-security-plan.md",
-    ROOT / "docs" / "constructflow-execution-plan-v4-analysis.md",
+    ROOT / "docs" / "Constriqo-execution-plan-v4-analysis.md",
     ROOT / "docs" / "adr" / "0003-modular-monolith-before-microservices.md",
 ]
 
@@ -45,7 +45,7 @@ def add_footer(canvas, doc):
     canvas.saveState()
     canvas.setFont("Helvetica", 8)
     canvas.setFillColor(colors.HexColor("#667085"))
-    canvas.drawString(0.72 * inch, 0.45 * inch, "ConstructFlow - Plan actualizado")
+    canvas.drawString(0.72 * inch, 0.45 * inch, "Constriqo - Plan actualizado")
     canvas.drawRightString(7.78 * inch, 0.45 * inch, f"Pagina {doc.page}")
     canvas.restoreState()
 
@@ -139,12 +139,12 @@ def build_pdf() -> None:
         leftMargin=0.72 * inch,
         topMargin=0.72 * inch,
         bottomMargin=0.72 * inch,
-        title="ConstructFlow - Plan Actualizado",
-        author="ConstructFlow",
+        title="Constriqo - Plan Actualizado",
+        author="Constriqo",
     )
 
     story = []
-    story.append(Paragraph("ConstructFlow", styles["CoverTitle"]))
+    story.append(Paragraph("Constriqo", styles["CoverTitle"]))
     story.append(Paragraph("Plan maestro actualizado", styles["SectionTitle"]))
     story.append(
         Paragraph(

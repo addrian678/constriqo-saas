@@ -48,7 +48,7 @@ check("AUTH_MFA_ENCRYPTION_KEY configurado", hasValue("AUTH_MFA_ENCRYPTION_KEY")
 
 check("DATABASE_URL runtime configurada", isPostgresUrl(process.env.DATABASE_URL), "Debe usar runtime role limitado.");
 check("MIGRATION_DATABASE_URL o ADMIN_DATABASE_URL configurada", isPostgresUrl(process.env.MIGRATION_DATABASE_URL || process.env.ADMIN_DATABASE_URL), "Necesaria para migraciones/preflight.");
-check("DATABASE_URL no parece usuario propietario local", !/constructflow_user:change-me|localhost|127\.0\.0\.1/iu.test(String(process.env.DATABASE_URL || "")), "En staging/produccion usar DB remota y usuario limitado.", "warning");
+check("DATABASE_URL no parece usuario propietario local", !/constriqo_user:change-me|localhost|127\.0\.0\.1/iu.test(String(process.env.DATABASE_URL || "")), "En staging/produccion usar DB remota y usuario limitado.", "warning");
 
 check("EMAIL_PROVIDER real", hasValue("EMAIL_PROVIDER") && !["sandbox", "not-configured"].includes(String(process.env.EMAIL_PROVIDER).toLowerCase()), "EMAIL_PROVIDER=smtp recomendado al inicio.");
 if (String(process.env.EMAIL_PROVIDER || "").toLowerCase() === "smtp") {

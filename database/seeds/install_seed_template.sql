@@ -1,4 +1,4 @@
--- ConstructFlow install seed template.
+-- Constriqo install seed template.
 -- Replace placeholders during a controlled installation. Do not commit real secrets.
 
 INSERT INTO tenants (tenant_id, name, industry_profile, locale, currency, timezone)

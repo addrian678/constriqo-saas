@@ -591,5 +591,5 @@ function rewardTypeLabel(value: string) {
 }
 
 function dispatchDataChanged(module: string) {
-  window.dispatchEvent(new CustomEvent("constructflow:data-changed", { detail: { module } }));
+  window.dispatchEvent(new CustomEvent("constriqo:data-changed", { detail: { module } }));
 }

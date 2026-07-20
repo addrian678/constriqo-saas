@@ -48,9 +48,9 @@ export function BusinessOverviewRealPage({ session }: BusinessOverviewRealPagePr
       void refresh();
     }
 
-    window.addEventListener("constructflow:data-changed", handleDataChanged);
+    window.addEventListener("constriqo:data-changed", handleDataChanged);
     return () => {
-      window.removeEventListener("constructflow:data-changed", handleDataChanged);
+      window.removeEventListener("constriqo:data-changed", handleDataChanged);
     };
   }, [session.sessionToken]);
 

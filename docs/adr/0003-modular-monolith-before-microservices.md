@@ -6,7 +6,7 @@ Aceptado.
 
 ## Contexto
 
-ConstructFlow se entregara inicialmente como SaaS web/PWA multi-tenant gestionado por proveedor. El producto necesita ser facil de desplegar, actualizar, auditar y soportar para todos los clientes desde una plataforma central.
+Constriqo se entregara inicialmente como SaaS web/PWA multi-tenant gestionado por proveedor. El producto necesita ser facil de desplegar, actualizar, auditar y soportar para todos los clientes desde una plataforma central.
 
 Dividir todo en microservicios desde el inicio aumentaria complejidad operativa, costos, puntos de fallo y dificultad de soporte.
 

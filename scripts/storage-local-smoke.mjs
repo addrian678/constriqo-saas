@@ -26,7 +26,7 @@ const storageKey = buildGeneratedStorageKey(
   },
   {
     STORAGE_PROVIDER: "local-dev",
-    STORAGE_BUCKET_DOCUMENTS: "constructflow-documents",
+    STORAGE_BUCKET_DOCUMENTS: "constriqo-documents",
   },
 );
 
@@ -39,7 +39,7 @@ const result = await storeGeneratedDocumentBuffer(
   {
     env: {
       STORAGE_PROVIDER: "local-dev",
-      STORAGE_BUCKET_DOCUMENTS: "constructflow-documents",
+      STORAGE_BUCKET_DOCUMENTS: "constriqo-documents",
       LOCAL_STORAGE_ROOT: localRoot,
     },
   },
@@ -59,7 +59,7 @@ check("not-configured storage keeps metadata only", metadataOnly.persisted === f
 let traversalBlocked = false;
 try {
   await storeGeneratedDocumentBuffer(
-    { documentId: "bad", storageKey: "local-dev://constructflow-documents/../../bad.pdf" },
+    { documentId: "bad", storageKey: "local-dev://constriqo-documents/../../bad.pdf" },
     buffer,
     { env: { STORAGE_PROVIDER: "local-dev", LOCAL_STORAGE_ROOT: localRoot } },
   );

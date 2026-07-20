@@ -247,7 +247,7 @@ async function writeWorkerAudit(client, delivery, action, severity, metadata) {
 }
 
 function createMimeMessage(delivery, { fromEmail, recipientEmail }) {
-  const subject = encodeHeader(delivery.subject || "ConstructFlow");
+  const subject = encodeHeader(delivery.subject || "Constriqo");
   const replyTo = delivery.reply_to_email ? `Reply-To: ${delivery.reply_to_email}\r\n` : "";
   const body = String(delivery.body_text || "").slice(0, MAX_BODY_LENGTH);
   const headers = [
@@ -255,7 +255,7 @@ function createMimeMessage(delivery, { fromEmail, recipientEmail }) {
     `To: ${formatAddress(recipientEmail, delivery.recipient_name)}`,
     `Subject: ${subject}`,
     `Date: ${new Date().toUTCString()}`,
-    `Message-ID: <${delivery.email_delivery_id}@constructflow.local>`,
+    `Message-ID: <${delivery.email_delivery_id}@constriqo.local>`,
     "MIME-Version: 1.0",
     "Content-Type: text/plain; charset=utf-8",
     "Content-Transfer-Encoding: 8bit",
@@ -285,7 +285,7 @@ function parseSmtpMessageId(response) {
 }
 
 function smtpClientName(env) {
-  return String(env.SMTP_CLIENT_NAME || "constructflow.local").replace(/[^a-zA-Z0-9.-]/gu, "") || "constructflow.local";
+  return String(env.SMTP_CLIENT_NAME || "constriqo.local").replace(/[^a-zA-Z0-9.-]/gu, "") || "constriqo.local";
 }
 
 function retryDelaySeconds(attemptCount) {

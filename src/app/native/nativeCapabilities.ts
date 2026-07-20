@@ -79,7 +79,7 @@ export function sanitizeDeviceFilename(filename: string): string {
     .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "-")
     .replace(/\s+/g, " ")
     .trim();
-  return cleaned || "constructflow-document.pdf";
+  return cleaned || "Constriqo-document.pdf";
 }
 
 export function createEphemeralSyncQueue() {

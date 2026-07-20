@@ -4,7 +4,7 @@ import { join } from "node:path";
 const root = process.cwd();
 const manifest = JSON.parse(readFileSync(join(root, "release", "manifest.json"), "utf8"));
 const policy = JSON.parse(readFileSync(join(root, "release", "artifact-policy.json"), "utf8"));
-const artifactRoot = join(root, "tmp", "release-artifacts", `constructflow-${manifest.version}`);
+const artifactRoot = join(root, "tmp", "release-artifacts", `Constriqo-${manifest.version}`);
 const included = [];
 const missing = [];
 const forbiddenInDist = [join(root, "dist", "stories")];
@@ -16,7 +16,7 @@ if (!policy.clientMustNotReceiveRepository) {
 
 for (const forbiddenPath of forbiddenInDist) {
   if (existsSync(forbiddenPath)) {
-    console.error(`Forbidden non-ConstructFlow asset found in dist: ${forbiddenPath}`);
+    console.error(`Forbidden non-Constriqo asset found in dist: ${forbiddenPath}`);
     process.exit(1);
   }
 }

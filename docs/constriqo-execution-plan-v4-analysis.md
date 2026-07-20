@@ -1,12 +1,12 @@
-# ConstructFlow - Analisis del plan maestro v4 y plan ejecutable
+# Constriqo - Analisis del plan maestro v4 y plan ejecutable
 
 Fecha: 2026-07-13  
-Fuente: `D:\descargas\Plan_Maestro_ConstructFlow_Modulos_y_Fases_v4.pdf`  
+Fuente: `D:\descargas\Plan_Maestro_Constriqo_Modulos_y_Fases_v4.pdf`  
 Estado del codigo revisado: prototipo visual V0.1 implementado parcialmente.
 
 ## Lectura ejecutiva
 
-El plan maestro v4 define ConstructFlow como una plataforma modular para pequenas empresas de servicios, con un nucleo comun, modulos independientes y perfiles sectoriales configurables. El perfil activo es Construccion y el perfil de Aseo queda como extension futura.
+El plan maestro v4 define Constriqo como una plataforma modular para pequenas empresas de servicios, con un nucleo comun, modulos independientes y perfiles sectoriales configurables. El perfil activo es Construccion y el perfil de Aseo queda como extension futura.
 
 El documento marca como completadas visualmente V0.1, V0.1A, V0.2 y V0.2C, y declara como siguiente fase aprobada V0.3 - UI del modulo de Cotizaciones. Sin embargo, el codigo actual no contiene todavia la UI CRM V0.2: no existen paginas de Prospectos, Clientes, Kanban, ficha, actividades, notas ni datos simulados de clientes con `clientId`. Como V0.3 depende de CRM y de clientes simulados, el plan operativo debe corregir primero esa diferencia.
 
@@ -133,7 +133,7 @@ Completar Construccion, habilitar Aseo sin duplicar producto, preparar despliegu
 
 ### Bloque G - Modelo comercial, actualizaciones y proteccion
 
-Decision actualizada: ConstructFlow debe iniciar como SaaS web/PWA multi-tenant gestionado por proveedor.
+Decision actualizada: Constriqo debe iniciar como SaaS web/PWA multi-tenant gestionado por proveedor.
 
 1. Un cliente debe tener su propio tenant, admin inicial, usuarios, roles, configuracion, cuotas, auditoria y exportacion.
 2. `tenant_id` es obligatorio para aislar datos entre clientes.
@@ -152,7 +152,7 @@ Decision actualizada: ConstructFlow debe iniciar como SaaS web/PWA multi-tenant 
 15. Soportar perfiles Colombia, USA y Espana con moneda y unidades por pais: COP/metrico, USD/imperial-USA por defecto, EUR/metrico. La unidad debe depender del perfil de mercado, no solo de la moneda.
 16. La navegacion movil debe usar drawer lateral izquierdo o patron equivalente; en PC puede mantenerse superior si funciona.
 17. Agregar bloque formal de cumplimiento legal y privacidad: GDPR/UE, Colombia Ley 1581, Utah/EE. UU., politicas, cookies, consentimiento, retencion, derechos del titular y registro de aceptaciones.
-18. Usar dominio principal con subdominios por tenant: `cliente.constructflow.com`; no usar formatos invalidos como `constructflow/cliente.com`.
+18. Usar dominio principal con subdominios por tenant: `cliente.Constriqo.com`; no usar formatos invalidos como `Constriqo/cliente.com`.
 19. Separar idioma, pais, moneda y unidades: app por usuario, documentos por tenant con override por cotizacion/factura y snapshot por documento.
 
 Documento detallado: `docs/product-delivery-update-security-plan.md`.

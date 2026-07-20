@@ -76,8 +76,8 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
       }
     }
 
-    window.addEventListener("constructflow:tenant-settings-updated", handleSettingsUpdated);
-    window.addEventListener("constructflow:tenant-usage-updated", handleUsageUpdated);
+    window.addEventListener("constriqo:tenant-settings-updated", handleSettingsUpdated);
+    window.addEventListener("constriqo:tenant-usage-updated", handleUsageUpdated);
     getTenantSettings(session.sessionToken)
       .then((settings) => {
         if (mounted) {
@@ -103,8 +103,8 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
 
     return () => {
       mounted = false;
-      window.removeEventListener("constructflow:tenant-settings-updated", handleSettingsUpdated);
-      window.removeEventListener("constructflow:tenant-usage-updated", handleUsageUpdated);
+      window.removeEventListener("constriqo:tenant-settings-updated", handleSettingsUpdated);
+      window.removeEventListener("constriqo:tenant-usage-updated", handleUsageUpdated);
     };
   }, [session.sessionToken, session.tenant.tenantId]);
 
@@ -113,9 +113,9 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
       refreshTenantWorkspaceCache(session);
     }
 
-    window.addEventListener("constructflow:data-changed", handleDataChanged);
+    window.addEventListener("constriqo:data-changed", handleDataChanged);
     return () => {
-      window.removeEventListener("constructflow:data-changed", handleDataChanged);
+      window.removeEventListener("constriqo:data-changed", handleDataChanged);
     };
   }, [session]);
 
@@ -157,14 +157,14 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
     };
   }, [activeModule, session.sessionToken]);
 
-  const brandName = tenantSettings?.companyName || session.tenant.companyName || "ConstructFlow";
+  const brandName = tenantSettings?.companyName || session.tenant.companyName || "Constriqo";
   const brandLogoUrl = tenantSettings?.logoUrl || "";
   const brandLockup = (
     <div className="brand-lockup">
       {brandLogoUrl ? <img className="brand-logo-image" src={brandLogoUrl} alt="" /> : <span className="brand-mark">{brandInitials(brandName)}</span>}
       <div>
         <p className="brand-name">{brandName}</p>
-        <p className="brand-subtitle">Software ConstructFlow</p>
+        <p className="brand-subtitle">Software Constriqo</p>
       </div>
     </div>
   );
@@ -188,7 +188,7 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
       language,
     });
     setRequiredPoliciesAccepted(true);
-    window.dispatchEvent(new CustomEvent("constructflow:policies-accepted", { detail: { policyVersion: REQUIRED_POLICY_VERSION } }));
+    window.dispatchEvent(new CustomEvent("constriqo:policies-accepted", { detail: { policyVersion: REQUIRED_POLICY_VERSION } }));
   }
 
   const navigation = (
@@ -291,7 +291,7 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
         </Suspense>
       </section>
       <ToastViewport />
-      <footer className="powered-footer">Software impulsado por ConstructFlow</footer>
+      <footer className="powered-footer">Software impulsado por Constriqo</footer>
     </main>
   );
 }

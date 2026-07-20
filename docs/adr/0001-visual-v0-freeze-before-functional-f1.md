@@ -6,7 +6,7 @@ Aceptado.
 
 ## Contexto
 
-ConstructFlow completo las fases visuales V0.2 a V0.15 con datos simulados, rutas por rol y reportes de fase. El plan maestro exige no mezclar backend, persistencia, pagos, hardware, archivos o servicios externos durante V0.
+Constriqo completo las fases visuales V0.2 a V0.15 con datos simulados, rutas por rol y reportes de fase. El plan maestro exige no mezclar backend, persistencia, pagos, hardware, archivos o servicios externos durante V0.
 
 ## Decision
 

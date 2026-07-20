@@ -199,7 +199,7 @@ function dispatchMutationToast(path: string, method: string) {
     return;
   }
   const message = mutationToastMessage(path, method);
-  window.dispatchEvent(new CustomEvent("constructflow:toast", {
+  window.dispatchEvent(new CustomEvent("constriqo:toast", {
     detail: {
       tone: "success",
       message,

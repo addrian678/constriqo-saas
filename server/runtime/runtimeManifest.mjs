@@ -1,5 +1,5 @@
 export const runtimeManifest = {
-  name: "ConstructFlow API",
+  name: "Constriqo API",
   version: "0.1.0",
   deploymentModel: "multi-tenant-saas",
   persistence: process.env.DATABASE_URL ? "configured" : "not-configured",

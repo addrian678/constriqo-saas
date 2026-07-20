@@ -30,7 +30,7 @@ export const roleProfiles: Record<RoleProfile["id"], RoleProfile> = {
   super_admin: {
     id: "super_admin",
     label: "Super Admin",
-    userName: "Proveedor ConstructFlow",
+    userName: "Proveedor Constriqo",
     roleName: "Super Admin proveedor",
     initials: "CF",
   },

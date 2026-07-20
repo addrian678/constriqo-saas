@@ -7,7 +7,7 @@ export function resolveEmailDeliveryConfig(env = process.env) {
   return {
     provider: normalizedProvider,
     status: isSandbox ? "sandboxed" : "queued",
-    fromEmail: isSandbox ? "no-reply@constructflow.local" : requiredEmail(env.EMAIL_FROM, "EMAIL_FROM"),
+    fromEmail: isSandbox ? "no-reply@constriqo.local" : requiredEmail(env.EMAIL_FROM, "EMAIL_FROM"),
     replyToEmail: isSandbox ? null : optionalEmail(env.EMAIL_REPLY_TO),
     sentAtSql: isSandbox ? "now()" : "NULL",
     mode: isSandbox ? "sandbox" : "transactional",

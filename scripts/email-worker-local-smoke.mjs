@@ -129,7 +129,7 @@ async function setupFixtures() {
           body_text, template_key, provider, status, related_entity_type, metadata,
           queued_by_user_id, next_attempt_at
         )
-        VALUES ($1, $2, 'recipient@example.com', 'Recipient', 'no-reply@constructflow.local',
+        VALUES ($1, $2, 'recipient@example.com', 'Recipient', 'no-reply@constriqo.local',
                 'Smoke worker email', 'Mensaje local de prueba', 'worker.smoke',
                 'sandbox', 'queued', 'smoke', '{}'::jsonb, $3, now() - interval '1 minute')
       `,
@@ -142,7 +142,7 @@ async function setupFixtures() {
           body_text, template_key, provider, status, related_entity_type, metadata,
           queued_by_user_id, next_attempt_at
         )
-        VALUES ($1, $2, 'retry@example.com', 'Retry', 'no-reply@constructflow.local',
+        VALUES ($1, $2, 'retry@example.com', 'Retry', 'no-reply@constriqo.local',
                 'Smoke retry email', 'Mensaje local de reintento', 'worker.retry',
                 'provider_without_worker', 'queued', 'smoke', '{}'::jsonb, $3, now() - interval '1 minute')
       `,

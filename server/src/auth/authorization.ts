@@ -15,6 +15,6 @@ export function requireTenant(context: RequestContext, tenantId: string): void {
 
 export function assertNoPublicRegistration(enabled: boolean): void {
   if (enabled) {
-    throw new ApiError("CONFLICT", 409, "Public registration must remain disabled for ConstructFlow.");
+    throw new ApiError("CONFLICT", 409, "Public registration must remain disabled for Constriqo.");
   }
 }

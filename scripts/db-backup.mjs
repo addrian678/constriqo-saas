@@ -13,7 +13,7 @@ if (!databaseUrl) {
 }
 
 const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-const outputPath = join(backupsDir, `constructflow-${timestamp}.dump`);
+const outputPath = join(backupsDir, `Constriqo-${timestamp}.dump`);
 
 mkdirSync(backupsDir, { recursive: true });
 
@@ -40,7 +40,7 @@ writeFileSync(
       sizeBytes: statSync(outputPath).size,
       checksumSha256,
       format: "pg_dump custom",
-      source: "ConstructFlow db:backup",
+      source: "Constriqo db:backup",
       databaseUrlRedacted: redactDatabaseUrl(databaseUrl),
     },
     null,

@@ -245,7 +245,7 @@ try {
         body: {
           factorId: "factor-audit",
           secret: "JBSWY3DPEHPK3PXP",
-          otpauthUri: "otpauth://totp/ConstructFlow:audit@example.com?secret=JBSWY3DPEHPK3PXP",
+          otpauthUri: "otpauth://totp/constriqo:audit@example.com?secret=JBSWY3DPEHPK3PXP",
         },
       };
     },

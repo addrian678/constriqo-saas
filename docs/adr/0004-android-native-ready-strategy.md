@@ -6,7 +6,7 @@ Aceptada.
 
 ## Contexto
 
-ConstructFlow debe funcionar como software web/PWA para PC, tablet y movil, pero tambien debe poder convertirse en app Android con permisos nativos.
+Constriqo debe funcionar como software web/PWA para PC, tablet y movil, pero tambien debe poder convertirse en app Android con permisos nativos.
 
 Los permisos relevantes son:
 
@@ -21,7 +21,7 @@ Construir una app Android separada desde cero duplicaria UI, reglas de negocio, 
 
 ## Decision
 
-ConstructFlow se construye como web/PWA responsive y native-ready.
+Constriqo se construye como web/PWA responsive y native-ready.
 
 Cuando el backend y los modulos reales esten estables, se creara Android con Capacitor o tecnologia equivalente.
 

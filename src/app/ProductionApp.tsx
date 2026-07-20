@@ -249,7 +249,7 @@ export function ProductionApp({ entry = "tenant" }: ProductionAppProps) {
           tenantPlaceholder: "codigo proveedor asignado",
           securityNote: "Este acceso exige autenticacion de dos factores y no es para usuarios de empresas cliente.",
           heroEyebrow: "Proveedor",
-          heroTitle: "Consola privada ConstructFlow.",
+          heroTitle: "Consola privada Constriqo.",
           heroDescription: "Panel aislado para administrar licencias, clientes SaaS y operacion del software.",
           brandSubtitle: "Acceso exclusivo del proveedor. No compartir con clientes.",
         }

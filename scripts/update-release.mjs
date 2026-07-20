@@ -38,7 +38,7 @@ if (manifest.version !== pkg.version) {
   process.exit(1);
 }
 
-console.log(`ConstructFlow update plan for version ${manifest.version}`);
+console.log(`Constriqo update plan for version ${manifest.version}`);
 console.log("- Review release notes");
 console.log("- Select rollout scope: --canary, --tenant=<tenant_id>, or --all-tenants");
 console.log("- Create database backup");
@@ -68,4 +68,4 @@ run("npm", ["run", "db:backup"], "database backup");
 run("npm", ["run", "db:migrate"], "database migrations");
 run("npm", ["run", "smoke:test"], "smoke tests");
 
-console.log(`ConstructFlow ${manifest.version} update completed.`);
+console.log(`Constriqo ${manifest.version} update completed.`);

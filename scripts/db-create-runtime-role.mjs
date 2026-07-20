@@ -2,7 +2,7 @@ import pg from "pg";
 
 const { Client } = pg;
 const adminDatabaseUrl = process.env.MIGRATION_DATABASE_URL || process.env.DATABASE_URL;
-const appDbUser = process.env.APP_DB_USER || "constructflow_app";
+const appDbUser = process.env.APP_DB_USER || "constriqo_app";
 const appDbPassword = process.env.APP_DB_PASSWORD;
 const appDbName = process.env.POSTGRES_DB || databaseNameFromUrl(adminDatabaseUrl);
 
@@ -63,10 +63,10 @@ async function revokeAuditMutationPrivileges(client, appDbUser) {
 
 function databaseNameFromUrl(value) {
   if (!value) {
-    return "constructflow_dev";
+    return "constriqo_dev";
   }
 
-  return new URL(value).pathname.replace(/^\//u, "") || "constructflow_dev";
+  return new URL(value).pathname.replace(/^\//u, "") || "constriqo_dev";
 }
 
 function sqlLiteral(value) {

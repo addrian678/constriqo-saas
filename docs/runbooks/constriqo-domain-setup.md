@@ -11,7 +11,7 @@ Separar marca, aplicacion y API para que el SaaS pueda crecer sin mezclar el log
 - `constriqo.com`: pagina comercial publica del producto.
 - `www.constriqo.com`: alias/redireccion a `constriqo.com`.
 - `app.constriqo.com`: acceso privado al SaaS para clientes finales.
-- `api.constriqo.com`: backend/API runtime de ConstructFlow/Constriqo.
+- `api.constriqo.com`: backend/API runtime de Constriqo/Constriqo.
 - `help.constriqo.com`: centro de ayuda futuro.
 - `status.constriqo.com`: estado de servicios futuro.
 
@@ -53,7 +53,7 @@ APP_ENV=staging
 APP_BASE_URL=https://app.constriqo.com
 APP_ALLOWED_ORIGIN_DOMAINS=constriqo.com
 HOST=0.0.0.0
-DATABASE_URL=postgresql://constructflow_app.iusgqqewvkpjpebxjzbx:...@aws-1-us-west-2.pooler.supabase.com:5432/postgres
+DATABASE_URL=postgresql://constriqo_app.iusgqqewvkpjpebxjzbx:...@aws-1-us-west-2.pooler.supabase.com:5432/postgres
 DATABASE_SSL=true
 DATABASE_SSL_REJECT_UNAUTHORIZED=false
 SESSION_TOKEN_PEPPER=secreto-largo-produccion

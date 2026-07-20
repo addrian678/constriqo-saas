@@ -12,7 +12,7 @@ SET module_id = EXCLUDED.module_id,
 INSERT INTO tenants (tenant_id, name, industry_profile, locale, currency, timezone)
 VALUES (
   '00000000-0000-4000-8000-000000000001',
-  'ConstructFlow Provider',
+  'Constriqo Provider',
   'provider',
   'es-ES',
   'EUR',

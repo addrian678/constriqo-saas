@@ -2517,7 +2517,7 @@ export function startRuntimeServer(options = {}) {
   server.listen(port, host, () => {
     const address = server.address();
     const actualPort = typeof address === "object" && address ? address.port : port;
-    process.stdout.write(`ConstructFlow API runtime listening on http://${host}:${actualPort}\n`);
+    process.stdout.write(`Constriqo API runtime listening on http://${host}:${actualPort}\n`);
     if (sharedPool) {
       void warmPostgresPool(sharedPool);
     }

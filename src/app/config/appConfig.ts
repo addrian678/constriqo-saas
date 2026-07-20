@@ -1,7 +1,7 @@
 import type { IndustryProfileId } from "../../core/contracts/industryProfile";
 
 export const appConfig = {
-  brandName: "ConstructFlow",
+  brandName: "Constriqo",
   activeIndustryProfile: "construction" as IndustryProfileId,
   enabledModules: [
     "dashboard",

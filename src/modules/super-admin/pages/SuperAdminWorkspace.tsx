@@ -247,7 +247,7 @@ export function SuperAdminWorkspace({ session, busy, onLogout }: SuperAdminWorks
         <div className="brand-lockup">
           <span className="brand-mark">CF</span>
           <div>
-            <p className="brand-name">ConstructFlow Provider</p>
+            <p className="brand-name">Constriqo Provider</p>
             <p className="brand-subtitle">Consola Super Admin</p>
           </div>
         </div>
@@ -561,7 +561,7 @@ export function SuperAdminWorkspace({ session, busy, onLogout }: SuperAdminWorks
           </article>
         </section>
 
-        <footer className="provider-footer">ConstructFlow SaaS Provider Console. Acceso privado del proveedor.</footer>
+        <footer className="provider-footer">Constriqo SaaS Provider Console. Acceso privado del proveedor.</footer>
       </section>
     </main>
   );

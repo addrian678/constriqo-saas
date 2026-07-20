@@ -1,4 +1,4 @@
-# ConstructFlow - Gestion de secretos
+# Constriqo - Gestion de secretos
 
 ## Principios
 

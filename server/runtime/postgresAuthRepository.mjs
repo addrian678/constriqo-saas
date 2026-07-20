@@ -30,7 +30,7 @@ export function createPostgresPoolFromEnv(env = process.env) {
     idleTimeoutMillis: Number(env.DATABASE_IDLE_TIMEOUT_MS || 30000),
     statement_timeout: Number(env.DATABASE_STATEMENT_TIMEOUT_MS || 30000),
     query_timeout: Number(env.DATABASE_QUERY_TIMEOUT_MS || 35000),
-    application_name: env.DATABASE_APPLICATION_NAME || "constructflow-runtime",
+    application_name: env.DATABASE_APPLICATION_NAME || "constriqo-runtime",
   });
 }
 
@@ -99,7 +99,7 @@ function identitySelect(extraColumns = "") {
 export function createPostgresAuthRepository(pool, options = {}) {
   const sessionExpiryHours = Number(options.sessionExpiryHours || SESSION_EXPIRY_HOURS);
   const requireAdminMfa = options.requireAdminMfa !== false;
-  const issuer = options.issuer || "ConstructFlow";
+  const issuer = options.issuer || "Constriqo";
   const failedLoginWindowMinutes = Number(options.failedLoginWindowMinutes || FAILED_LOGIN_WINDOW_MINUTES);
   const failedLoginLimit = Number(options.failedLoginLimit || FAILED_LOGIN_LIMIT);
 

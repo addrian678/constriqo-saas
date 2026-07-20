@@ -88,19 +88,19 @@ const requiredEnabledModules = [
 ];
 
 const requiredReports = [
-  "constructflow-v02-v03-visual-report.md",
-  "constructflow-v04-jobs-visual-report.md",
-  "constructflow-v05-workforce-visual-report.md",
-  "constructflow-v06-attendance-visual-report.md",
-  "constructflow-v07-field-work-proofs-report.md",
-  "constructflow-v08-documents-visual-report.md",
-  "constructflow-v09-invoicing-visual-report.md",
-  "constructflow-v10-expenses-payables-visual-report.md",
-  "constructflow-v11-finance-visual-report.md",
-  "constructflow-v12-assets-liabilities-visual-report.md",
-  "constructflow-v13-notifications-reports-audit-visual-report.md",
-  "constructflow-v14-organization-users-settings-visual-report.md",
-  "constructflow-v15-industry-validation-visual-report.md",
+  "Constriqo-v02-v03-visual-report.md",
+  "Constriqo-v04-jobs-visual-report.md",
+  "Constriqo-v05-workforce-visual-report.md",
+  "Constriqo-v06-attendance-visual-report.md",
+  "Constriqo-v07-field-work-proofs-report.md",
+  "Constriqo-v08-documents-visual-report.md",
+  "Constriqo-v09-invoicing-visual-report.md",
+  "Constriqo-v10-expenses-payables-visual-report.md",
+  "Constriqo-v11-finance-visual-report.md",
+  "Constriqo-v12-assets-liabilities-visual-report.md",
+  "Constriqo-v13-notifications-reports-audit-visual-report.md",
+  "Constriqo-v14-organization-users-settings-visual-report.md",
+  "Constriqo-v15-industry-validation-visual-report.md",
 ];
 
 const prohibitedPatterns = [
@@ -223,7 +223,7 @@ assertCheck(checks, "Sin Google Fonts externo", !globalCss.includes("fonts.googl
 const failed = checks.filter((check) => !check.passed);
 const generatedAt = new Date().toISOString();
 const reportLines = [
-  "# ConstructFlow V0.16 - Congelacion visual y auditoria automatica",
+  "# Constriqo V0.16 - Congelacion visual y auditoria automatica",
   "",
   `Generado: ${generatedAt}`,
   "",
@@ -256,7 +256,7 @@ const reportLines = [
   "- No prueba backend ni base de datos, porque aun no existen en V0.",
 ];
 
-writeFileSync(join(reportsDir, "constructflow-v16-visual-freeze-audit.md"), `${reportLines.join("\n")}\n`);
+writeFileSync(join(reportsDir, "Constriqo-v16-visual-freeze-audit.md"), `${reportLines.join("\n")}\n`);
 
 if (failed.length > 0) {
   console.error(`Visual audit failed with ${failed.length} issue(s).`);

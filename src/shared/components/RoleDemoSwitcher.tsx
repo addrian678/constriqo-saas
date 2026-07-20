@@ -56,7 +56,7 @@ export function LoginPage({
   tenantPlaceholder = "tenant-id asignado",
   securityNote = "Si tu usuario es administrador, el segundo factor se solicita despues de validar la contrasena.",
   heroEyebrow = "Acceso privado",
-  heroTitle = "Inicia sesion para entrar a ConstructFlow.",
+  heroTitle = "Inicia sesion para entrar a Constriqo.",
   heroDescription = "Software web y movil por roles para administrar obras, trabajadores, documentos, facturacion, asistencia y operaciones.",
   brandSubtitle = "Usuarios creados solo por administradores. Sin registro publico.",
   clientLogoUrl,

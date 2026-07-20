@@ -40,7 +40,7 @@ async function main() {
         if (token === "super") {
           return {
             requestId: "super-admin-smoke",
-            tenant: { tenantId: "00000000-0000-4000-8000-000000000001", companyName: "ConstructFlow Provider" },
+            tenant: { tenantId: "00000000-0000-4000-8000-000000000001", companyName: "Constriqo Provider" },
             actor: {
               userId: null,
               email: "superadmin-smoke@local.test",

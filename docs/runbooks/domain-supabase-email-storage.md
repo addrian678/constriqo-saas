@@ -1,6 +1,6 @@
 # Dominio, Supabase, email y storage productivo
 
-Este runbook prepara ConstructFlow para pasar de local/sandbox a staging o produccion SaaS.
+Este runbook prepara Constriqo para pasar de local/sandbox a staging o produccion SaaS.
 
 ## Estado actual
 
@@ -36,7 +36,7 @@ npm run db:migrate
 
 ```powershell
 $env:MIGRATION_DATABASE_URL="postgresql://..."
-$env:APP_DB_USER="constructflow_app"
+$env:APP_DB_USER="constriqo_app"
 $env:APP_DB_PASSWORD="clave-larga-generada"
 npm run db:create-runtime-role
 ```
@@ -44,28 +44,28 @@ npm run db:create-runtime-role
 5. Configurar backend runtime con el usuario limitado:
 
 ```powershell
-$env:DATABASE_URL="postgresql://constructflow_app:..."
+$env:DATABASE_URL="postgresql://constriqo_app:..."
 ```
 
-Si se usa Supabase Session Pooler (`*.pooler.supabase.com`), el usuario de la URL runtime debe incluir el project ref como sufijo. Ejemplo: si el rol PostgreSQL real es `constructflow_app` y el project ref es `iusgqqewvkpjpebxjzbx`, la URL runtime debe usar:
+Si se usa Supabase Session Pooler (`*.pooler.supabase.com`), el usuario de la URL runtime debe incluir el project ref como sufijo. Ejemplo: si el rol PostgreSQL real es `constriqo_app` y el project ref es `iusgqqewvkpjpebxjzbx`, la URL runtime debe usar:
 
 ```text
-postgresql://constructflow_app.iusgqqewvkpjpebxjzbx:APP_DB_PASSWORD@aws-1-us-west-2.pooler.supabase.com:5432/postgres
+postgresql://constriqo_app.iusgqqewvkpjpebxjzbx:APP_DB_PASSWORD@aws-1-us-west-2.pooler.supabase.com:5432/postgres
 ```
 
-No usar solo `constructflow_app` contra `*.pooler.supabase.com`; Supabase Pooler respondera `ENOIDENTIFIER no tenant identifier provided`.
+No usar solo `constriqo_app` contra `*.pooler.supabase.com`; Supabase Pooler respondera `ENOIDENTIFIER no tenant identifier provided`.
 
 6. Ejecutar `/ready`; debe responder `ok` solo si migraciones y proveedores estan listos.
 
 ## Supabase Storage
 
-1. Crear bucket privado para documentos, por ejemplo `constructflow-documents`.
+1. Crear bucket privado para documentos, por ejemplo `constriqo-documents`.
 2. Configurar politicas del bucket por backend/servicio, no por frontend directo.
 3. Configurar:
 
 ```powershell
 $env:STORAGE_PROVIDER="supabase-storage"
-$env:STORAGE_BUCKET_DOCUMENTS="constructflow-documents"
+$env:STORAGE_BUCKET_DOCUMENTS="constriqo-documents"
 $env:SUPABASE_URL="https://..."
 $env:SUPABASE_SERVICE_ROLE_KEY="secreto-servidor-no-frontend"
 ```
@@ -166,7 +166,7 @@ $env:APP_BASE_URL="https://app.tumarca.com"
 $env:APP_ALLOWED_ORIGIN_DOMAINS="tumarca.com"
 $env:VITE_API_BASE_URL="https://api.tumarca.com"
 $env:MIGRATION_DATABASE_URL="postgresql://..."
-$env:DATABASE_URL="postgresql://constructflow_app:..."
+$env:DATABASE_URL="postgresql://constriqo_app:..."
 $env:EMAIL_PROVIDER="smtp"
 $env:STORAGE_PROVIDER="supabase-storage"
 npm run production:preflight
@@ -185,7 +185,7 @@ El preflight no debe imprimir secretos en claro. Si falla, corregir los puntos `
 
 ## Fiscalidad por pais
 
-ConstructFlow guarda perfiles fiscales operativos y snapshots por documento, pero no queda certificado fiscalmente hasta integrar o validar el proveedor fiscal correspondiente.
+Constriqo guarda perfiles fiscales operativos y snapshots por documento, pero no queda certificado fiscalmente hasta integrar o validar el proveedor fiscal correspondiente.
 
 Fuentes oficiales a revisar antes de produccion:
 

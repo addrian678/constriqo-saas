@@ -158,7 +158,7 @@ export function CrmRealPage({ session, onLogout, busy, embedded }: CrmRealPagePr
         setActivePanel(null);
         setMessage("Cliente actualizado correctamente.");
         void refreshClients(updated.clientId, { preserveMessage: true });
-        window.dispatchEvent(new CustomEvent("constructflow:data-changed", { detail: { module: "crm", action: "updated" } }));
+        window.dispatchEvent(new CustomEvent("constriqo:data-changed", { detail: { module: "crm", action: "updated" } }));
       } else {
         const created = await createCrmClient(session.sessionToken, form);
         applyClientSnapshot(created);
@@ -166,7 +166,7 @@ export function CrmRealPage({ session, onLogout, busy, embedded }: CrmRealPagePr
         setActivePanel(null);
         setMessage("Cliente creado correctamente.");
         void refreshClients(created.clientId, { preserveMessage: true });
-        window.dispatchEvent(new CustomEvent("constructflow:data-changed", { detail: { module: "crm", action: "created" } }));
+        window.dispatchEvent(new CustomEvent("constriqo:data-changed", { detail: { module: "crm", action: "created" } }));
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo guardar el cliente.");
@@ -187,7 +187,7 @@ export function CrmRealPage({ session, onLogout, busy, embedded }: CrmRealPagePr
       });
       setMessage("Cliente archivado. El registro queda disponible para auditoria.");
       void refreshClients(null, { preserveMessage: true });
-      window.dispatchEvent(new CustomEvent("constructflow:data-changed", { detail: { module: "crm", action: "archived" } }));
+      window.dispatchEvent(new CustomEvent("constriqo:data-changed", { detail: { module: "crm", action: "archived" } }));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo archivar el cliente.");
     } finally {
@@ -218,7 +218,7 @@ export function CrmRealPage({ session, onLogout, busy, embedded }: CrmRealPagePr
       setActivePanel(null);
       await loadClientDetail(selectedClientId);
       setMessage("Nota guardada en el historial del cliente.");
-      window.dispatchEvent(new CustomEvent("constructflow:data-changed", { detail: { module: "crm", action: "note-created" } }));
+      window.dispatchEvent(new CustomEvent("constriqo:data-changed", { detail: { module: "crm", action: "note-created" } }));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo guardar la nota.");
     } finally {
@@ -240,7 +240,7 @@ export function CrmRealPage({ session, onLogout, busy, embedded }: CrmRealPagePr
       setActivePanel(null);
       await loadClientDetail(selectedClientId);
       setMessage("Actividad registrada y auditada.");
-      window.dispatchEvent(new CustomEvent("constructflow:data-changed", { detail: { module: "crm", action: "activity-created" } }));
+      window.dispatchEvent(new CustomEvent("constriqo:data-changed", { detail: { module: "crm", action: "activity-created" } }));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo registrar la actividad.");
     } finally {
@@ -499,7 +499,7 @@ export function CrmRealPage({ session, onLogout, busy, embedded }: CrmRealPagePr
         <div className="brand-lockup">
           <span className="brand-mark">CF</span>
           <div>
-            <p className="brand-name">ConstructFlow</p>
+            <p className="brand-name">Constriqo</p>
             <p className="brand-subtitle">{session.tenant.companyName}</p>
           </div>
         </div>

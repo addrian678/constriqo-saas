@@ -9,7 +9,7 @@ export function resolveStorageConfig(env = process.env) {
   const normalizedProvider = STORAGE_PROVIDERS.has(provider) ? provider : "not-configured";
   return {
     provider: normalizedProvider,
-    bucket: env.STORAGE_BUCKET_DOCUMENTS || "constructflow-documents",
+    bucket: env.STORAGE_BUCKET_DOCUMENTS || "constriqo-documents",
     isExternal: normalizedProvider === "supabase-storage" || normalizedProvider === "s3-compatible",
     localRoot: env.LOCAL_STORAGE_ROOT || ".local-data/storage",
   };

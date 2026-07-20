@@ -13,7 +13,7 @@ const args = new Map(
 
 const databaseUrl = process.env.DATABASE_URL || process.env.ADMIN_DATABASE_URL;
 const email = normalizeEmail(args.get("email") || process.env.SUPER_ADMIN_EMAIL || "superadmin@local.test");
-const displayName = args.get("name") || process.env.SUPER_ADMIN_NAME || "ConstructFlow Super Admin";
+const displayName = args.get("name") || process.env.SUPER_ADMIN_NAME || "Constriqo Super Admin";
 const passwordFromEnv = process.env.SUPER_ADMIN_PASSWORD;
 const generatedPassword = passwordFromEnv ? null : generateTemporaryPassword();
 const password = passwordFromEnv || generatedPassword;
@@ -49,7 +49,7 @@ try {
   await client.query(
     `
       INSERT INTO tenants (tenant_id, name, industry_profile, locale, currency, timezone)
-      VALUES ($1, 'ConstructFlow Provider', 'provider', 'es-ES', 'EUR', 'Europe/Madrid')
+      VALUES ($1, 'Constriqo Provider', 'provider', 'es-ES', 'EUR', 'Europe/Madrid')
       ON CONFLICT (tenant_id) DO UPDATE
       SET name = EXCLUDED.name,
           industry_profile = EXCLUDED.industry_profile,

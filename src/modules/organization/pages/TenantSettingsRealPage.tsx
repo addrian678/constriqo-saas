@@ -84,13 +84,13 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
       }
     }
 
-    window.addEventListener("constructflow:policies-accepted", handlePoliciesAccepted);
+    window.addEventListener("constriqo:policies-accepted", handlePoliciesAccepted);
     setNativeInfo(getNativeRuntimeInfo());
     setNotificationConsent(getNotificationConsentStatus());
     void refresh();
 
     return () => {
-      window.removeEventListener("constructflow:policies-accepted", handlePoliciesAccepted);
+      window.removeEventListener("constriqo:policies-accepted", handlePoliciesAccepted);
     };
   }, []);
 
@@ -180,7 +180,7 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
     try {
       const nextSettings = await updateTenantSettings(session.sessionToken, settings);
       setSettings(nextSettings);
-      window.dispatchEvent(new CustomEvent("constructflow:tenant-settings-updated", { detail: nextSettings }));
+      window.dispatchEvent(new CustomEvent("constriqo:tenant-settings-updated", { detail: nextSettings }));
       setSettingsFormOpen(false);
       setMessage("Configuracion guardada con auditoria.");
     } catch (error) {
@@ -291,7 +291,7 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
         ...input,
       });
       setTenantUsage(nextUsage);
-      window.dispatchEvent(new CustomEvent("constructflow:tenant-usage-updated", { detail: nextUsage }));
+      window.dispatchEvent(new CustomEvent("constriqo:tenant-usage-updated", { detail: nextUsage }));
       setMessage("Plan, cuotas y add-ons guardados con auditoria.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudieron guardar cuotas.");
@@ -398,7 +398,7 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
               </label>
               <label className="form-control">
                 <span>Subdominio privado</span>
-                <input className="input" placeholder="cliente.constructflow.com" value={settings.tenantSlug} onChange={(event) => setSettings({ ...settings, tenantSlug: event.target.value })} />
+                <input className="input" placeholder="cliente.Constriqo.com" value={settings.tenantSlug} onChange={(event) => setSettings({ ...settings, tenantSlug: event.target.value })} />
               </label>
               <label className="form-control">
                 <span>Idioma app</span>

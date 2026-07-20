@@ -1,18 +1,18 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: constructflow-db
+    container_name: constriqo-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-constructflow_dev}
-      POSTGRES_USER: ${POSTGRES_USER:-constructflow_user}
+      POSTGRES_DB: ${POSTGRES_DB:-constriqo_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-constriqo_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
     ports:
       - "5432:5432"
     volumes:
       - ./.local-data/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-constructflow_user} -d ${POSTGRES_DB:-constructflow_dev}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-constriqo_user} -d ${POSTGRES_DB:-constriqo_dev}"]
       interval: 10s
       timeout: 5s
       retries: 5
