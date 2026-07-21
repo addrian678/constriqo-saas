@@ -215,7 +215,9 @@ function mutationToastMessage(path: string, method: string) {
   if (path.startsWith("/api/workforce/worker-users")) return "Acceso de trabajador creado correctamente.";
   if (path.startsWith("/api/jobs") && method === "POST") return "Registro de obra guardado correctamente.";
   if (path.startsWith("/api/jobs") && method === "PATCH") return "Obra actualizada correctamente.";
+  if (path.startsWith("/api/estimates") && path.includes("/send-email")) return "Correo de cotizacion preparado en sandbox.";
   if (path.startsWith("/api/estimates")) return "Cotizacion guardada correctamente.";
+  if (path.startsWith("/api/invoicing") && path.includes("/send-email")) return "Correo de factura preparado en sandbox.";
   if (path.startsWith("/api/invoicing")) return "Factura actualizada correctamente.";
   if (path.startsWith("/api/finance") || path.startsWith("/api/expenses")) return "Movimiento guardado correctamente.";
   if (path.startsWith("/api/assets")) return "Activo guardado correctamente.";
@@ -348,4 +350,20 @@ export function saveBlobAsFile(blob: Blob, filename: string): void {
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
+}
+
+export function openBlobInDocumentViewer(blob: Blob, filename: string): boolean {
+  const documentBlob = blob.type ? blob : new Blob([blob], { type: "application/pdf" });
+  const url = URL.createObjectURL(documentBlob);
+  const openedWindow = window.open(url, "_blank", "noopener,noreferrer");
+
+  if (!openedWindow) {
+    saveBlobAsFile(blob, filename);
+    URL.revokeObjectURL(url);
+    return false;
+  }
+
+  openedWindow.focus();
+  window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
+  return true;
 }

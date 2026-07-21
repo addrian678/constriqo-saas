@@ -80,6 +80,8 @@ const campaignTone: Record<CampaignStatus, "neutral" | "info" | "warning" | "suc
   closed: "info",
 };
 
+const MARKETING_MODULE_RELEASED = false;
+
 export function MarketingRealPage({ session }: MarketingRealPageProps) {
   const [campaigns, setCampaigns] = useState<MarketingCampaign[]>([]);
   const [leads, setLeads] = useState<MarketingLead[]>([]);
@@ -106,8 +108,34 @@ export function MarketingRealPage({ session }: MarketingRealPageProps) {
   }, [campaigns.length, leadSummary, leads.length, loyaltyCards.length, loyaltySummary]);
 
   useEffect(() => {
+    if (!MARKETING_MODULE_RELEASED) {
+      setLoading(false);
+      return;
+    }
     void refresh();
   }, []);
+
+  if (!MARKETING_MODULE_RELEASED) {
+    return (
+      <section className="production-module-content">
+        <PageHeader
+          eyebrow="Marketing"
+          title="Marketing y fidelizacion"
+          description="Modulo reservado para campanas, leads y tarjetas de fidelizacion."
+        />
+        <div className="coming-soon marketing-coming-soon">
+          <div className="empty-state">
+            <span className="empty-icon">
+              <Megaphone size={28} />
+            </span>
+            <h2>Proximamente</h2>
+            <p>Estamos trabajando en el desarrollo de este modulo. Por ahora no esta disponible para clientes finales.</p>
+            <StatusBadge label="Modulo bloqueado" tone="warning" />
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   async function refresh(options: { preserveMessage?: boolean } = {}) {
     setLoading(true);

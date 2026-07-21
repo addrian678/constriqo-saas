@@ -1224,6 +1224,21 @@ button {
   align-items: center;
 }
 
+.compact-line-control {
+  gap: 5px;
+}
+
+.compact-line-control span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.compact-line-control .input,
+.compact-line-control .select {
+  min-height: 42px;
+}
+
 .demo-panel {
   margin-top: 22px;
   padding-top: 18px;
@@ -2160,6 +2175,40 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .crm-real-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .crm-real-stats .stat-card {
+    min-height: 92px;
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .crm-real-stats .stat-top {
+    gap: 8px;
+  }
+
+  .crm-real-stats .stat-label {
+    font-size: 11px;
+  }
+
+  .crm-real-stats .stat-value {
+    margin-top: 3px;
+    font-size: 19px;
+  }
+
+  .crm-real-stats .stat-note {
+    font-size: 10px;
+  }
+
+  .crm-real-stats .stat-icon {
+    width: 30px;
+    height: 30px;
+  }
+
   .filters-row {
     grid-template-columns: 1fr;
   }
@@ -2338,6 +2387,10 @@ button {
 
   .estimate-real-item {
     grid-template-columns: 1fr;
+  }
+
+  .compact-line-control {
+    gap: 6px;
   }
 
   .bar-row {

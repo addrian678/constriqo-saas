@@ -1,7 +1,7 @@
 import { Banknote, Download, FileCheck2, FileText, Mail, Plus, Printer, Receipt, RefreshCw, RotateCcw, Save } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import type { AuthenticatedSession } from "../../../app/auth/authClient";
+import { openBlobInDocumentViewer, type AuthenticatedSession } from "../../../app/auth/authClient";
 import { saveDocumentToCurrentDevice } from "../../../app/native/nativeCapabilities";
 import { Button } from "../../../shared/components/Button";
 import { BasicModal } from "../../../shared/components/BasicModal";
@@ -301,10 +301,22 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
     }
   }
 
-  function handlePrintInvoice(invoice: Invoice) {
+  async function handlePrintInvoice(invoice: Invoice) {
     setSelectedInvoice(invoice);
-    window.print();
-    setMessage("Vista enviada al dialogo de impresion del navegador.");
+    setSaving(true);
+    setMessage(null);
+    try {
+      const blob = await downloadInvoicePdf(session.sessionToken, invoice.invoiceId);
+      const opened = openBlobInDocumentViewer(blob, `${invoice.invoiceNumber}.pdf`);
+      setMessage(opened ? "PDF real abierto para imprimir desde el visor del dispositivo." : "PDF descargado porque el navegador bloqueo la ventana de impresion.");
+      dispatchDataChanged("documents");
+      await refresh({ preserveMessage: true });
+      await loadDetail(invoice.invoiceId);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo preparar el PDF para imprimir.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleCreditNote(event: FormEvent<HTMLFormElement>) {
@@ -459,10 +471,22 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
             <div className="responsive-table">
               {(form.items || []).map((item, index) => (
                 <article className="table-row invoice-items-grid" key={`item-${index}`}>
-                  <input className="input" placeholder="Descripcion" value={item.description} onChange={(event) => updateItem(index, { description: event.target.value })} required />
-                  <input className="input" type="number" min="0" step="0.01" value={item.quantity || ""} onChange={(event) => updateItem(index, { quantity: Number(event.target.value) })} required />
-                  <input className="input" type="number" min="0" step="0.01" value={item.unitPrice || ""} onChange={(event) => updateItem(index, { unitPrice: Number(event.target.value) })} required />
-                  <input className="input" type="number" min="0" step="0.01" value={item.taxAmount || ""} onChange={(event) => updateItem(index, { taxAmount: Number(event.target.value) })} />
+                  <label className="form-control compact-line-control">
+                    <span>Descripcion de partida</span>
+                    <input className="input" placeholder="Ej. Instalacion de ceramica" value={item.description} onChange={(event) => updateItem(index, { description: event.target.value })} required />
+                  </label>
+                  <label className="form-control compact-line-control">
+                    <span>Cantidad</span>
+                    <input className="input" type="number" inputMode="decimal" min="0" step="0.01" placeholder="1" value={item.quantity || ""} onChange={(event) => updateItem(index, { quantity: Number(event.target.value) })} required />
+                  </label>
+                  <label className="form-control compact-line-control">
+                    <span>Precio unitario</span>
+                    <input className="input" type="number" inputMode="decimal" min="0" step="0.01" placeholder="0.00" value={item.unitPrice || ""} onChange={(event) => updateItem(index, { unitPrice: Number(event.target.value) })} required />
+                  </label>
+                  <label className="form-control compact-line-control">
+                    <span>Impuesto de la partida</span>
+                    <input className="input" type="number" inputMode="decimal" min="0" step="0.01" placeholder="0.00" value={item.taxAmount || ""} onChange={(event) => updateItem(index, { taxAmount: Number(event.target.value) })} />
+                  </label>
                 </article>
               ))}
               <Button variant="secondary" type="button" icon={<Plus size={16} />} onClick={addItem}>Agregar partida</Button>
@@ -505,7 +529,7 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
                   <Button variant="secondary" type="button" icon={<Mail size={16} />} onClick={() => handlePrepareEmail(invoice)} disabled={saving}>
                     Correo
                   </Button>
-                  <Button variant="secondary" type="button" icon={<Printer size={16} />} onClick={() => handlePrintInvoice(invoice)} disabled={saving}>
+                  <Button variant="secondary" type="button" icon={<Printer size={16} />} onClick={() => void handlePrintInvoice(invoice)} disabled={saving}>
                     Imprimir
                   </Button>
                 </div>

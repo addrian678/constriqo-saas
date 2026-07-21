@@ -1,7 +1,7 @@
 import { Calculator, CheckCircle2, Download, FileText, Mail, Plus, Printer, RefreshCw, Save, XCircle } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import type { AuthenticatedSession } from "../../../app/auth/authClient";
+import { openBlobInDocumentViewer, type AuthenticatedSession } from "../../../app/auth/authClient";
 import { saveDocumentToCurrentDevice } from "../../../app/native/nativeCapabilities";
 import { BasicModal } from "../../../shared/components/BasicModal";
 import { Button } from "../../../shared/components/Button";
@@ -424,9 +424,22 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
     }
   }
 
-  function handlePrint() {
-    window.print();
-    setMessage("Vista enviada al dialogo de impresion del navegador.");
+  async function handlePrint() {
+    if (!selectedEstimateId || !detail) {
+      return;
+    }
+    setSaving(true);
+    setMessage(null);
+    try {
+      const blob = await downloadEstimatePdf(session.sessionToken, selectedEstimateId);
+      const opened = openBlobInDocumentViewer(blob, `${detail.estimate.estimateNumber}.pdf`);
+      setMessage(opened ? "PDF real abierto para imprimir desde el visor del dispositivo." : "PDF descargado porque el navegador bloqueo la ventana de impresion.");
+      dispatchDataChanged("documents");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo preparar el PDF para imprimir.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -648,49 +661,67 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
               </div>
               {form.sections[0].items.map((item, index) => (
                 <div className="estimate-real-item" key={index}>
-                  <select
-                    className="select"
-                    value={item.serviceCatalogItemId || ""}
-                    onChange={(event) => applyService(event.target.value, index)}
-                    aria-label="Servicio"
-                  >
-                    <option value="">Manual</option>
-                    {services.map((service) => (
-                      <option value={service.serviceId} key={service.serviceId}>
-                        {service.code} - {service.name}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    className="input"
-                    placeholder="Descripcion"
-                    value={item.description}
-                    onChange={(event) => updateItem("description", event.target.value, index)}
-                    required
-                  />
-                  <select className="select" value={item.unitCode || (form.unitSystem === "metric" ? "m2" : "sq_ft")} onChange={(event) => updateItem("unitCode", event.target.value, index)} aria-label="Unidad">
-                    {(form.unitSystem === "metric" ? metricUnits : imperialUnits).map((unit) => (
-                      <option value={unit} key={unit}>{unit}</option>
-                    ))}
-                  </select>
-                  <input
-                    className="input"
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={item.quantity || ""}
-                    onChange={(event) => updateItem("quantity", event.target.value, index)}
-                    required
-                  />
-                  <input
-                    className="input"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.unitPrice || ""}
-                    onChange={(event) => updateItem("unitPrice", event.target.value, index)}
-                    required
-                  />
+                  <label className="form-control compact-line-control">
+                    <span>Servicio o precio base</span>
+                    <select
+                      className="select"
+                      value={item.serviceCatalogItemId || ""}
+                      onChange={(event) => applyService(event.target.value, index)}
+                    >
+                      <option value="">Manual</option>
+                      {services.map((service) => (
+                        <option value={service.serviceId} key={service.serviceId}>
+                          {service.code} - {service.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="form-control compact-line-control">
+                    <span>Descripcion de partida</span>
+                    <input
+                      className="input"
+                      placeholder="Ej. Lavado exterior"
+                      value={item.description}
+                      onChange={(event) => updateItem("description", event.target.value, index)}
+                      required
+                    />
+                  </label>
+                  <label className="form-control compact-line-control">
+                    <span>Unidad de medida</span>
+                    <select className="select" value={item.unitCode || (form.unitSystem === "metric" ? "m2" : "sq_ft")} onChange={(event) => updateItem("unitCode", event.target.value, index)}>
+                      {(form.unitSystem === "metric" ? metricUnits : imperialUnits).map((unit) => (
+                        <option value={unit} key={unit}>{unit}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="form-control compact-line-control">
+                    <span>Cantidad</span>
+                    <input
+                      className="input"
+                      type="number"
+                      inputMode="decimal"
+                      min="0.01"
+                      step="0.01"
+                      placeholder="1"
+                      value={item.quantity || ""}
+                      onChange={(event) => updateItem("quantity", event.target.value, index)}
+                      required
+                    />
+                  </label>
+                  <label className="form-control compact-line-control">
+                    <span>Precio unitario</span>
+                    <input
+                      className="input"
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={item.unitPrice || ""}
+                      onChange={(event) => updateItem("unitPrice", event.target.value, index)}
+                      required
+                    />
+                  </label>
                   <strong>{formatMoney(Number(item.quantity || 0) * Number(item.unitPrice || 0), form.currency || "EUR")}</strong>
                 </div>
               ))}
@@ -736,7 +767,7 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
               <Button variant="secondary" type="button" icon={<Mail size={16} />} onClick={handlePrepareEmail} disabled={saving}>
                 Correo
               </Button>
-              <Button variant="secondary" type="button" icon={<Printer size={16} />} onClick={handlePrint} disabled={saving}>
+              <Button variant="secondary" type="button" icon={<Printer size={16} />} onClick={() => void handlePrint()} disabled={saving}>
                 Imprimir
               </Button>
               <Button variant="primary" type="button" icon={<CheckCircle2 size={16} />} onClick={() => void handleApprove()} disabled={saving || detail.estimate.status === "approved"}>
