@@ -11,6 +11,7 @@ Separar marca, aplicacion y API para que el SaaS pueda crecer sin mezclar el log
 - `constriqo.com`: pagina comercial publica del producto.
 - `www.constriqo.com`: alias/redireccion a `constriqo.com`.
 - `app.constriqo.com`: acceso privado al SaaS para clientes finales.
+- `admin.constriqo.com`: acceso privado del proveedor/Super Admin.
 - `api.constriqo.com`: backend/API runtime de Constriqo/Constriqo.
 - `help.constriqo.com`: centro de ayuda futuro.
 - `status.constriqo.com`: estado de servicios futuro.
@@ -31,6 +32,7 @@ Crear estos registros solo cuando el proveedor entregue el destino real:
 | Subdominio | Tipo | Nombre/Host | Valor |
 |---|---|---|---|
 | App SaaS | CNAME | `app` | destino del frontend, por ejemplo `xxxxx.vercel.app` |
+| Super Admin | CNAME | `admin` | mismo destino frontend de Vercel que `app` |
 | API | CNAME o A | `api` | destino backend, por ejemplo `xxxxx.onrender.com` o IP del VPS |
 | Web publica | A, CNAME o ALIAS | `@` | destino de landing/web publica |
 | Web publica www | CNAME | `www` | destino de landing/web publica |
@@ -70,9 +72,11 @@ No activar `APP_ENV=production` hasta configurar email real, storage real y prov
 4. Configurar `api.constriqo.com`.
 5. Publicar frontend con `VITE_API_BASE_URL=https://api.constriqo.com`.
 6. Configurar `app.constriqo.com`.
-7. Probar login admin/trabajador desde `app.constriqo.com`.
-8. Probar que cookies, CORS y MFA funcionan en HTTPS.
-9. Dejar `constriqo.com` para landing comercial.
+7. Configurar `admin.constriqo.com` en el mismo proyecto frontend de Vercel.
+8. Probar login admin/trabajador desde `app.constriqo.com`.
+9. Probar login Super Admin desde `admin.constriqo.com`.
+10. Probar que cookies, CORS y MFA funcionan en HTTPS.
+11. Dejar `constriqo.com` para landing comercial.
 
 ## Render
 
@@ -96,6 +100,7 @@ En Render, `HOST=0.0.0.0` permite que la plataforma detecte el puerto del servic
 Primera etapa:
 
 - `app.constriqo.com`: acceso general de clientes.
+- `admin.constriqo.com`: acceso privado proveedor; no se entrega a clientes.
 
 Cuando el SaaS ya este estable:
 

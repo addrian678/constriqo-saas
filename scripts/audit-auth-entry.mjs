@@ -45,6 +45,7 @@ if (existsSync(appPath)) {
   const app = readFileSync(appPath, "utf8");
   check("App usa login real de cliente", app.includes('entry="tenant"'), "tenant login");
   check("App separa Super Admin", app.includes('"/acceso-admi-proveedor-constriqo"') && app.includes('entry="super-admin"'), "provider route");
+  check("App soporta subdominio privado Super Admin", app.includes("admin.constriqo.com") && app.includes("isProviderHost"), "provider host");
   check("Ruta Super Admin antigua no abre consola", app.includes('"/super-admin"') && app.includes("Pagina no encontrada"), "legacy provider route blocked");
   check("App no carga demo desarrollo", !app.includes("DevelopmentDemoApp") && !app.includes("import.meta.env.DEV"), "no dev demo");
   check("App no importa rutas visuales directamente", !app.includes('from "./routes/AppRoutes"'), "no AppRoutes static import");
