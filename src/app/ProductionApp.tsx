@@ -289,7 +289,7 @@ export function ProductionApp({ entry = "tenant" }: ProductionAppProps) {
 
 function validateEntrySession(entry: ProductionAppProps["entry"], session: AuthenticatedSession) {
   if (entry === "tenant" && session.user.roles.includes("super_admin")) {
-    return "Este usuario pertenece a la consola privada del proveedor. Usa /super-admin.";
+    return "Este usuario pertenece a la consola privada del proveedor. Usa la ruta privada asignada.";
   }
 
   if (entry === "super-admin" && !session.user.roles.includes("super_admin")) {

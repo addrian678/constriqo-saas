@@ -53,9 +53,10 @@ check("Rutas API Super Admin declaradas", routes.includes('method: "POST", path:
 check("Manifest publica modulo Super Admin", manifest.includes('"super-admin"') && manifest.includes("/api/super-admin/tenants"), "manifest");
 check("Runtime conecta handler Super Admin", server.includes("handleSuperAdminRoute") && server.includes('route.moduleId === "super-admin"'), "handler");
 check("Auth exige MFA a super_admin", authRepository.includes('"super_admin"') && authRepository.includes("privilegedAccessRequiresMfa"), "mfa");
-check("App separa ruta /super-admin", appEntry.includes('pathname.startsWith("/super-admin")') && appEntry.includes('entry="super-admin"'), "route split");
+check("App separa ruta privada proveedor", appEntry.includes('"/acceso-admi-proveedor-constriqo"') && appEntry.includes('entry="super-admin"'), "route split");
+check("App bloquea ruta antigua /super-admin", appEntry.includes('"/super-admin"') && appEntry.includes("Pagina no encontrada"), "legacy route blocked");
 check("ProductionApp separa workspace proveedor", app.includes("SuperAdminWorkspace") && app.includes('roles.includes("super_admin")'), "workspace split");
-check("Login normal bloquea Super Admin", app.includes('entry === "tenant"') && app.includes("Usa /super-admin"), "tenant login guard");
+check("Login normal bloquea Super Admin", app.includes('entry === "tenant"') && app.includes("ruta privada asignada"), "tenant login guard");
 check("Login Super Admin bloquea usuarios cliente", app.includes('entry === "super-admin"') && app.includes("inicio de sesion normal para empresas"), "provider login guard");
 check("Cliente frontend usa API Super Admin", client.includes("listSuperAdminTenants") && client.includes("updateTenantLicense") && client.includes("createTenantFromSuperAdmin"), "client");
 check("Panel permite duraciones flexibles", page.includes("Prueba 7 dias") && page.includes("Prueba 30 dias") && page.includes("2 años"), "license options");
