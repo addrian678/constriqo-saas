@@ -54,7 +54,7 @@ check("Manifest publica modulo Super Admin", manifest.includes('"super-admin"') 
 check("Runtime conecta handler Super Admin", server.includes("handleSuperAdminRoute") && server.includes('route.moduleId === "super-admin"'), "handler");
 check("Auth exige MFA a super_admin", authRepository.includes('"super_admin"') && authRepository.includes("privilegedAccessRequiresMfa"), "mfa");
 check("App separa ruta privada proveedor", appEntry.includes('"/acceso-admi-proveedor-constriqo"') && appEntry.includes('entry="super-admin"'), "route split");
-check("App soporta host privado proveedor", appEntry.includes("admin.constriqo.com") && appEntry.includes("isProviderHost"), "provider host");
+check("App no duplica entrada proveedor por subdominio", !appEntry.includes("admin.constriqo.com") && !appEntry.includes("isProviderHost"), "single provider route");
 check("App bloquea ruta antigua /super-admin", appEntry.includes('"/super-admin"') && appEntry.includes("Pagina no encontrada"), "legacy route blocked");
 check("ProductionApp separa workspace proveedor", app.includes("SuperAdminWorkspace") && app.includes('roles.includes("super_admin")'), "workspace split");
 check("Login normal bloquea Super Admin", app.includes('entry === "tenant"') && app.includes("ruta privada asignada"), "tenant login guard");
