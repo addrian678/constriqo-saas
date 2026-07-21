@@ -114,7 +114,6 @@ export const runtimeApiRoutes = [
   { method: "PATCH", path: "/api/organization/settings", moduleId: "organization", capability: "organization.manage" },
   { method: "PATCH", path: "/api/organization/settings/:key", moduleId: "organization", capability: "organization.manage" },
   { method: "GET", path: "/api/organization/usage", moduleId: "organization", capability: "organization.read" },
-  { method: "PATCH", path: "/api/organization/usage", moduleId: "organization", capability: "organization.manage" },
   { method: "GET", path: "/api/organization/users", moduleId: "organization", capability: "organization.users.manage" },
   { method: "POST", path: "/api/organization/users", moduleId: "organization", capability: "organization.users.manage" },
   { method: "PATCH", path: "/api/organization/users/:userId", moduleId: "organization", capability: "organization.users.manage" },

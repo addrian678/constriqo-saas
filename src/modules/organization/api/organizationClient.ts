@@ -94,6 +94,7 @@ export type TenantUsage = {
 };
 
 export type TenantUserRole = "admin" | "manager" | "worker";
+export type ManagedTenantUserRole = Exclude<TenantUserRole, "admin">;
 export type TenantUserStatus = "active" | "inactive" | "suspended";
 
 export type TenantUser = {
@@ -101,7 +102,7 @@ export type TenantUser = {
   email: string;
   displayName: string;
   status: TenantUserStatus;
-  roles: TenantUserRole[];
+  roles: Array<TenantUserRole | "super_admin">;
   workerId?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -110,7 +111,7 @@ export type TenantUser = {
 export type TenantUserInput = {
   email: string;
   displayName: string;
-  role: TenantUserRole;
+  role: ManagedTenantUserRole;
   password?: string;
 };
 
@@ -186,15 +187,6 @@ export async function getTenantUsage(token: string): Promise<TenantUsage> {
 
 export function getCachedTenantUsage(token: string): TenantUsage | null {
   return peekCachedJson<{ usage: TenantUsage }>(token, "/api/organization/usage")?.usage || null;
-}
-
-export async function updateTenantUsageLimits(token: string, input: Partial<TenantUsage>): Promise<TenantUsage> {
-  const response = await requestJson<{ usage: TenantUsage }>("/api/organization/usage", {
-    method: "PATCH",
-    token,
-    body: input,
-  });
-  return response.usage;
 }
 
 export async function listTenantUsers(token: string): Promise<TenantUser[]> {

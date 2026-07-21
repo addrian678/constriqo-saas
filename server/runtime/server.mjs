@@ -1006,13 +1006,6 @@ async function handleOrganizationRoute(options, request, response, route, contex
       return;
     }
 
-    if (request.method === "PATCH" && route.path === "/api/organization/usage") {
-      const body = await readJsonBody(request);
-      const usage = await organizationRepository.updateTenantUsageLimits(context, body);
-      sendJson(request, response, 200, { requestId, usage });
-      return;
-    }
-
     if (request.method === "GET" && route.path === "/api/organization/users") {
       const items = await organizationRepository.listUsers(context);
       sendJson(request, response, 200, { requestId, items, total: items.length });

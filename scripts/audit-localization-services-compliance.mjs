@@ -18,7 +18,9 @@ const migration = readProjectFile("database/migrations/0023_localization_service
 const privacyMigration = readProjectFile("database/migrations/0041_privacy_preferences.sql");
 const usageMigration = readProjectFile("database/migrations/0042_tenant_usage_quotas.sql");
 const fiscalMigration = readProjectFile("database/migrations/0050_fiscal_profiles_provider_readiness.sql");
+const licenseUsageSyncMigration = readProjectFile("database/migrations/0059_sync_usage_limits_from_licenses.sql");
 const orgRepo = readProjectFile("server/runtime/postgresOrganizationRepository.mjs");
+const superAdminRepo = readProjectFile("server/runtime/postgresSuperAdminRepository.mjs");
 const serviceRepo = readProjectFile("server/runtime/postgresServiceCatalogRepository.mjs");
 const estimateRepo = readProjectFile("server/runtime/postgresEstimateRepository.mjs");
 const invoiceRepo = readProjectFile("server/runtime/postgresInvoiceRepository.mjs");
@@ -46,6 +48,7 @@ check("Cuotas registran add-ons comerciales", usageMigration.includes("photo_evi
 check("Cuotas tienen RLS fuerte", usageMigration.includes("ALTER TABLE tenant_usage_limits ENABLE ROW LEVEL SECURITY") && usageMigration.includes("tenant_usage_limits_tenant_isolation"), "usage RLS");
 check("Documentos tienen tamano de storage auditable", usageMigration.includes("storage_size_bytes") && usageMigration.includes("idx_documents_tenant_storage_size"), "storage size");
 check("Migracion crea perfiles fiscales y proveedores", fiscalMigration.includes("tenant_fiscal_profiles") && fiscalMigration.includes("tenant_provider_settings"), "fiscal/provider migration");
+check("Migracion sincroniza cuotas desde licencias", licenseUsageSyncMigration.includes("FROM tenant_licenses") && licenseUsageSyncMigration.includes("tenant_usage_limits"), "license usage sync");
 check("Perfiles fiscales cubren US CO ES", fiscalProfiles.includes("countryProfile: \"US\"") && fiscalProfiles.includes("countryProfile: \"CO\"") && fiscalProfiles.includes("countryProfile: \"ES\""), "fiscal profiles");
 
 check("Organization repository usa tenant context", orgRepo.includes("set_config('app.tenant_id'"), "app.tenant_id");
@@ -54,8 +57,9 @@ check("Organization repository guarda aceptacion con evidencia", orgRepo.include
 check("Organization repository audita cambios", orgRepo.includes("organization.settings.updated") && orgRepo.includes("compliance.policies.accepted"), "audit");
 check("Organization repository gestiona preferencias privacidad", orgRepo.includes("getPrivacyPreferences") && orgRepo.includes("updatePrivacyPreferences"), "privacy repo");
 check("Organization repository fuerza cookies necesarias", orgRepo.includes("necessary_cookies = true") && orgRepo.includes("compliance.privacy_preferences.updated"), "privacy audit");
-check("Organization repository gestiona cuotas tenant", orgRepo.includes("getTenantUsage") && orgRepo.includes("updateTenantUsageLimits"), "usage repo");
-check("Organization repository audita cuotas tenant", orgRepo.includes("organization.usage_limits.updated") && orgRepo.includes("storageUsagePercent"), "usage audit/status");
+check("Organization repository calcula cuotas tenant", orgRepo.includes("getTenantUsage") && orgRepo.includes("storageUsagePercent"), "usage repo");
+check("Organization repository conserva actualizacion de cuotas para proveedor", orgRepo.includes("updateTenantUsageLimits") && orgRepo.includes("organization.usage_limits.updated"), "provider usage update");
+check("Super Admin sincroniza licencia con cuotas visibles", server.includes("handleSuperAdminRoute") && superAdminRepo.includes("syncTenantUsageLimitsFromLicense"), "super admin usage sync");
 
 check("Service repository usa tenant context", serviceRepo.includes("set_config('app.tenant_id'"), "app.tenant_id");
 check("Service repository no toma tenant desde input", !serviceRepo.includes("input.tenantId") && !serviceRepo.includes("body.tenantId"), "no tenant input");
@@ -76,7 +80,7 @@ check("Runtime conecta handlers nuevos", server.includes("handleOrganizationRout
 check("Rutas incluyen servicios", routes.includes("/api/services/prices") && routes.includes("services-prices"), "services routes");
 check("Rutas incluyen compliance", routes.includes("/api/compliance/policy-acceptances"), "policy routes");
 check("Rutas incluyen preferencias privacidad", routes.includes("/api/compliance/privacy-preferences"), "privacy routes");
-check("Rutas incluyen cuotas tenant", routes.includes("/api/organization/usage") && routes.includes("organization.manage"), "usage routes");
+check("Rutas incluyen cuotas tenant solo lectura", routes.includes("/api/organization/usage") && routes.includes("organization.read") && !routes.includes('path: "/api/organization/usage", moduleId: "organization", capability: "organization.manage"'), "usage routes");
 check("Manifest declara services-prices", manifest.includes("services-prices"), "manifest");
 check("Manifest declara privacidad", manifest.includes("/api/compliance/privacy-preferences"), "privacy manifest");
 check("Manifest declara cuotas tenant", manifest.includes("/api/organization/usage"), "usage manifest");
@@ -88,13 +92,13 @@ check("Workspace lee cuotas SaaS", workspace.includes("getTenantUsage") && works
 check("Workspace bloquea add-ons apagados", workspace.includes("AddonLockedPanel") && workspace.includes("marketingAddonEnabled === false"), "addon UX");
 check("Workspace avisa limite almacenamiento", workspace.includes("Limite de almacenamiento alcanzado") && workspace.includes("TENANT_STORAGE_LIMIT_REACHED") === false, "storage UX");
 check("API client expone privacidad", apiClient.includes("getPrivacyPreferences") && apiClient.includes("updatePrivacyPreferences"), "privacy client");
-check("API client expone cuotas tenant", apiClient.includes("getTenantUsage") && apiClient.includes("updateTenantUsageLimits"), "usage client");
+check("API client expone lectura de cuotas tenant", apiClient.includes("getTenantUsage") && !apiClient.includes("updateTenantUsageLimits"), "usage client");
 check("Settings page no usa mock data", !settingsPage.includes("mock-data"), "no mock");
 check("Settings page permite aceptar politicas", settingsPage.includes("acceptRequiredPolicies") && settingsPage.includes("Registrar aceptacion"), "policies");
 check("Settings page permite preferencias privacidad", settingsPage.includes("Cookies y comunicaciones") && settingsPage.includes("PreferenceToggle") && settingsPage.includes("updatePrivacyPreferences"), "privacy ui");
 check("Settings page indica no esenciales apagadas", settingsPage.includes("No esenciales apagadas") && settingsPage.includes("No se activan rastreos"), "privacy copy");
-check("Settings page muestra plan y cuotas", settingsPage.includes("Plan y cuotas") && settingsPage.includes("usage-meter"), "usage UI");
-check("Settings page controla add-ons SaaS", settingsPage.includes("photoEvidenceEnabled") && settingsPage.includes("marketingAddonEnabled") && settingsPage.includes("dedicatedStorageEnabled"), "addon UI");
+check("Settings page muestra plan y cuotas solo lectura", settingsPage.includes("Plan y cuotas") && settingsPage.includes("usage-meter") && settingsPage.includes("administrados por el proveedor"), "usage UI");
+check("Settings page no permite editar add-ons SaaS", settingsPage.includes("enabledAddonsLabel") && !settingsPage.includes("handleUsageLimitChange"), "addon UI");
 check("Services page no usa mock data", !servicesPage.includes("mock-data"), "no mock");
 check("Services page crea y archiva servicios", servicesPage.includes("createService") && servicesPage.includes("archiveService"), "service actions");
 check("Estimates page usa settings reales", estimatesPage.includes("getTenantSettings") && estimatesPage.includes("countryProfile"), "settings");

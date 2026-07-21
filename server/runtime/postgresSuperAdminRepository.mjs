@@ -123,6 +123,7 @@ export function createPostgresSuperAdminRepository(pool) {
           context.actor.userId,
         ],
       );
+      await syncTenantUsageLimitsFromLicense(client, tenantId, license, context.actor.userId);
       await client.query(
         `
           INSERT INTO audit_events (tenant_id, actor_user_id, action, module_id, entity_type, entity_id, severity, metadata)
@@ -233,57 +234,70 @@ export function createPostgresSuperAdminRepository(pool) {
     const tenant = await requireClientTenant(tenantId);
     const clean = normalizeLicenseInput(input);
 
-    const result = await pool.query(
-      `
-        INSERT INTO tenant_licenses (
-          tenant_id,
-          license_code,
-          status,
-          plan_code,
-          starts_at,
-          expires_at,
-          trial_ends_at,
-          duration_preset,
-          seats_limit,
-          storage_quota_mb,
-          features,
-          notes,
-          created_by_user_id,
-          updated_by_user_id
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13, $13)
-        ON CONFLICT (tenant_id) DO UPDATE
-        SET status = EXCLUDED.status,
-            plan_code = EXCLUDED.plan_code,
-            starts_at = EXCLUDED.starts_at,
-            expires_at = EXCLUDED.expires_at,
-            trial_ends_at = EXCLUDED.trial_ends_at,
-            duration_preset = EXCLUDED.duration_preset,
-            seats_limit = EXCLUDED.seats_limit,
-            storage_quota_mb = EXCLUDED.storage_quota_mb,
-            features = EXCLUDED.features,
-            notes = EXCLUDED.notes,
-            updated_by_user_id = EXCLUDED.updated_by_user_id,
-            updated_at = now()
-        RETURNING license_id, tenant_id, license_code, status, plan_code, starts_at, expires_at,
-                  trial_ends_at, duration_preset, seats_limit, storage_quota_mb, features, notes, updated_at
-      `,
-      [
-        tenantId,
-        clean.licenseCode || `LIC-${randomUUID().replace(/-/gu, "").slice(0, 12).toUpperCase()}`,
-        clean.status,
-        clean.planCode,
-        clean.startsAt,
-        clean.expiresAt,
-        clean.trialEndsAt,
-        clean.durationPreset,
-        clean.seatsLimit,
-        clean.storageQuotaMb,
-        JSON.stringify(clean.features),
-        clean.notes,
-        context.actor.userId,
-      ],
-    );
+    const client = await pool.connect();
+    let result;
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenantId]);
+      result = await client.query(
+        `
+          INSERT INTO tenant_licenses (
+            tenant_id,
+            license_code,
+            status,
+            plan_code,
+            starts_at,
+            expires_at,
+            trial_ends_at,
+            duration_preset,
+            seats_limit,
+            storage_quota_mb,
+            features,
+            notes,
+            created_by_user_id,
+            updated_by_user_id
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13, $13)
+          ON CONFLICT (tenant_id) DO UPDATE
+          SET status = EXCLUDED.status,
+              plan_code = EXCLUDED.plan_code,
+              starts_at = EXCLUDED.starts_at,
+              expires_at = EXCLUDED.expires_at,
+              trial_ends_at = EXCLUDED.trial_ends_at,
+              duration_preset = EXCLUDED.duration_preset,
+              seats_limit = EXCLUDED.seats_limit,
+              storage_quota_mb = EXCLUDED.storage_quota_mb,
+              features = EXCLUDED.features,
+              notes = EXCLUDED.notes,
+              updated_by_user_id = EXCLUDED.updated_by_user_id,
+              updated_at = now()
+          RETURNING license_id, tenant_id, license_code, status, plan_code, starts_at, expires_at,
+                    trial_ends_at, duration_preset, seats_limit, storage_quota_mb, features, notes, updated_at
+        `,
+        [
+          tenantId,
+          clean.licenseCode || `LIC-${randomUUID().replace(/-/gu, "").slice(0, 12).toUpperCase()}`,
+          clean.status,
+          clean.planCode,
+          clean.startsAt,
+          clean.expiresAt,
+          clean.trialEndsAt,
+          clean.durationPreset,
+          clean.seatsLimit,
+          clean.storageQuotaMb,
+          JSON.stringify(clean.features),
+          clean.notes,
+          context.actor.userId,
+        ],
+      );
+      await syncTenantUsageLimitsFromLicense(client, tenantId, clean, context.actor.userId);
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => null);
+      throw error;
+    } finally {
+      client.release();
+    }
 
     await writeSuperAdminAudit(context, {
       action: "super_admin.license.upserted",
@@ -355,6 +369,44 @@ export function createPostgresSuperAdminRepository(pool) {
     listTenants,
     upsertTenantLicense,
   };
+}
+
+async function syncTenantUsageLimitsFromLicense(client, tenantId, license, actorUserId) {
+  const features = license.features || {};
+  await client.query(
+    `
+      INSERT INTO tenant_usage_limits (
+        tenant_id,
+        plan_code,
+        storage_quota_mb,
+        photo_evidence_enabled,
+        marketing_addon_enabled,
+        dedicated_storage_enabled,
+        updated_by_user_id,
+        metadata
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
+      ON CONFLICT (tenant_id) DO UPDATE
+      SET plan_code = EXCLUDED.plan_code,
+          storage_quota_mb = EXCLUDED.storage_quota_mb,
+          photo_evidence_enabled = EXCLUDED.photo_evidence_enabled,
+          marketing_addon_enabled = EXCLUDED.marketing_addon_enabled,
+          dedicated_storage_enabled = EXCLUDED.dedicated_storage_enabled,
+          updated_by_user_id = EXCLUDED.updated_by_user_id,
+          updated_at = now(),
+          metadata = tenant_usage_limits.metadata || EXCLUDED.metadata
+    `,
+    [
+      tenantId,
+      license.planCode,
+      license.storageQuotaMb,
+      Boolean(features.photoEvidenceAddon),
+      Boolean(features.marketingAddon),
+      license.planCode === "dedicated" || Boolean(features.dedicatedStorage),
+      actorUserId,
+      JSON.stringify({ source: "super-admin-license", syncedAt: new Date().toISOString() }),
+    ],
+  );
 }
 
 async function ensureTenantRolesAndCapabilities(client, tenantId) {

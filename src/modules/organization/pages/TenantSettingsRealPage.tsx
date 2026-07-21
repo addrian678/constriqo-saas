@@ -27,7 +27,7 @@ import {
   updateTenantSettings,
   updateTenantUser,
   updatePrivacyPreferences,
-  updateTenantUsageLimits,
+  type ManagedTenantUserRole,
   type PrivacyPreferences,
   type TenantUsage,
   type TenantSettings,
@@ -75,6 +75,7 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
   const [userFormOpen, setUserFormOpen] = useState(false);
   const [nativeInfo, setNativeInfo] = useState<NativeRuntimeInfo | null>(null);
   const [notificationConsent, setNotificationConsent] = useState<NotificationConsentStatus>("unsupported");
+  const managedUsers = users.filter((user) => isManagedTenantUser(user));
 
   useEffect(() => {
     function handlePoliciesAccepted(event: Event) {
@@ -274,27 +275,6 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
       setMessage("Preferencias de privacidad guardadas con auditoria.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudieron guardar preferencias de privacidad.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleUsageLimitChange(input: Partial<TenantUsage>) {
-    if (!tenantUsage) {
-      return;
-    }
-    setSaving(true);
-    setMessage(null);
-    try {
-      const nextUsage = await updateTenantUsageLimits(session.sessionToken, {
-        ...tenantUsage,
-        ...input,
-      });
-      setTenantUsage(nextUsage);
-      window.dispatchEvent(new CustomEvent("constriqo:tenant-usage-updated", { detail: nextUsage }));
-      setMessage("Plan, cuotas y add-ons guardados con auditoria.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudieron guardar cuotas.");
     } finally {
       setSaving(false);
     }
@@ -560,21 +540,20 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
               <div className="card-title-row">
                 <h2 className="card-title">Usuarios activos</h2>
                 <div className="segmented-actions">
-                  <StatusBadge label={`${users.length} registros`} tone="info" />
+                  <StatusBadge label={`${managedUsers.length} registros`} tone="info" />
                   <Button variant="secondary" type="button" icon={<Users size={16} />} onClick={() => setUserFormOpen(true)}>
                     Crear
                   </Button>
                 </div>
               </div>
               <div className="responsive-table">
-                {users.map((user) => (
+                {managedUsers.length > 0 ? managedUsers.map((user) => (
                   <article className="table-row users-table-grid" key={user.userId}>
                     <div>
                       <strong>{user.displayName}</strong>
                       <span className="activity-meta">{user.email}</span>
                     </div>
                     <select className="select" value={user.roles[0] || "worker"} onChange={(event) => void handleUserUpdate(user.userId, { role: event.target.value as TenantUserRole })} disabled={saving}>
-                      <option value="admin">Admin</option>
                       <option value="manager">Manager</option>
                       <option value="worker">Trabajador</option>
                     </select>
@@ -587,10 +566,39 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
                       Reset
                     </Button>
                   </article>
-                ))}
+                )) : (
+                  <div className="empty-state">
+                    <Users size={24} />
+                    <h3>Sin personal gestionable</h3>
+                    <p>Crea gerentes o trabajadores para administrar accesos operativos. La cuenta propietaria se gestiona en Datos de seguridad.</p>
+                  </div>
+                )}
               </div>
             </aside>
           ) : null}
+
+          <aside className="card">
+            <div className="card-title-row">
+              <h2 className="card-title">Datos de seguridad</h2>
+              <StatusBadge label="Cuenta propietaria" tone="info" />
+            </div>
+            <div className="activity-list">
+              <article className="activity-item">
+                <span className="activity-icon"><ShieldCheck size={18} /></span>
+                <div>
+                  <p className="activity-title">{session.user.displayName}</p>
+                  <p className="activity-meta">{session.user.email}</p>
+                </div>
+              </article>
+              <article className="activity-item">
+                <span className="activity-icon"><KeyRound size={18} /></span>
+                <div>
+                  <p className="activity-title">Contraseña y segundo factor</p>
+                  <p className="activity-meta">La cuenta administradora no aparece como usuario operativo. Sus cambios de seguridad se gestionan desde este apartado para no mezclarla con gerentes o trabajadores.</p>
+                </div>
+              </article>
+            </div>
+          </aside>
 
           <aside className="card">
             <div className="card-title-row">
@@ -740,67 +748,20 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
                   </div>
                 </article>
                 <div className="grid proof-grid">
-                  <label className="form-control">
-                    <span>Plan comercial</span>
-                    <select className="select" value={tenantUsage.planCode} disabled={saving} onChange={(event) => void handleUsageLimitChange({ planCode: event.target.value as TenantUsage["planCode"] })}>
-                      <option value="starter">Starter</option>
-                      <option value="growth">Growth</option>
-                      <option value="dedicated">Dedicated</option>
-                    </select>
-                  </label>
-                  <label className="form-control">
-                    <span>Cuota MB</span>
-                    <input
-                      key={`storage-${tenantUsage.updatedAt}-${tenantUsage.storageQuotaMb}`}
-                      className="input"
-                      type="number"
-                      min={50}
-                      defaultValue={tenantUsage.storageQuotaMb}
-                      disabled={saving}
-                      onBlur={(event) => {
-                        const value = Number(event.target.value);
-                        if (Number.isInteger(value) && value !== tenantUsage.storageQuotaMb) {
-                          void handleUsageLimitChange({ storageQuotaMb: value });
-                        }
-                      }}
-                    />
-                  </label>
-                  <label className="form-control">
-                    <span>Cuota documentos</span>
-                    <input
-                      key={`documents-${tenantUsage.updatedAt}-${tenantUsage.documentQuota}`}
-                      className="input"
-                      type="number"
-                      min={50}
-                      defaultValue={tenantUsage.documentQuota}
-                      disabled={saving}
-                      onBlur={(event) => {
-                        const value = Number(event.target.value);
-                        if (Number.isInteger(value) && value !== tenantUsage.documentQuota) {
-                          void handleUsageLimitChange({ documentQuota: value });
-                        }
-                      }}
-                    />
-                  </label>
+                  <ReadOnlyMetric label="Plan comercial" value={planLabel(tenantUsage.planCode)} />
+                  <ReadOnlyMetric label="Cuota MB" value={`${tenantUsage.storageQuotaMb} MB`} />
+                  <ReadOnlyMetric label="Cuota documentos" value={`${tenantUsage.documentQuota}`} />
                 </div>
-                <PreferenceToggle
-                  label="Microservicio de evidencias fotograficas"
-                  checked={tenantUsage.photoEvidenceEnabled}
-                  disabled={saving}
-                  onChange={(checked) => void handleUsageLimitChange({ photoEvidenceEnabled: checked })}
-                />
-                <PreferenceToggle
-                  label="Modulo marketing activo"
-                  checked={tenantUsage.marketingAddonEnabled}
-                  disabled={saving}
-                  onChange={(checked) => void handleUsageLimitChange({ marketingAddonEnabled: checked })}
-                />
-                <PreferenceToggle
-                  label="Almacenamiento dedicado futuro"
-                  checked={tenantUsage.dedicatedStorageEnabled}
-                  disabled={saving}
-                  onChange={(checked) => void handleUsageLimitChange({ dedicatedStorageEnabled: checked })}
-                />
+                <div className="activity-item">
+                  <span className="activity-icon"><ShieldCheck size={18} /></span>
+                  <div>
+                    <p className="activity-title">Modulos incluidos</p>
+                    <p className="activity-meta">{enabledAddonsLabel(tenantUsage)}</p>
+                  </div>
+                </div>
+                <p className="activity-meta">
+                  El plan, cuotas y add-ons son administrados por el proveedor desde Super Admin. El cliente solo ve consumo, limites y alertas de limpieza.
+                </p>
               </div>
             ) : (
               <p className="activity-meta">Cargando consumo y limites del tenant.</p>
@@ -827,8 +788,7 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
             <div className="grid proof-grid">
               <label className="form-control">
                 <span>Rol</span>
-                <select className="select" value={userForm.role} onChange={(event) => setUserForm({ ...userForm, role: event.target.value as TenantUserRole })}>
-                  <option value="admin">Admin</option>
+                <select className="select" value={userForm.role} onChange={(event) => setUserForm({ ...userForm, role: event.target.value as ManagedTenantUserRole })}>
                   <option value="manager">Manager</option>
                   <option value="worker">Trabajador</option>
                 </select>
@@ -910,6 +870,19 @@ function PreferenceToggle({
   );
 }
 
+function ReadOnlyMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="form-control">
+      <span>{label}</span>
+      <strong className="readonly-metric-value">{value}</strong>
+    </div>
+  );
+}
+
+function isManagedTenantUser(user: TenantUser) {
+  return !user.roles.includes("admin") && !user.roles.includes("super_admin");
+}
+
 function companyVisibilityLabel(key: string) {
   return {
     logo: "Logo",
@@ -953,6 +926,23 @@ function usageStatusLabel(status: TenantUsage["status"]) {
     danger: "Alto uso",
     blocked: "Limite",
   }[status];
+}
+
+function planLabel(planCode: TenantUsage["planCode"]) {
+  return {
+    starter: "Starter",
+    growth: "Growth",
+    dedicated: "Dedicated",
+  }[planCode];
+}
+
+function enabledAddonsLabel(usage: TenantUsage) {
+  const addons = [
+    usage.photoEvidenceEnabled ? "Evidencias fotograficas" : "",
+    usage.marketingAddonEnabled ? "Marketing" : "",
+    usage.dedicatedStorageEnabled ? "Almacenamiento dedicado futuro" : "",
+  ].filter(Boolean);
+  return addons.length > 0 ? addons.join(" · ") : "Sin add-ons comerciales activos";
 }
 
 function formatMb(bytes: number) {
