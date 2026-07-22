@@ -65,6 +65,7 @@ check("Login Super Admin bloquea usuarios cliente", app.includes('entry === "sup
 check("Cliente frontend usa API Super Admin", client.includes("listSuperAdminTenants") && client.includes("updateTenantLicense") && client.includes("createTenantFromSuperAdmin"), "client");
 check("Panel permite duraciones flexibles", page.includes("Prueba 7 dias") && page.includes("Prueba 30 dias") && page.includes("2 años"), "license options");
 check("Panel crea cliente desde Super Admin", page.includes("Crear cliente y admin") && page.includes("Credenciales temporales"), "tenant create ui");
+check("Panel usa estadisticas compactas", page.includes("super-admin-stats-grid"), "compact stats");
 check("Panel muestra alertas y acciones rapidas", page.includes("Requieren revision") && page.includes("Extender 1 año") && page.includes("Suspender"), "alerts actions");
 check("Instalador crea Super Admin con Argon2id", install.includes("argon2.hash") && install.includes("super_admin") && install.includes("mfaRequired"), "install");
 check("Smoke valida acceso y licencia", smoke.includes("non-super cannot list tenants") && smoke.includes("two_years") && smoke.includes("LICENSE_SUSPENDED"), "smoke");

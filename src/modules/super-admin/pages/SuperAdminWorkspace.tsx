@@ -369,14 +369,11 @@ export function SuperAdminWorkspace({ session, busy, onLogout }: SuperAdminWorks
           </section>
         </BasicModal>
 
-        <section className="stats-grid">
+        <section className="stats-grid super-admin-stats-grid">
           <StatCard label="Empresas" value={String(summary.total)} note="Clientes SaaS registrados" tone="info" icon={Building2} />
           <StatCard label="Licencias activas" value={String(summary.active)} note="Clientes operativos" tone="positive" icon={ShieldCheck} />
           <StatCard label="Alertas" value={String(summary.blocked + summary.expiringSoon + summary.storageOverQuota)} note="Bloqueo, vencimiento o cuota" tone="danger" icon={AlertTriangle} />
           <StatCard label="Uso archivos" value={formatBytes(summary.storageSizeBytes)} note={`${summary.storageOverQuota} sobre cuota`} tone="info" icon={Database} />
-        </section>
-
-        <section className="stats-grid">
           <StatCard label="Pruebas" value={String(summary.trial)} note="7 o 30 dias" tone="warning" icon={Users} />
           <StatCard label="Bloqueadas" value={String(summary.blocked)} note="Suspendidas, vencidas o sin licencia" tone="danger" icon={ShieldCheck} />
           <StatCard label="Vencen pronto" value={String(summary.expiringSoon)} note="Proximos 14 dias" tone="warning" icon={CalendarClock} />

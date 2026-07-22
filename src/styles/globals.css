@@ -1551,6 +1551,37 @@ button {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.super-admin-shell .production-main {
+  max-width: 1320px;
+  margin-inline: auto;
+}
+
+.super-admin-stats-grid {
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.super-admin-stats-grid .stat-card {
+  min-height: 118px;
+  padding: 14px;
+  gap: 8px;
+}
+
+.super-admin-stats-grid .stat-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.super-admin-stats-grid .stat-value {
+  margin-top: 4px;
+  font-size: 25px;
+}
+
+.super-admin-stats-grid .stat-note {
+  font-size: 11px;
+}
+
 .super-admin-grid {
   display: grid;
   grid-template-columns: minmax(360px, 0.9fr) minmax(420px, 1.1fr);
@@ -2364,6 +2395,7 @@ button {
   }
 
   .super-admin-grid,
+  .super-admin-stats-grid,
   .form-grid {
     grid-template-columns: 1fr;
   }
