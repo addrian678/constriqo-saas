@@ -78,6 +78,8 @@ check("Pagina cobra factura", page.includes("handlePayment") && page.includes("r
 check("Pagina descarga PDF/recibo", page.includes("handleDownloadInvoice") && page.includes("handleDownloadReceipt"), "pdf ui");
 check("Pagina abre PDF real para impresion", page.includes("openBlobInDocumentViewer") && page.includes("PDF real abierto para imprimir") && page.includes("Abrir PDF"), "real pdf print");
 check("Pagina etiqueta partidas en movil", page.includes("line-item-mobile-heading") && page.includes("aria-label={`Cantidad de partida") && page.includes("placeholder=\"Precio unitario\""), "mobile item labels");
+check("Pagina muestra detalle de factura en modal", page.includes("Detalle de factura") && page.includes("document-detail-modal") && page.includes("setSelectedInvoice(null)"), "detail modal");
+check("Pagina permite agregar partida al final", page.includes("line-item-bottom-actions") && page.includes("Agregar otra partida"), "bottom add item");
 check("Pagina crea rectificativa", page.includes("handleCreditNote") && page.includes("createCreditNote"), "credit ui");
 check("Pagina usa CRM y cotizaciones reales", page.includes("listCrmClients") && page.includes("listEstimates"), "real dependencies");
 check("Workspace productivo incluye facturas", workspace.includes("<InvoicingRealPage") && workspace.includes('id: "invoicing"'), "workspace");

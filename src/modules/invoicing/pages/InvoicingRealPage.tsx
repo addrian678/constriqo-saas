@@ -490,7 +490,11 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
                   </label>
                 </article>
               ))}
-              <Button variant="secondary" type="button" icon={<Plus size={16} />} onClick={addItem}>Agregar partida</Button>
+              <div className="line-item-bottom-actions">
+                <Button variant="secondary" type="button" icon={<Plus size={16} />} onClick={addItem}>
+                  Agregar otra partida
+                </Button>
+              </div>
             </div>
           ) : null}
 
@@ -540,12 +544,43 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
         </div>
       </section>
 
-      {selectedInvoice ? (
-        <section className="grid two-column crm-real-grid" style={{ marginTop: 16 }}>
+      <BasicModal
+        title={selectedInvoice ? `${selectedInvoice.invoiceNumber} - ${selectedInvoice.title}` : "Detalle de factura"}
+        open={Boolean(selectedInvoice)}
+        onClose={() => {
+          setSelectedInvoice(null);
+          setSelectedItems([]);
+          setSelectedPayments([]);
+          setSelectedHistory([]);
+          setActivePanel(null);
+          setPendingInvoice(null);
+        }}
+        size="wide"
+        footer={null}
+      >
+        {selectedInvoice ? (
+        <div className="grid two-column crm-real-grid document-detail-modal">
           <div className="card">
             <div className="card-title-row">
               <h2 className="card-title">{selectedInvoice.invoiceNumber}</h2>
               <StatusBadge label={statusLabels[selectedInvoice.status]} tone={statusTone[selectedInvoice.status]} />
+            </div>
+            <div className="segmented-actions" style={{ marginBottom: 12 }}>
+              <Button variant="secondary" type="button" onClick={() => prepareIssue(selectedInvoice)} disabled={saving || selectedInvoice.status !== "draft"}>
+                Emitir
+              </Button>
+              <Button variant="secondary" type="button" onClick={() => preparePayment(selectedInvoice)} disabled={saving || selectedInvoice.balanceAmount <= 0 || selectedInvoice.status === "draft"}>
+                Cobrar
+              </Button>
+              <Button variant="secondary" type="button" icon={<Download size={16} />} onClick={() => void handleDownloadInvoice(selectedInvoice)} disabled={saving}>
+                PDF
+              </Button>
+              <Button variant="secondary" type="button" icon={<Mail size={16} />} onClick={() => handlePrepareEmail(selectedInvoice)} disabled={saving}>
+                Correo
+              </Button>
+              <Button variant="secondary" type="button" icon={<Printer size={16} />} onClick={() => void handlePrintInvoice(selectedInvoice)} disabled={saving}>
+                Abrir PDF
+              </Button>
             </div>
             {selectedInvoice.invoiceType === "credit_note" ? (
               <p className="login-notice">Rectifica {selectedInvoice.correctsInvoiceNumber || selectedInvoice.correctsInvoiceId}. {selectedInvoice.correctionReason}</p>
@@ -716,8 +751,9 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
               </Button>
             </form>
           </BasicModal>
-        </section>
-      ) : null}
+        </div>
+        ) : null}
+      </BasicModal>
     </section>
   );
 }

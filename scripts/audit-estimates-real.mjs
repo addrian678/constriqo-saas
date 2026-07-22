@@ -53,6 +53,9 @@ check("Estimates real page aprueba cotizacion", page.includes("handleApprove") &
 check("Estimates real page calcula totales de formulario", page.includes("formSubtotal") && page.includes("formTotal"), "form totals");
 check("Estimates real page abre PDF real para impresion", page.includes("openBlobInDocumentViewer") && page.includes("PDF real abierto para imprimir") && page.includes("Abrir PDF"), "real pdf print");
 check("Estimates real page etiqueta partidas en movil", page.includes("line-item-mobile-heading") && page.includes("aria-label={`Cantidad de partida") && page.includes("placeholder=\"Precio unitario\""), "mobile item labels");
+check("Estimates real page convierte aprobada en factura", page.includes("handleCreateInvoiceFromEstimate") && page.includes("createInvoice(session.sessionToken") && page.includes("Crear factura para cobrar"), "estimate to invoice");
+check("Estimates real page muestra detalle en modal", page.includes("Detalle de cotizacion") && page.includes("document-detail-modal") && page.includes("setSelectedEstimateId(null)"), "detail modal");
+check("Estimates real page permite agregar partida al final", page.includes("line-item-bottom-actions") && page.includes("Agregar otra partida"), "bottom add item");
 
 check("Workspace productivo incluye CRM y cotizaciones", workspace.includes("<CrmRealPage") && workspace.includes("<EstimatesRealPage"), "workspace modules");
 check("Production workspace no importa mock data", !workspace.includes("mock-data"), "no mock imports");

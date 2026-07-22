@@ -23,6 +23,7 @@ import {
   type EstimateInput,
   type EstimateSummary,
 } from "../api/estimateClient";
+import { createInvoice } from "../../invoicing/api/invoiceClient";
 
 type EstimatesRealPageProps = {
   session: AuthenticatedSession;
@@ -442,6 +443,31 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
     }
   }
 
+  async function handleCreateInvoiceFromEstimate() {
+    if (!detail) {
+      return;
+    }
+    if (detail.estimate.status !== "approved") {
+      setMessage("Primero aprueba la cotizacion antes de convertirla en factura.");
+      return;
+    }
+    setSaving(true);
+    setMessage(null);
+    try {
+      const invoice = await createInvoice(session.sessionToken, {
+        estimateId: detail.estimate.estimateId,
+        title: detail.estimate.title,
+      });
+      setMessage(`Factura ${invoice.invoiceNumber} creada en borrador. Puedes emitirla y cobrarla desde Facturas.`);
+      dispatchDataChanged("invoicing");
+      await refresh(detail.estimate.estimateId, { preserveMessage: true });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo convertir la cotizacion en factura.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <section className="production-module-content">
       <PageHeader
@@ -728,6 +754,11 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
                   <strong>{formatMoney(Number(item.quantity || 0) * Number(item.unitPrice || 0), form.currency || "EUR")}</strong>
                 </div>
               ))}
+              <div className="line-item-bottom-actions">
+                <Button variant="secondary" type="button" icon={<Plus size={15} />} onClick={addItem}>
+                  Agregar otra partida
+                </Button>
+              </div>
               <div className="session-summary">
                 <span>Subtotal</span>
                 <strong>{formatMoney(formSubtotal, form.currency || "EUR")}</strong>
@@ -744,19 +775,29 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
           </form>
       </BasicModal>
 
-      {detail ? (
-        <section className="card" style={{ marginTop: 16 }}>
+      <BasicModal
+        title={detail ? `${detail.estimate.estimateNumber} - ${detail.estimate.title}` : "Detalle de cotizacion"}
+        open={Boolean(detail)}
+        onClose={() => {
+          setSelectedEstimateId(null);
+          setDetail(null);
+        }}
+        size="wide"
+        footer={null}
+      >
+        {detail ? (
+        <div className="document-detail-modal">
           <div className="card-title-row">
             <div>
-              <h2 className="card-title">{detail.estimate.estimateNumber} - {detail.estimate.title}</h2>
+              <h2 className="card-title">Detalle de cotizacion</h2>
               <p className="activity-meta">{detail.estimate.clientName}</p>
             </div>
             <div className="crm-client-actions">
-              <Button variant="secondary" type="button" onClick={() => void handleSend()} disabled={saving || detail.estimate.status === "approved"}>
-                Marcar enviada
+              <Button variant="secondary" type="button" onClick={handlePrepareEmail} disabled={saving}>
+                Enviar / reenviar
               </Button>
               <Button variant="secondary" type="button" onClick={() => void handleReviewEstimate()} disabled={saving || detail.estimate.status === "approved" || detail.estimate.status === "cancelled"}>
-                Revision
+                En revision
               </Button>
               <Button variant="secondary" type="button" onClick={() => void handleRejectEstimate()} disabled={saving || detail.estimate.status === "approved" || detail.estimate.status === "cancelled" || detail.estimate.status === "rejected"}>
                 Rechazar
@@ -767,14 +808,14 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
               <Button variant="secondary" type="button" icon={<Download size={16} />} onClick={() => void handleDownloadPdf()} disabled={saving}>
                 PDF
               </Button>
-              <Button variant="secondary" type="button" icon={<Mail size={16} />} onClick={handlePrepareEmail} disabled={saving}>
-                Correo
-              </Button>
               <Button variant="secondary" type="button" icon={<Printer size={16} />} onClick={() => void handlePrint()} disabled={saving}>
                 Abrir PDF
               </Button>
               <Button variant="primary" type="button" icon={<CheckCircle2 size={16} />} onClick={() => void handleApprove()} disabled={saving || detail.estimate.status === "approved"}>
                 Aprobar
+              </Button>
+              <Button variant="primary" type="button" icon={<ReceiptIcon />} onClick={() => void handleCreateInvoiceFromEstimate()} disabled={saving || detail.estimate.status !== "approved"}>
+                Crear factura para cobrar
               </Button>
             </div>
           </div>
@@ -835,10 +876,15 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
               </div>
             </div>
           </div>
-        </section>
-      ) : null}
+        </div>
+        ) : null}
+      </BasicModal>
     </section>
   );
+}
+
+function ReceiptIcon() {
+  return <FileText size={16} />;
 }
 
 function SummaryCard({ icon, label, value }: { icon: ReactNode; label: string; value: number | string }) {
