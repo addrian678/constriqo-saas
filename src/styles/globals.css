@@ -1557,13 +1557,15 @@ button {
 }
 
 .super-admin-stats-grid {
-  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(156px, 176px));
   gap: 12px;
+  justify-content: start;
   margin-bottom: 16px;
 }
 
 .super-admin-stats-grid .stat-card {
-  min-height: 118px;
+  aspect-ratio: 1 / 0.82;
+  min-height: 126px;
   padding: 14px;
   gap: 8px;
 }
@@ -2395,9 +2397,12 @@ button {
   }
 
   .super-admin-grid,
-  .super-admin-stats-grid,
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .super-admin-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .super-admin-tenant-row {
