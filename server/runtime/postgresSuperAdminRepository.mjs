@@ -214,6 +214,7 @@ export function createPostgresSuperAdminRepository(pool) {
         FROM tenants t
         LEFT JOIN tenant_licenses l ON l.tenant_id = t.tenant_id
         WHERE t.tenant_id <> $1
+          AND t.archived_at IS NULL
         ORDER BY t.created_at DESC
         LIMIT 300
       `,
@@ -325,6 +326,7 @@ export function createPostgresSuperAdminRepository(pool) {
         FROM tenants
         WHERE tenant_id = $1
           AND tenant_id <> $2
+          AND archived_at IS NULL
       `,
       [tenantId, PROVIDER_TENANT_ID],
     );

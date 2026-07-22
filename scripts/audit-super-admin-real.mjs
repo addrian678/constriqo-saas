@@ -23,6 +23,7 @@ function check(name, condition, detail = "") {
 
 const migration = readProjectFile("database/migrations/0045_super_admin_licensing.sql");
 const tenantAdminCleanupMigration = readProjectFile("database/migrations/0058_remove_superadmin_from_tenant_admin.sql");
+const tenantArchiveMigration = readProjectFile("database/migrations/0060_tenant_internal_archive.sql");
 const repository = readProjectFile("server/runtime/postgresSuperAdminRepository.mjs");
 const routes = readProjectFile("server/runtime/runtimeRoutes.mjs");
 const manifest = readProjectFile("server/runtime/runtimeManifest.mjs");
@@ -41,6 +42,7 @@ check("Migration crea tenant proveedor", migration.includes("Constriqo Provider"
 check("Migration crea licencias", migration.includes("CREATE TABLE IF NOT EXISTS tenant_licenses") && migration.includes("trial_7d") && migration.includes("two_years"), "tenant_licenses");
 check("Migration crea auditoria global", migration.includes("CREATE TABLE IF NOT EXISTS super_admin_audit_events"), "super admin audit");
 check("Migration registra capacidades Super Admin", migration.includes("superadmin.read") && migration.includes("superadmin.manage"), "capabilities");
+check("Migration permite archivar tenants internos", tenantArchiveMigration.includes("archived_at") && tenantArchiveMigration.includes("internal_test_data"), "tenant archive");
 check("Repository usa conexion administrativa separada", repository.includes("SUPER_ADMIN_DATABASE_URL") && repository.includes("ADMIN_DATABASE_URL"), "admin connection");
 check("Repository exige rol y capability", repository.includes('roles.includes("super_admin")') && repository.includes("capabilities.includes(capability)"), "role guard");
 check("Repository no da superadmin a admin tenant", repository.includes("c.code NOT LIKE 'superadmin.%'"), "tenant admin capabilities");
@@ -48,6 +50,7 @@ check("Instalador cliente no da superadmin a admin tenant", initialAdminInstall.
 check("Migracion limpia superadmin de roles tenant", tenantAdminCleanupMigration.includes("c.code LIKE 'superadmin.%'") && tenantAdminCleanupMigration.includes("r.scope = 'tenant'"), "tenant cleanup");
 check("Repository soporta presets de licencia", repository.includes("trial_7d") && repository.includes("trial_30d") && repository.includes("one_year") && repository.includes("two_years"), "duration presets");
 check("Repository crea clientes con admin inicial", repository.includes("createTenant") && repository.includes("temporaryPassword") && repository.includes("tenant.initial_admin_created"), "tenant create");
+check("Repository oculta tenants archivados", repository.includes("t.archived_at IS NULL") && repository.includes("AND archived_at IS NULL"), "archived tenants");
 check("Repository resume alertas proveedor", repository.includes("expiringSoon") && repository.includes("storageOverQuota") && repository.includes("blocked"), "summary alerts");
 check("Rutas API Super Admin declaradas", routes.includes('method: "POST", path: "/api/super-admin/tenants"') && routes.includes("/api/super-admin/tenants/:tenantId/license"), "routes");
 check("Manifest publica modulo Super Admin", manifest.includes('"super-admin"') && manifest.includes("/api/super-admin/tenants"), "manifest");
