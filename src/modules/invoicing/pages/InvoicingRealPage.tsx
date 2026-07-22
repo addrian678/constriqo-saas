@@ -471,21 +471,22 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
             <div className="responsive-table">
               {(form.items || []).map((item, index) => (
                 <article className="table-row invoice-items-grid" key={`item-${index}`}>
+                  <div className="line-item-mobile-heading">Partida {index + 1}</div>
                   <label className="form-control compact-line-control">
                     <span>Descripcion de partida</span>
-                    <input className="input" placeholder="Ej. Instalacion de ceramica" value={item.description} onChange={(event) => updateItem(index, { description: event.target.value })} required />
+                    <input className="input" aria-label={`Descripcion de partida ${index + 1}`} placeholder="Descripcion: ej. instalacion de ceramica" value={item.description} onChange={(event) => updateItem(index, { description: event.target.value })} required />
                   </label>
                   <label className="form-control compact-line-control">
                     <span>Cantidad</span>
-                    <input className="input" type="number" inputMode="decimal" min="0" step="0.01" placeholder="1" value={item.quantity || ""} onChange={(event) => updateItem(index, { quantity: Number(event.target.value) })} required />
+                    <input className="input" type="number" inputMode="decimal" min="0" step="0.01" aria-label={`Cantidad de partida ${index + 1}`} placeholder="Cantidad" value={item.quantity || ""} onChange={(event) => updateItem(index, { quantity: Number(event.target.value) })} required />
                   </label>
                   <label className="form-control compact-line-control">
                     <span>Precio unitario</span>
-                    <input className="input" type="number" inputMode="decimal" min="0" step="0.01" placeholder="0.00" value={item.unitPrice || ""} onChange={(event) => updateItem(index, { unitPrice: Number(event.target.value) })} required />
+                    <input className="input" type="number" inputMode="decimal" min="0" step="0.01" aria-label={`Precio unitario de partida ${index + 1}`} placeholder="Precio unitario" value={item.unitPrice || ""} onChange={(event) => updateItem(index, { unitPrice: Number(event.target.value) })} required />
                   </label>
                   <label className="form-control compact-line-control">
                     <span>Impuesto de la partida</span>
-                    <input className="input" type="number" inputMode="decimal" min="0" step="0.01" placeholder="0.00" value={item.taxAmount || ""} onChange={(event) => updateItem(index, { taxAmount: Number(event.target.value) })} />
+                    <input className="input" type="number" inputMode="decimal" min="0" step="0.01" aria-label={`Impuesto de partida ${index + 1}`} placeholder="Impuesto" value={item.taxAmount || ""} onChange={(event) => updateItem(index, { taxAmount: Number(event.target.value) })} />
                   </label>
                 </article>
               ))}
@@ -530,7 +531,7 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
                     Correo
                   </Button>
                   <Button variant="secondary" type="button" icon={<Printer size={16} />} onClick={() => void handlePrintInvoice(invoice)} disabled={saving}>
-                    Imprimir
+                    Abrir PDF
                   </Button>
                 </div>
               </article>

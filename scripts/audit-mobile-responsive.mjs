@@ -17,6 +17,8 @@ function check(name, passed, details) {
 const css = readProjectFile("src/styles/globals.css");
 const workspace = readProjectFile("src/app/ProductionWorkspace.tsx");
 const workerWorkspace = readProjectFile("src/app/WorkerProductionWorkspace.tsx");
+const estimatesPage = readProjectFile("src/modules/estimates/pages/EstimatesRealPage.tsx");
+const invoicingPage = readProjectFile("src/modules/invoicing/pages/InvoicingRealPage.tsx");
 const runbook = readProjectFile("docs/runbooks/pwa-android-readiness.md");
 const packageJson = JSON.parse(readProjectFile("package.json") || "{}");
 
@@ -33,6 +35,8 @@ check("Tablas responsive controlan overflow", css.includes(".responsive-table") 
 check("Tablas colapsan en movil", css.includes(".documents-table-grid") && css.includes(".finance-table-grid") && css.includes("grid-template-columns: 1fr"), "mobile grids");
 check("Botones no desbordan", css.includes(".button") && css.includes("max-width: 100%") && css.includes("white-space: normal"), "buttons");
 check("Formularios no fuerzan ancho", css.includes(".input") && css.includes("min-width: 0") && css.includes(".form-control"), "forms");
+check("Partidas moviles conservan contexto visible", css.includes(".line-item-mobile-heading") && estimatesPage.includes("Partida {index + 1}") && invoicingPage.includes("Partida {index + 1}"), "mobile line item labels");
+check("Campos numericos moviles tienen aria-label", estimatesPage.includes("aria-label={`Cantidad de partida") && invoicingPage.includes("aria-label={`Precio unitario de partida"), "mobile numeric labels");
 check("Acciones segmentadas envuelven", css.includes(".segmented-actions") && css.includes("flex-wrap: wrap") && css.includes("flex: 1 1 180px"), "actions wrap");
 check("Textos largos rompen palabra en movil", css.includes("overflow-wrap: anywhere") && css.includes(".status-badge"), "long text");
 check("Page title no usa vw", !/font-size:\s*clamp\([^;]*vw/iu.test(css) && !/font-size:\s*[^;]*vw/iu.test(css), "no vw font");

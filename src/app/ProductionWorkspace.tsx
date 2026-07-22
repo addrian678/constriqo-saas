@@ -16,7 +16,6 @@ const EstimatesRealPage = lazy(() => import("../modules/estimates/pages/Estimate
 const FinanceRealPage = lazy(() => import("../modules/finance/pages/FinanceRealPage").then((module) => ({ default: module.FinanceRealPage })));
 const InvoicingRealPage = lazy(() => import("../modules/invoicing/pages/InvoicingRealPage").then((module) => ({ default: module.InvoicingRealPage })));
 const JobsRealPage = lazy(() => import("../modules/jobs/pages/JobsRealPage").then((module) => ({ default: module.JobsRealPage })));
-const MarketingRealPage = lazy(() => import("../modules/marketing/pages/MarketingRealPage").then((module) => ({ default: module.MarketingRealPage })));
 const NotificationsAuditRealPage = lazy(() => import("../modules/notifications/pages/NotificationsAuditRealPage").then((module) => ({ default: module.NotificationsAuditRealPage })));
 const TenantSettingsRealPage = lazy(() => import("../modules/organization/pages/TenantSettingsRealPage").then((module) => ({ default: module.TenantSettingsRealPage })));
 const ReportsRealPage = lazy(() => import("../modules/reports/pages/ReportsRealPage").then((module) => ({ default: module.ReportsRealPage })));
@@ -270,11 +269,12 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
           {activeModule === "home" ? <BusinessOverviewRealPage session={session} /> : null}
           {activeModule === "crm" ? <CrmRealPage session={session} onLogout={onLogout} busy={busy} embedded /> : null}
           {activeModule === "marketing" ? (
-            tenantUsage?.marketingAddonEnabled === false ? (
-              <AddonLockedPanel title="Marketing no activo" description="Este modulo esta disponible como add-on del plan. Un administrador puede activarlo en Ajustes > Plan y cuotas." onOpenSettings={() => selectModule("settings")} />
-            ) : (
-              <MarketingRealPage session={session} />
-            )
+            <AddonLockedPanel
+              title="Marketing proximamente"
+              description="Estamos trabajando en el desarrollo de este modulo. Por ahora queda visible en el menu, pero sus acciones permanecen bloqueadas para evitar datos incompletos."
+              actionLabel="Ir a inicio"
+              onOpenSettings={() => selectModule("home")}
+            />
           ) : null}
           {activeModule === "services" ? <ServiceCatalogRealPage session={session} /> : null}
           {activeModule === "estimates" ? <EstimatesRealPage session={session} /> : null}
@@ -321,7 +321,7 @@ function formatShortDate(value: string) {
   return new Intl.DateTimeFormat("es-ES", { dateStyle: "medium" }).format(new Date(value));
 }
 
-function AddonLockedPanel({ title, description, onOpenSettings }: { title: string; description: string; onOpenSettings: () => void }) {
+function AddonLockedPanel({ title, description, actionLabel = "Revisar plan", onOpenSettings }: { title: string; description: string; actionLabel?: string; onOpenSettings: () => void }) {
   return (
     <section className="card">
       <div className="card-title-row">
@@ -332,7 +332,7 @@ function AddonLockedPanel({ title, description, onOpenSettings }: { title: strin
         <LockKeyhole size={22} />
       </div>
       <Button variant="primary" type="button" onClick={onOpenSettings}>
-        Revisar plan
+        {actionLabel}
       </Button>
     </section>
   );

@@ -51,6 +51,8 @@ check("Estimates real page selecciona clientes reales", page.includes("listCrmCl
 check("Estimates real page crea cotizacion", page.includes("handleCreateEstimate") && page.includes("createEstimate"), "create");
 check("Estimates real page aprueba cotizacion", page.includes("handleApprove") && page.includes("approveEstimate"), "approve");
 check("Estimates real page calcula totales de formulario", page.includes("formSubtotal") && page.includes("formTotal"), "form totals");
+check("Estimates real page abre PDF real para impresion", page.includes("openBlobInDocumentViewer") && page.includes("PDF real abierto para imprimir") && page.includes("Abrir PDF"), "real pdf print");
+check("Estimates real page etiqueta partidas en movil", page.includes("line-item-mobile-heading") && page.includes("aria-label={`Cantidad de partida") && page.includes("placeholder=\"Precio unitario\""), "mobile item labels");
 
 check("Workspace productivo incluye CRM y cotizaciones", workspace.includes("<CrmRealPage") && workspace.includes("<EstimatesRealPage"), "workspace modules");
 check("Production workspace no importa mock data", !workspace.includes("mock-data"), "no mock imports");

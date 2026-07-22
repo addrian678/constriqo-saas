@@ -661,6 +661,7 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
               </div>
               {form.sections[0].items.map((item, index) => (
                 <div className="estimate-real-item" key={index}>
+                  <div className="line-item-mobile-heading">Partida {index + 1}</div>
                   <label className="form-control compact-line-control">
                     <span>Servicio o precio base</span>
                     <select
@@ -688,7 +689,7 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
                   </label>
                   <label className="form-control compact-line-control">
                     <span>Unidad de medida</span>
-                    <select className="select" value={item.unitCode || (form.unitSystem === "metric" ? "m2" : "sq_ft")} onChange={(event) => updateItem("unitCode", event.target.value, index)}>
+                    <select className="select" aria-label={`Unidad de medida de partida ${index + 1}`} value={item.unitCode || (form.unitSystem === "metric" ? "m2" : "sq_ft")} onChange={(event) => updateItem("unitCode", event.target.value, index)}>
                       {(form.unitSystem === "metric" ? metricUnits : imperialUnits).map((unit) => (
                         <option value={unit} key={unit}>{unit}</option>
                       ))}
@@ -702,7 +703,8 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
                       inputMode="decimal"
                       min="0.01"
                       step="0.01"
-                      placeholder="1"
+                      aria-label={`Cantidad de partida ${index + 1}`}
+                      placeholder="Cantidad"
                       value={item.quantity || ""}
                       onChange={(event) => updateItem("quantity", event.target.value, index)}
                       required
@@ -716,7 +718,8 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
                       inputMode="decimal"
                       min="0"
                       step="0.01"
-                      placeholder="0.00"
+                      aria-label={`Precio unitario de partida ${index + 1}`}
+                      placeholder="Precio unitario"
                       value={item.unitPrice || ""}
                       onChange={(event) => updateItem("unitPrice", event.target.value, index)}
                       required
@@ -768,7 +771,7 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
                 Correo
               </Button>
               <Button variant="secondary" type="button" icon={<Printer size={16} />} onClick={() => void handlePrint()} disabled={saving}>
-                Imprimir
+                Abrir PDF
               </Button>
               <Button variant="primary" type="button" icon={<CheckCircle2 size={16} />} onClick={() => void handleApprove()} disabled={saving || detail.estimate.status === "approved"}>
                 Aprobar

@@ -51,7 +51,8 @@ check("Pagina no usa mock data", !page.includes("mock-data") && !page.includes("
 check("Pagina oculta formularios por boton", page.includes("activePanel") && page.includes('activePanel === "campaign"') && page.includes('activePanel === "lead"') && page.includes('activePanel === "loyalty"'), "hidden forms");
 check("Pagina muestra QR sin guardar archivo", page.includes("QrCodeSvg") && page.includes("CFLOY:") && !page.includes("download"), "qr local");
 check("Pagina cierra formulario al guardar", page.includes("setActivePanel(null)") && page.includes("setMessage("), "close and notify");
-check("Workspace expone marketing real", workspace.includes("<MarketingRealPage") && workspace.includes('label: "Marketing"'), "workspace");
+check("Workspace conserva entrada de marketing", workspace.includes('label: "Marketing"') && workspace.includes('activeModule === "marketing"'), "workspace menu");
+check("Workspace bloquea marketing para piloto", workspace.includes("Marketing proximamente") && workspace.includes("sus acciones permanecen bloqueadas") && !workspace.includes("<MarketingRealPage session={session} />"), "pilot lock");
 
 check("Smoke valida aislamiento", localSmoke.includes("Tenant B no ve lead A"), "isolation smoke");
 check("Smoke valida conversion CRM", localSmoke.includes("Lead convertido crea cliente CRM"), "conversion smoke");

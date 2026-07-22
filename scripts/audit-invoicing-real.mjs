@@ -76,6 +76,8 @@ check("Pagina crea factura", page.includes("handleCreate") && page.includes("cre
 check("Pagina emite factura", page.includes("handleIssue") && page.includes("issueInvoice"), "issue");
 check("Pagina cobra factura", page.includes("handlePayment") && page.includes("recordInvoicePayment"), "payment");
 check("Pagina descarga PDF/recibo", page.includes("handleDownloadInvoice") && page.includes("handleDownloadReceipt"), "pdf ui");
+check("Pagina abre PDF real para impresion", page.includes("openBlobInDocumentViewer") && page.includes("PDF real abierto para imprimir") && page.includes("Abrir PDF"), "real pdf print");
+check("Pagina etiqueta partidas en movil", page.includes("line-item-mobile-heading") && page.includes("aria-label={`Cantidad de partida") && page.includes("placeholder=\"Precio unitario\""), "mobile item labels");
 check("Pagina crea rectificativa", page.includes("handleCreditNote") && page.includes("createCreditNote"), "credit ui");
 check("Pagina usa CRM y cotizaciones reales", page.includes("listCrmClients") && page.includes("listEstimates"), "real dependencies");
 check("Workspace productivo incluye facturas", workspace.includes("<InvoicingRealPage") && workspace.includes('id: "invoicing"'), "workspace");

@@ -1224,6 +1224,13 @@ button {
   align-items: center;
 }
 
+.line-item-mobile-heading {
+  display: none;
+  color: var(--graphite);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .compact-line-control {
   gap: 5px;
 }
@@ -2508,6 +2515,14 @@ button {
 
   .estimate-real-item {
     grid-template-columns: 1fr;
+  }
+
+  .invoice-items-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .line-item-mobile-heading {
+    display: block;
   }
 
   .compact-line-control {
