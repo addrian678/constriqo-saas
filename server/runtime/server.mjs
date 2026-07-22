@@ -33,7 +33,7 @@ const DEFAULT_RATE_LIMIT_MAX_REQUESTS = 120;
 const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60_000;
 const LOGIN_RATE_LIMIT_MAX_REQUESTS = 8;
 const SESSION_COOKIE_NAME = "constriqo_session";
-const PUBLIC_API_ROUTES = new Set(["/api/modules", "/api/routes", "/api/public/tenant-branding"]);
+const PUBLIC_API_ROUTES = new Set(["/api/modules", "/api/public/tenant-branding"]);
 const AUTH_API_ROUTES = new Set([
   "/api/auth/login",
   "/api/auth/logout",
@@ -41,6 +41,14 @@ const AUTH_API_ROUTES = new Set([
   "/api/auth/mfa/totp/setup",
   "/api/auth/mfa/totp/verify",
 ]);
+
+function getAppEnvironment(env = process.env) {
+  return String(env.APP_ENV || "development").trim().toLowerCase();
+}
+
+function isProductionLikeEnvironment(env = process.env) {
+  return !["development", "local", "test"].includes(getAppEnvironment(env));
+}
 
 function getAllowedOrigins() {
   return new Set(
@@ -116,7 +124,7 @@ function securityHeaders(request) {
     headers["access-control-max-age"] = "600";
   }
 
-  if (process.env.APP_ENV === "production") {
+  if (isProductionLikeEnvironment()) {
     headers["strict-transport-security"] = "max-age=31536000; includeSubDomains";
   }
 
@@ -389,12 +397,12 @@ function readCookie(request, name) {
 
 function createSessionCookie(sessionToken, expiresAt) {
   const maxAge = Math.max(60, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
-  const secure = process.env.APP_ENV === "production" ? "; Secure" : "";
+  const secure = isProductionLikeEnvironment() ? "; Secure" : "";
   return `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionToken)}; HttpOnly; Path=/api; Max-Age=${maxAge}; SameSite=Lax${secure}`;
 }
 
 function clearSessionCookie() {
-  const secure = process.env.APP_ENV === "production" ? "; Secure" : "";
+  const secure = isProductionLikeEnvironment() ? "; Secure" : "";
   return `${SESSION_COOKIE_NAME}=; HttpOnly; Path=/api; Max-Age=0; SameSite=Lax${secure}`;
 }
 
@@ -431,6 +439,10 @@ async function resolveContext(options, request, requestId) {
 
 function hasCapability(context, capability) {
   return Array.isArray(context?.actor?.capabilities) && context.actor.capabilities.includes(capability);
+}
+
+function canInspectRuntimeRoutes(context) {
+  return hasCapability(context, "audit.read") || hasCapability(context, "superadmin.read");
 }
 
 async function enforceTenantUsageGate(options, route, context) {
@@ -2064,6 +2076,25 @@ export function createRuntimeServer(options = {}) {
     }
 
     if (request.method === "GET" && url.pathname === "/api/routes") {
+      if (isProductionLikeEnvironment()) {
+        const contextResult = await resolveContext(
+          { ...runtimeOptions, sessionContextResolver: getSessionContextResolver(runtimeOptions) },
+          request,
+          requestId,
+        );
+        if (!contextResult.context) {
+          sendJson(request, response, contextResult.status, contextResult.body);
+          return;
+        }
+        if (!canInspectRuntimeRoutes(contextResult.context)) {
+          sendJson(request, response, 403, {
+            code: "FORBIDDEN",
+            requestId,
+            message: "No tienes permisos para inspeccionar contratos internos.",
+          });
+          return;
+        }
+      }
       sendJson(request, response, 200, {
         routes: manifest.routes,
       });

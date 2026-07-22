@@ -2,6 +2,8 @@ import type { DemoRole } from "../../core/types/roles";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8789";
 const GET_CACHE_TTL_MS = 5 * 60_000;
+const API_CONNECTION_ERROR =
+  "No se pudo conectar con la API. Verifica la conexion, el dominio o que el servidor este disponible.";
 
 type CachedJson = {
   expiresAt: number;
@@ -258,15 +260,20 @@ async function fetchJson<T>(
     token?: string;
   },
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: options.method,
-    credentials: "include",
-    headers: {
-      "content-type": "application/json",
-      ...(options.token ? { authorization: `Bearer ${options.token}` } : {}),
-    },
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: options.method,
+      credentials: "include",
+      headers: {
+        "content-type": "application/json",
+        ...(options.token ? { authorization: `Bearer ${options.token}` } : {}),
+      },
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    });
+  } catch {
+    throw new Error(API_CONNECTION_ERROR);
+  }
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -324,13 +331,18 @@ export async function requestBlob(
     token?: string;
   },
 ): Promise<Blob> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: options.method,
-    credentials: "include",
-    headers: {
-      ...(options.token ? { authorization: `Bearer ${options.token}` } : {}),
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: options.method,
+      credentials: "include",
+      headers: {
+        ...(options.token ? { authorization: `Bearer ${options.token}` } : {}),
+      },
+    });
+  } catch {
+    throw new Error(API_CONNECTION_ERROR);
+  }
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));

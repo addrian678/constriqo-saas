@@ -17,6 +17,7 @@ check("Runtime incluye modulo marketing", runtimeManifest.modules.includes("mark
 check("Runtime incluye ruta marketing", runtimeManifest.routes.includes("/api/marketing/campaigns"), runtimeManifest.routes.join(","));
 
 const serverSource = readFileSync("server/runtime/server.mjs", "utf8");
+const authClientSource = readFileSync("src/app/auth/authClient.ts", "utf8");
 const repositorySources = readdirSync("server/runtime")
   .filter((file) => /^postgres.*Repository\.mjs$/u.test(file))
   .map((file) => readFileSync(`server/runtime/${file}`, "utf8"))
@@ -31,6 +32,10 @@ check("Runtime aplica rate limit general y login", serverSource.includes("create
 check("Runtime sanea x-request-id", serverSource.includes("^[a-zA-Z0-9._:-]{8,96}$") && serverSource.includes("randomUUID()"), "request id sanitization");
 check("Runtime readiness valida proveedores productivos", serverSource.includes("validateProviderReadiness") && serverSource.includes("PROVIDERS_NOT_READY") && serverSource.includes("SUPABASE_STORAGE_SECRETS") && serverSource.includes("EMAIL_DELIVERY_WORKER_ENABLED") && serverSource.includes("EXTERNAL_PROVIDERS_VERIFIED"), "provider readiness");
 check("Branding publico usa tenantSlug", serverSource.includes('url.searchParams.get("tenantSlug")') && !serverSource.includes('url.searchParams.get("tenantId")'), "tenantSlug branding");
+check("Runtime trata staging como entorno protegido", serverSource.includes("isProductionLikeEnvironment") && serverSource.includes('"development", "local", "test"'), "production-like env");
+check("Runtime no publica contrato interno en entornos reales", !serverSource.includes('"/api/modules", "/api/routes"') && serverSource.includes('url.pathname === "/api/routes"') && serverSource.includes("canInspectRuntimeRoutes") && serverSource.includes("No tienes permisos para inspeccionar contratos internos"), "route manifest guard");
+check("Runtime usa cookies Secure en entornos reales", serverSource.includes('const secure = isProductionLikeEnvironment() ? "; Secure" : "";') && serverSource.includes("strict-transport-security"), "secure cookie");
+check("Frontend muestra error claro si API no responde", authClientSource.includes("No se pudo conectar con la API") && authClientSource.includes("API_CONNECTION_ERROR"), "api connection message");
 
 const authRepositorySource = readFileSync("server/runtime/postgresAuthRepository.mjs", "utf8");
 check("Auth repo bloquea intentos fallidos recientes", authRepositorySource.includes("getFailedLoginPressure") && authRepositorySource.includes("FAILED_LOGIN_LIMIT"), "failed login pressure");
