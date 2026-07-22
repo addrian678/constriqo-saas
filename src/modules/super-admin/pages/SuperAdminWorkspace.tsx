@@ -11,6 +11,7 @@ import { StatusBadge } from "../../../shared/components/StatusBadge";
 import {
   listSuperAdminTenants,
   createTenantFromSuperAdmin,
+  resetTenantAdminPassword,
   updateTenantLicense,
   type CreateTenantInput,
   type LicenseDurationPreset,
@@ -61,6 +62,7 @@ export function SuperAdminWorkspace({ session, busy, onLogout }: SuperAdminWorks
   const [createOpen, setCreateOpen] = useState(false);
   const [licenseOpen, setLicenseOpen] = useState(false);
   const [createdAdmin, setCreatedAdmin] = useState<{ tenantId: string; email: string; temporaryPassword: string } | null>(null);
+  const [recoveredAdmin, setRecoveredAdmin] = useState<{ tenantId: string; email: string; temporaryPassword: string; resetMfa: boolean } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -194,6 +196,38 @@ export function SuperAdminWorkspace({ session, busy, onLogout }: SuperAdminWorks
     }
   }
 
+  async function handleAdminRecovery(userId: string, email: string, resetMfa: boolean) {
+    if (!selectedTenant) {
+      return;
+    }
+    const message = resetMfa
+      ? `Se generara una nueva clave temporal y se reiniciara el segundo factor para ${email}. ¿Continuar?`
+      : `Se generara una nueva clave temporal para ${email} y se cerraran sus sesiones activas. ¿Continuar?`;
+    if (!window.confirm(message)) {
+      return;
+    }
+
+    setSaving(true);
+    setNotice(null);
+    setError(null);
+    setRecoveredAdmin(null);
+    try {
+      const result = await resetTenantAdminPassword(session.sessionToken, selectedTenant.tenantId, userId, { resetMfa });
+      await refreshTenants();
+      setRecoveredAdmin({
+        tenantId: selectedTenant.tenantId,
+        email: result.user.email,
+        temporaryPassword: result.temporaryPassword,
+        resetMfa: result.resetMfa,
+      });
+      setNotice("Acceso del administrador recuperado correctamente. Entrega la clave por un canal seguro.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "No se pudo recuperar el acceso del administrador.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleCreateTenantSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -217,6 +251,7 @@ export function SuperAdminWorkspace({ session, busy, onLogout }: SuperAdminWorks
     setNotice(null);
     setError(null);
     setCreatedAdmin(null);
+    setRecoveredAdmin(null);
     try {
       const result = await createTenantFromSuperAdmin(session.sessionToken, input);
       await refreshTenants();
@@ -278,6 +313,12 @@ export function SuperAdminWorkspace({ session, busy, onLogout }: SuperAdminWorks
         {createdAdmin ? (
           <div className="inline-alert success">
             <strong>Credenciales temporales:</strong> codigo empresa {createdAdmin.tenantId}, correo {createdAdmin.email}, clave {createdAdmin.temporaryPassword}. Al primer acceso debe configurar MFA.
+          </div>
+        ) : null}
+        {recoveredAdmin ? (
+          <div className="inline-alert warning">
+            <strong>Acceso recuperado:</strong> codigo empresa {recoveredAdmin.tenantId}, correo {recoveredAdmin.email}, clave temporal {recoveredAdmin.temporaryPassword}.
+            {recoveredAdmin.resetMfa ? " El segundo factor fue reiniciado y se configurara nuevamente al iniciar sesion." : " Sus sesiones activas fueron cerradas."}
           </div>
         ) : null}
 
@@ -473,21 +514,65 @@ export function SuperAdminWorkspace({ session, busy, onLogout }: SuperAdminWorks
                   Suspender
                 </Button>
               </div>
-              <div className="activity-list">
-                <article className="activity-item">
-                  <span className="activity-icon"><ShieldCheck size={18} /></span>
-                  <div>
-                    <strong>{selectedTenant.license ? statusLabels[selectedTenant.license.status] : "Sin licencia"}</strong>
-                    <span>{selectedTenant.license ? `${selectedTenant.license.planCode} · vence ${formatDate(selectedTenant.license.expiresAt)}` : "Crea una licencia para habilitar el cliente."}</span>
-                  </div>
+              <div className="super-admin-detail-grid">
+                <article className="detail-tile">
+                  <span>Codigo empresa</span>
+                  <strong>{selectedTenant.tenantId}</strong>
                 </article>
-                <article className="activity-item">
-                  <span className="activity-icon"><Database size={18} /></span>
-                  <div>
-                    <strong>{formatBytes(selectedTenant.usage.storageSizeBytes)}</strong>
-                    <span>{selectedTenant.usage.userCount} usuarios · {selectedTenant.usage.documentCount} documentos</span>
-                  </div>
+                <article className="detail-tile">
+                  <span>Plan y estado</span>
+                  <strong>{selectedTenant.license ? `${selectedTenant.license.planCode} · ${statusLabels[selectedTenant.license.status]}` : "Sin licencia"}</strong>
                 </article>
+                <article className="detail-tile">
+                  <span>Vencimiento</span>
+                  <strong>{selectedTenant.license ? formatDate(selectedTenant.license.expiresAt) : "Pendiente"}</strong>
+                </article>
+                <article className="detail-tile">
+                  <span>Uso</span>
+                  <strong>{formatBytes(selectedTenant.usage.storageSizeBytes)} / {selectedTenant.license?.storageQuotaMb || 0} MB</strong>
+                </article>
+              </div>
+
+              <div className="super-admin-mini-metrics">
+                <span><strong>{selectedTenant.usage.userCount}</strong> usuarios</span>
+                <span><strong>{selectedTenant.usage.workerCount}</strong> trabajadores</span>
+                <span><strong>{selectedTenant.usage.clientCount}</strong> clientes</span>
+                <span><strong>{selectedTenant.usage.jobCount}</strong> obras</span>
+                <span><strong>{selectedTenant.usage.invoiceCount}</strong> facturas</span>
+                <span><strong>{selectedTenant.usage.documentCount}</strong> documentos</span>
+              </div>
+
+              <div className="surface-subpanel">
+                <div className="section-heading compact">
+                  <div>
+                    <p className="eyebrow">Usuarios</p>
+                    <h3>Accesos ligados a esta empresa</h3>
+                  </div>
+                </div>
+                <div className="activity-list">
+                  {selectedTenant.users.map((user) => {
+                    const isAdmin = user.roles.includes("admin");
+                    return (
+                      <article className="activity-item super-admin-user-row" key={user.userId}>
+                        <span className="activity-icon"><Users size={18} /></span>
+                        <div>
+                          <strong>{user.displayName || user.email}</strong>
+                          <span>{user.email} · {user.roles.join(", ") || "sin rol"} · {user.status}</span>
+                        </div>
+                        {isAdmin ? (
+                          <div className="segmented-actions">
+                            <Button variant="secondary" type="button" onClick={() => void handleAdminRecovery(user.userId, user.email, false)} disabled={saving}>
+                              Nueva clave
+                            </Button>
+                            <Button variant="danger" type="button" onClick={() => void handleAdminRecovery(user.userId, user.email, true)} disabled={saving}>
+                              Clave + MFA
+                            </Button>
+                          </div>
+                        ) : null}
+                      </article>
+                    );
+                  })}
+                </div>
               </div>
               <BasicModal title="Editar licencia del cliente" open={licenseOpen} onClose={() => setLicenseOpen(false)} size="wide" footer={null}>
               <form className="form-grid" onSubmit={handleLicenseSubmit}>

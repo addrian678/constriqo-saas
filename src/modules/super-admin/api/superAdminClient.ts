@@ -32,10 +32,21 @@ export type SuperAdminTenant = {
   license: TenantLicense | null;
   usage: {
     userCount: number;
+    workerCount: number;
+    clientCount: number;
+    jobCount: number;
+    invoiceCount: number;
     documentCount: number;
     storageSizeBytes: number;
     lastActivityAt: string | null;
   };
+  users: Array<{
+    userId: string;
+    email: string;
+    displayName: string;
+    status: string;
+    roles: string[];
+  }>;
 };
 
 export type SuperAdminTenantSummary = {
@@ -110,6 +121,29 @@ export async function createTenantFromSuperAdmin(token: string, input: CreateTen
   };
 }> {
   return requestJson("/api/super-admin/tenants", {
+    method: "POST",
+    token,
+    body: input,
+  });
+}
+
+export async function resetTenantAdminPassword(
+  token: string,
+  tenantId: string,
+  userId: string,
+  input: { password?: string; resetMfa?: boolean },
+): Promise<{
+  tenant: Omit<SuperAdminTenant, "license" | "usage" | "users">;
+  user: {
+    userId: string;
+    email: string;
+    displayName: string;
+    status: string;
+  };
+  temporaryPassword: string;
+  resetMfa: boolean;
+}> {
+  return requestJson(`/api/super-admin/tenants/${tenantId}/admins/${userId}/reset-password`, {
     method: "POST",
     token,
     body: input,

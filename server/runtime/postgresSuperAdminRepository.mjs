@@ -208,9 +208,34 @@ export function createPostgresSuperAdminRepository(pool) {
           l.notes,
           l.updated_at AS license_updated_at,
           COALESCE((SELECT count(*)::int FROM users u WHERE u.tenant_id = t.tenant_id), 0) AS user_count,
+          COALESCE((SELECT count(*)::int FROM workers w WHERE w.tenant_id = t.tenant_id), 0) AS worker_count,
+          COALESCE((SELECT count(*)::int FROM clients c WHERE c.tenant_id = t.tenant_id), 0) AS client_count,
+          COALESCE((SELECT count(*)::int FROM jobs j WHERE j.tenant_id = t.tenant_id), 0) AS job_count,
+          COALESCE((SELECT count(*)::int FROM invoices i WHERE i.tenant_id = t.tenant_id), 0) AS invoice_count,
           COALESCE((SELECT count(*)::int FROM documents d WHERE d.tenant_id = t.tenant_id), 0) AS document_count,
           COALESCE((SELECT sum(d.storage_size_bytes)::bigint FROM documents d WHERE d.tenant_id = t.tenant_id), 0) AS storage_size_bytes,
-          (SELECT max(a.created_at) FROM audit_events a WHERE a.tenant_id = t.tenant_id) AS last_activity_at
+          (SELECT max(a.created_at) FROM audit_events a WHERE a.tenant_id = t.tenant_id) AS last_activity_at,
+          COALESCE((
+            SELECT jsonb_agg(
+              jsonb_build_object(
+                'userId', tenant_users.user_id,
+                'email', tenant_users.email,
+                'displayName', tenant_users.display_name,
+                'status', tenant_users.status,
+                'roles', tenant_users.roles
+              )
+              ORDER BY tenant_users.display_name
+            )
+            FROM (
+              SELECT u.user_id, u.email, u.display_name, u.status,
+                     COALESCE(string_agg(r.code, ', ' ORDER BY r.code), '') AS roles
+              FROM users u
+              LEFT JOIN user_roles ur ON ur.tenant_id = u.tenant_id AND ur.user_id = u.user_id
+              LEFT JOIN roles r ON r.role_id = ur.role_id
+              WHERE u.tenant_id = t.tenant_id
+              GROUP BY u.user_id, u.email, u.display_name, u.status
+            ) tenant_users
+          ), '[]'::jsonb) AS users_json
         FROM tenants t
         LEFT JOIN tenant_licenses l ON l.tenant_id = t.tenant_id
         WHERE t.tenant_id <> $1
@@ -226,6 +251,91 @@ export function createPostgresSuperAdminRepository(pool) {
       items,
       total: items.length,
       summary: summarizeTenants(items),
+    };
+  }
+
+  async function resetTenantAdminPassword(context, tenantId, userId, input = {}) {
+    requireSuperAdmin(context, "superadmin.manage");
+    assertUuid(tenantId, "Tenant no valido.");
+    assertUuid(userId, "Usuario no valido.");
+    const tenant = await requireClientTenant(tenantId);
+    const password = optionalText(input.password, 160) || generateTemporaryPassword();
+    if (password.length < 14) {
+      throw createHttpError(400, "VALIDATION_ERROR", "La contrasena temporal debe tener al menos 14 caracteres.");
+    }
+    const passwordHash = await hashPassword(password);
+    const resetMfa = Boolean(input.resetMfa);
+
+    const client = await pool.connect();
+    let user;
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenantId]);
+      user = await requireTenantAdminUser(client, tenantId, userId);
+      await client.query(
+        `
+          INSERT INTO auth_password_credentials (tenant_id, user_id, password_hash, password_algorithm)
+          VALUES ($1, $2, $3, 'argon2id')
+          ON CONFLICT (tenant_id, user_id) DO UPDATE
+          SET password_hash = EXCLUDED.password_hash,
+              password_algorithm = 'argon2id',
+              password_updated_at = now()
+        `,
+        [tenantId, userId, passwordHash],
+      );
+      await client.query(
+        "UPDATE auth_sessions SET status = 'revoked', revoked_at = now() WHERE tenant_id = $1 AND user_id = $2 AND status = 'active'",
+        [tenantId, userId],
+      );
+      if (resetMfa) {
+        await client.query("UPDATE auth_mfa_factors SET status = 'disabled', updated_at = now() WHERE tenant_id = $1 AND user_id = $2 AND status <> 'disabled'", [tenantId, userId]);
+        await client.query("UPDATE auth_mfa_challenges SET status = 'cancelled', used_at = now() WHERE tenant_id = $1 AND user_id = $2 AND status = 'pending'", [tenantId, userId]);
+        await client.query("UPDATE auth_recovery_codes SET status = 'revoked', used_at = now() WHERE tenant_id = $1 AND user_id = $2 AND status = 'active'", [tenantId, userId]);
+      }
+      await client.query(
+        `
+          INSERT INTO audit_events (tenant_id, actor_user_id, action, module_id, entity_type, entity_id, severity, metadata)
+          VALUES ($1, $2, 'super_admin.admin_access_reset', 'auth', 'user', $3, 'warning', $4::jsonb)
+        `,
+        [
+          tenantId,
+          context.actor.userId,
+          userId,
+          JSON.stringify({
+            source: "super-admin",
+            passwordStored: "argon2id-hash-only",
+            sessionsRevoked: true,
+            mfaReset: resetMfa,
+          }),
+        ],
+      );
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => null);
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    await writeSuperAdminAudit(context, {
+      action: "super_admin.tenant_admin.password_reset",
+      targetTenantId: tenantId,
+      entityType: "user",
+      entityId: userId,
+      severity: "warning",
+      metadata: {
+        tenantName: tenant.companyName,
+        adminEmail: user.email,
+        mfaReset: resetMfa,
+        sessionsRevoked: true,
+      },
+    });
+
+    return {
+      tenant,
+      user,
+      temporaryPassword: password,
+      resetMfa,
     };
   }
 
@@ -370,6 +480,36 @@ export function createPostgresSuperAdminRepository(pool) {
     createTenant,
     listTenants,
     upsertTenantLicense,
+    resetTenantAdminPassword,
+  };
+}
+
+async function requireTenantAdminUser(client, tenantId, userId) {
+  const result = await client.query(
+    `
+      SELECT u.user_id, u.email, u.display_name, u.status
+      FROM users u
+      WHERE u.tenant_id = $1
+        AND u.user_id = $2
+        AND EXISTS (
+          SELECT 1
+          FROM user_roles ur
+          JOIN roles r ON r.role_id = ur.role_id
+          WHERE ur.tenant_id = u.tenant_id
+            AND ur.user_id = u.user_id
+            AND r.code = 'admin'
+        )
+    `,
+    [tenantId, userId],
+  );
+  if (!result.rows[0]) {
+    throw createHttpError(404, "ADMIN_NOT_FOUND", "Administrador del cliente no encontrado.");
+  }
+  return {
+    userId: result.rows[0].user_id,
+    email: result.rows[0].email,
+    displayName: result.rows[0].display_name,
+    status: result.rows[0].status,
   };
 }
 
@@ -583,10 +723,28 @@ function mapTenantLicenseRow(row) {
     license: row.license_id ? mapLicense(row) : null,
     usage: {
       userCount: Number(row.user_count || 0),
+      workerCount: Number(row.worker_count || 0),
+      clientCount: Number(row.client_count || 0),
+      jobCount: Number(row.job_count || 0),
+      invoiceCount: Number(row.invoice_count || 0),
       documentCount: Number(row.document_count || 0),
       storageSizeBytes: Number(row.storage_size_bytes || 0),
       lastActivityAt: row.last_activity_at ? row.last_activity_at.toISOString() : null,
     },
+    users: Array.isArray(row.users_json) ? row.users_json.map(mapTenantUser) : [],
+  };
+}
+
+function mapTenantUser(user) {
+  return {
+    userId: user.userId,
+    email: user.email,
+    displayName: user.displayName,
+    status: user.status,
+    roles: String(user.roles || "")
+      .split(",")
+      .map((role) => role.trim())
+      .filter(Boolean),
   };
 }
 

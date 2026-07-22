@@ -2,6 +2,7 @@ export const runtimeApiRoutes = [
   { method: "GET", path: "/api/super-admin/tenants", moduleId: "super-admin", capability: "superadmin.read" },
   { method: "POST", path: "/api/super-admin/tenants", moduleId: "super-admin", capability: "superadmin.manage" },
   { method: "PATCH", path: "/api/super-admin/tenants/:tenantId/license", moduleId: "super-admin", capability: "superadmin.manage" },
+  { method: "POST", path: "/api/super-admin/tenants/:tenantId/admins/:userId/reset-password", moduleId: "super-admin", capability: "superadmin.manage" },
   { method: "GET", path: "/api/crm/clients", moduleId: "crm", capability: "clients.read" },
   { method: "POST", path: "/api/crm/clients", moduleId: "crm", capability: "clients.create" },
   { method: "GET", path: "/api/crm/clients/:clientId", moduleId: "crm", capability: "clients.read" },

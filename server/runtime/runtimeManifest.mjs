@@ -28,6 +28,7 @@ export const runtimeManifest = {
   routes: [
     "/api/super-admin/tenants",
     "/api/super-admin/tenants/:tenantId/license",
+    "/api/super-admin/tenants/:tenantId/admins/:userId/reset-password",
     "/api/public/tenant-branding",
     "/api/crm/clients",
     "/api/estimates",

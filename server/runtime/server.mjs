@@ -1952,6 +1952,13 @@ async function handleSuperAdminRoute(options, request, response, route, context,
       return;
     }
 
+    if (request.method === "POST" && route.path === "/api/super-admin/tenants/:tenantId/admins/:userId/reset-password") {
+      const body = await readJsonBody(request);
+      const result = await superAdminRepository.resetTenantAdminPassword(context, route.params.tenantId, route.params.userId, body);
+      sendJson(request, response, 200, { requestId, ...result });
+      return;
+    }
+
     sendJson(request, response, 405, {
       code: "METHOD_NOT_ALLOWED",
       requestId,
