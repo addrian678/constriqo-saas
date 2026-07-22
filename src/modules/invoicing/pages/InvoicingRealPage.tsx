@@ -89,6 +89,10 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
   const [saving, setSaving] = useState(false);
 
   const approvedEstimates = useMemo(() => estimates.filter((estimate) => estimate.status === "approved"), [estimates]);
+  const selectedApprovedEstimate = useMemo(
+    () => approvedEstimates.find((estimate) => estimate.estimateId === form.estimateId) || null,
+    [approvedEstimates, form.estimateId],
+  );
   const currency = selectedInvoice?.currency || form.currency || "USD";
 
   useEffect(() => {
@@ -417,6 +421,12 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
             </select>
           </label>
 
+          {selectedApprovedEstimate ? (
+            <p className="login-notice">
+              Cotizacion {selectedApprovedEstimate.estimateNumber} seleccionada para {selectedApprovedEstimate.clientName}. Al pulsar Crear factura desde cotizacion se generara una factura en borrador por {formatMoney(selectedApprovedEstimate.totalAmount, selectedApprovedEstimate.currency)}.
+            </p>
+          ) : null}
+
           {!form.estimateId ? (
             <label className="form-control">
               <span>Cliente</span>
@@ -498,7 +508,9 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
             </div>
           ) : null}
 
-          <Button variant="primary" type="submit" icon={<Save size={16} />} disabled={saving}>Crear factura</Button>
+          <Button variant="primary" type="submit" icon={<Save size={16} />} disabled={saving}>
+            {selectedApprovedEstimate ? "Crear factura desde cotizacion" : "Crear factura"}
+          </Button>
         </form>
       </BasicModal>
 
@@ -606,11 +618,12 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
               <div className="card-title-row">
                 <StatusBadge label={pendingInvoice?.invoiceNumber || "Factura"} tone="warning" />
               </div>
+              <strong>Esta seguro de emitir esta factura?</strong>
               <p className="activity-meta">
                 Al emitir la factura se registra en cuentas por cobrar y queda trazada en finanzas. Esta accion no borra historial.
               </p>
               <Button variant="primary" type="submit" icon={<FileCheck2 size={16} />} disabled={saving}>
-                Confirmar emision
+                Si, emitir factura
               </Button>
             </form>
           </BasicModal>
@@ -620,6 +633,8 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
               <div className="card-title-row">
                 <StatusBadge label={pendingInvoice ? formatMoney(pendingInvoice.balanceAmount, pendingInvoice.currency) : "Sin factura"} tone="info" />
               </div>
+              <strong>Esta seguro de registrar este cobro?</strong>
+              <p className="login-security-note">Confirma el cobro antes de registrar. Este movimiento se reflejara automaticamente en Finanzas y quedara en historial.</p>
               <div className="grid proof-grid">
                 <label className="form-control">
                   <span>Importe cobrado</span>
@@ -665,7 +680,7 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
                   Anticipo 30%
                 </Button>
                 <Button variant="primary" type="submit" icon={<Banknote size={16} />} disabled={saving || paymentForm.amount <= 0}>
-                  Registrar cobro
+                  Confirmar cobro
                 </Button>
               </div>
             </form>

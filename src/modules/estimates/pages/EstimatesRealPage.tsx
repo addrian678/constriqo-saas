@@ -29,6 +29,36 @@ type EstimatesRealPageProps = {
   session: AuthenticatedSession;
 };
 
+type EstimateAction = "approve" | "review" | "reject" | "cancel" | "invoice";
+
+const estimateActionCopy: Record<EstimateAction, { title: string; description: string; confirmLabel: string }> = {
+  approve: {
+    title: "Aprobar cotizacion",
+    description: "La cotizacion quedara aprobada y podra convertirse en factura. Esta accion queda registrada en auditoria.",
+    confirmLabel: "Si, aprobar cotizacion",
+  },
+  review: {
+    title: "Marcar en revision",
+    description: "Usa este estado cuando la cotizacion necesita ajustes antes de enviarse o aprobarse.",
+    confirmLabel: "Si, marcar en revision",
+  },
+  reject: {
+    title: "Rechazar cotizacion",
+    description: "Usa esta opcion cuando el cliente no acepto la cotizacion. No se borra: queda visible en historial.",
+    confirmLabel: "Si, rechazar cotizacion",
+  },
+  cancel: {
+    title: "Cancelar cotizacion",
+    description: "Usa esta opcion para anularla por error interno, duplicado o cambio de alcance. No se borra: queda visible en historial.",
+    confirmLabel: "Si, cancelar cotizacion",
+  },
+  invoice: {
+    title: "Generar factura",
+    description: "Se creara una factura en borrador ligada a esta cotizacion aprobada. Despues podras emitirla y cobrarla desde Facturas.",
+    confirmLabel: "Si, generar factura",
+  },
+};
+
 function createInitialForm(settings?: TenantSettings | null): EstimateInput {
   const unitSystem = settings?.unitSystem || "imperial";
   return {
@@ -116,6 +146,7 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<EstimateAction | null>(null);
 
   const formSubtotal = useMemo(() => {
     if (form.costBreakdown?.manualTotal.enabled) {
@@ -297,6 +328,37 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
     } finally {
       setSaving(false);
     }
+  }
+
+  function requestEstimateAction(action: EstimateAction) {
+    if (!detail) {
+      return;
+    }
+    if (action === "invoice" && detail.estimate.status !== "approved") {
+      setMessage("Primero aprueba la cotizacion antes de convertirla en factura.");
+      return;
+    }
+    setMessage(null);
+    setPendingAction(action);
+  }
+
+  async function executeEstimateAction(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!pendingAction) {
+      return;
+    }
+    if (pendingAction === "approve") {
+      await handleApprove();
+    } else if (pendingAction === "review") {
+      await handleReviewEstimate();
+    } else if (pendingAction === "reject") {
+      await handleRejectEstimate();
+    } else if (pendingAction === "cancel") {
+      await handleCancelEstimate();
+    } else {
+      await handleCreateInvoiceFromEstimate();
+    }
+    setPendingAction(null);
   }
 
   async function handleApprove() {
@@ -552,16 +614,16 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
               </select>
             </label>
             <label className="form-control">
-              <span>Titulo</span>
-              <input className="input" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required />
+              <span>Titulo de la cotizacion</span>
+              <input className="input" placeholder="Ej. Remodelacion de bano principal" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required />
             </label>
             <label className="form-control">
-              <span>Alcance</span>
-              <textarea className="input crm-textarea" value={form.scope} onChange={(event) => setForm({ ...form, scope: event.target.value })} />
+              <span>Descripcion / alcance del trabajo</span>
+              <textarea className="input crm-textarea" placeholder="Describe que incluye el trabajo, condiciones principales o resumen para el cliente." value={form.scope} onChange={(event) => setForm({ ...form, scope: event.target.value })} />
             </label>
             <div className="grid proof-grid">
               <label className="form-control">
-                <span>Plantilla</span>
+                <span>Plantilla del PDF</span>
                 <select className="select" value={form.templateId} onChange={(event) => setForm({ ...form, templateId: event.target.value as EstimateInput["templateId"] })}>
                   <option value="estimate_classic_blue">Clasica azul construccion</option>
                   <option value="estimate_cleaning_teal">Limpieza teal</option>
@@ -796,13 +858,13 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
               <Button variant="secondary" type="button" onClick={handlePrepareEmail} disabled={saving}>
                 Enviar / reenviar
               </Button>
-              <Button variant="secondary" type="button" onClick={() => void handleReviewEstimate()} disabled={saving || detail.estimate.status === "approved" || detail.estimate.status === "cancelled"}>
+              <Button variant="secondary" type="button" onClick={() => requestEstimateAction("review")} disabled={saving || detail.estimate.status === "approved" || detail.estimate.status === "cancelled"}>
                 En revision
               </Button>
-              <Button variant="secondary" type="button" onClick={() => void handleRejectEstimate()} disabled={saving || detail.estimate.status === "approved" || detail.estimate.status === "cancelled" || detail.estimate.status === "rejected"}>
+              <Button variant="secondary" type="button" onClick={() => requestEstimateAction("reject")} disabled={saving || detail.estimate.status === "approved" || detail.estimate.status === "cancelled" || detail.estimate.status === "rejected"}>
                 Rechazar
               </Button>
-              <Button variant="secondary" type="button" icon={<XCircle size={16} />} onClick={() => void handleCancelEstimate()} disabled={saving || detail.estimate.status === "approved" || detail.estimate.status === "cancelled"}>
+              <Button variant="secondary" type="button" icon={<XCircle size={16} />} onClick={() => requestEstimateAction("cancel")} disabled={saving || detail.estimate.status === "approved" || detail.estimate.status === "cancelled"}>
                 Cancelar
               </Button>
               <Button variant="secondary" type="button" icon={<Download size={16} />} onClick={() => void handleDownloadPdf()} disabled={saving}>
@@ -811,10 +873,10 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
               <Button variant="secondary" type="button" icon={<Printer size={16} />} onClick={() => void handlePrint()} disabled={saving}>
                 Abrir PDF
               </Button>
-              <Button variant="primary" type="button" icon={<CheckCircle2 size={16} />} onClick={() => void handleApprove()} disabled={saving || detail.estimate.status === "approved"}>
+              <Button variant="primary" type="button" icon={<CheckCircle2 size={16} />} onClick={() => requestEstimateAction("approve")} disabled={saving || detail.estimate.status === "approved"}>
                 Aprobar
               </Button>
-              <Button variant="primary" type="button" icon={<ReceiptIcon />} onClick={() => void handleCreateInvoiceFromEstimate()} disabled={saving || detail.estimate.status !== "approved"}>
+              <Button variant="primary" type="button" icon={<ReceiptIcon />} onClick={() => requestEstimateAction("invoice")} disabled={saving || detail.estimate.status !== "approved"}>
                 Crear factura para cobrar
               </Button>
             </div>
@@ -877,6 +939,27 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
             </div>
           </div>
         </div>
+        ) : null}
+      </BasicModal>
+
+      <BasicModal
+        title={pendingAction ? estimateActionCopy[pendingAction].title : "Confirmar accion"}
+        open={Boolean(pendingAction)}
+        onClose={() => setPendingAction(null)}
+        footer={null}
+      >
+        {pendingAction ? (
+          <form className="auth-form" onSubmit={executeEstimateAction}>
+            <p className="activity-meta">{estimateActionCopy[pendingAction].description}</p>
+            <div className="segmented-actions">
+              <Button variant="secondary" type="button" onClick={() => setPendingAction(null)} disabled={saving}>
+                Volver
+              </Button>
+              <Button variant="primary" type="submit" icon={pendingAction === "invoice" ? <ReceiptIcon /> : <CheckCircle2 size={16} />} disabled={saving}>
+                {estimateActionCopy[pendingAction].confirmLabel}
+              </Button>
+            </div>
+          </form>
         ) : null}
       </BasicModal>
     </section>

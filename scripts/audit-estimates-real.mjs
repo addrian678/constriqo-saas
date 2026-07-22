@@ -56,6 +56,10 @@ check("Estimates real page etiqueta partidas en movil", page.includes("line-item
 check("Estimates real page convierte aprobada en factura", page.includes("handleCreateInvoiceFromEstimate") && page.includes("createInvoice(session.sessionToken") && page.includes("Crear factura para cobrar"), "estimate to invoice");
 check("Estimates real page muestra detalle en modal", page.includes("Detalle de cotizacion") && page.includes("document-detail-modal") && page.includes("setSelectedEstimateId(null)"), "detail modal");
 check("Estimates real page permite agregar partida al final", page.includes("line-item-bottom-actions") && page.includes("Agregar otra partida"), "bottom add item");
+check("Estimates real page confirma acciones comerciales", page.includes("type EstimateAction") && page.includes("estimateActionCopy") && page.includes("executeEstimateAction"), "action confirmation");
+check("Estimates real page diferencia rechazar y cancelar", page.includes("cliente no acepto la cotizacion") && page.includes("error interno, duplicado o cambio de alcance"), "reject vs cancel copy");
+check("Estimates real page aclara alcance y plantilla", page.includes("Descripcion / alcance del trabajo") && page.includes("Plantilla del PDF") && page.includes("Describe que incluye el trabajo"), "field clarity");
+check("Estimates real page confirma factura desde cotizacion", page.includes("Si, generar factura") && page.includes("Se creara una factura en borrador ligada"), "invoice confirmation");
 
 check("Workspace productivo incluye CRM y cotizaciones", workspace.includes("<CrmRealPage") && workspace.includes("<EstimatesRealPage"), "workspace modules");
 check("Production workspace no importa mock data", !workspace.includes("mock-data"), "no mock imports");
