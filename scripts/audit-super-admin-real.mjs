@@ -22,6 +22,7 @@ function check(name, condition, detail = "") {
 }
 
 const migration = readProjectFile("database/migrations/0045_super_admin_licensing.sql");
+const providerBrandingMigration = readProjectFile("database/migrations/0061_provider_branding_constriqo.sql");
 const tenantAdminCleanupMigration = readProjectFile("database/migrations/0058_remove_superadmin_from_tenant_admin.sql");
 const tenantArchiveMigration = readProjectFile("database/migrations/0060_tenant_internal_archive.sql");
 const repository = readProjectFile("server/runtime/postgresSuperAdminRepository.mjs");
@@ -39,7 +40,8 @@ const initialAdminInstall = readProjectFile("scripts/install-initial-admin.mjs")
 const smoke = readProjectFile("scripts/super-admin-local-smoke.mjs");
 const packageJson = JSON.parse(readProjectFile("package.json"));
 
-check("Migration crea tenant proveedor", migration.includes("Constriqo Provider") && migration.includes("00000000-0000-4000-8000-000000000001"), "provider tenant");
+check("Migration crea tenant proveedor historico", migration.includes("ConstructFlow Provider") && migration.includes("00000000-0000-4000-8000-000000000001"), "provider tenant");
+check("Migracion actualiza marca proveedor", providerBrandingMigration.includes("Constriqo Provider") && providerBrandingMigration.includes("00000000-0000-4000-8000-000000000001"), "provider branding");
 check("Migration crea licencias", migration.includes("CREATE TABLE IF NOT EXISTS tenant_licenses") && migration.includes("trial_7d") && migration.includes("two_years"), "tenant_licenses");
 check("Migration crea auditoria global", migration.includes("CREATE TABLE IF NOT EXISTS super_admin_audit_events"), "super admin audit");
 check("Migration registra capacidades Super Admin", migration.includes("superadmin.read") && migration.includes("superadmin.manage"), "capabilities");
