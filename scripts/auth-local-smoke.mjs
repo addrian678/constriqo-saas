@@ -71,10 +71,20 @@ try {
     });
     check("Setup TOTP entrega secreto", setup.status === 200 && setup.body.secret && setup.body.otpauthUri, JSON.stringify(setup.body));
 
-    const code = generateCurrentTotpCode(setup.body.secret);
+    const secondSetup = await postJson("/api/auth/mfa/totp/setup", {
+      mfaSetupToken: login.body.mfaSetupToken,
+      label: "Local smoke test",
+    });
+    check(
+      "Setup TOTP es idempotente ante doble click",
+      secondSetup.status === 200 && secondSetup.body.factorId === setup.body.factorId && secondSetup.body.secret,
+      JSON.stringify(secondSetup.body),
+    );
+
+    const code = generateCurrentTotpCode(secondSetup.body.secret);
     const verify = await postJson("/api/auth/mfa/totp/verify", {
       mfaSetupToken: login.body.mfaSetupToken,
-      factorId: setup.body.factorId,
+      factorId: secondSetup.body.factorId,
       code,
     });
     check("Verify TOTP entrega sesion", verify.status === 200 && verify.body.sessionToken, JSON.stringify(verify.body));

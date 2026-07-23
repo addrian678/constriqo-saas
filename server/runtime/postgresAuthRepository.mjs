@@ -459,6 +459,7 @@ export function createPostgresAuthRepository(pool, options = {}) {
 
     const secret = generateTotpSecret();
     const encrypted = encryptSecret(secret);
+    const normalizedLabel = String(label || "Authenticator app").slice(0, 80);
     const result = await queryForTenant(
       challenge.tenantId,
       `
@@ -473,12 +474,21 @@ export function createPostgresAuthRepository(pool, options = {}) {
           status
         )
         VALUES ($1, $2, 'totp', $3, $4, $5, $6, 'pending')
+        ON CONFLICT (tenant_id, user_id, factor_type, label)
+        DO UPDATE SET
+          secret_ciphertext = EXCLUDED.secret_ciphertext,
+          secret_iv = EXCLUDED.secret_iv,
+          secret_tag = EXCLUDED.secret_tag,
+          status = 'pending',
+          verified_at = NULL,
+          last_used_at = NULL,
+          updated_at = now()
         RETURNING factor_id
       `,
       [
         challenge.tenantId,
         challenge.userId,
-        String(label || "Authenticator app").slice(0, 80),
+        normalizedLabel,
         encrypted.ciphertext,
         encrypted.iv,
         encrypted.tag,
