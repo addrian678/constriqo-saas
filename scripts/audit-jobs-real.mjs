@@ -34,6 +34,7 @@ check("Jobs repository no toma tenant desde input", !repository.includes("input.
 check("Jobs repository crea fases por defecto", repository.includes("insertDefaultPhases") && repository.includes("Preparacion"), "default phases");
 check("Jobs repository registra cambios", repository.includes("createChangeRequest") && repository.includes("change_pending"), "change requests");
 check("Jobs repository calcula progreso", repository.includes("progress_percent") && repository.includes("completed_tasks"), "progress");
+check("Jobs repository valida GPS de obra", repository.includes("validateCoordinatePair") && repository.includes("allowedRadiusMeters: clampNumber(input?.allowedRadiusMeters, 25, 5000, 250)"), "job geofence validation");
 check("Jobs repository sincroniza fases desde checklist", repository.includes("syncJobPhasesFromTasks") && repository.includes("allPhasesCompleted"), "phase sync");
 check("Jobs repository asigna tareas a workers", repository.includes("assigned_to_worker_id") && repository.includes("ensureAssignmentForWorker"), "task assignment");
 check("Jobs repository filtra tareas por actor worker", repository.includes("resolveWorkerForActor") && repository.includes("assigned_to_worker_id = $2"), "worker self filter");
@@ -60,6 +61,7 @@ check("Jobs real page usa cotizaciones reales", page.includes("listEstimates"), 
 check("Jobs real page usa trabajadores reales", page.includes("listWorkers") && page.includes("assignedToWorkerId"), "workers");
 check("Jobs real page tiene estado vacio", page.includes("Sin obras todavia"), "empty state");
 check("Jobs real page crea obra", page.includes("handleCreateJob") && page.includes("createJob"), "create");
+check("Jobs real page permite GPS en crear y editar", page.includes("Usar mi ubicacion") && page.includes("projectLatitude") && page.includes("projectLongitude"), "job geofence ui");
 check("Jobs real page crea y actualiza tareas", page.includes("handleCreateTask") && page.includes("handleTaskUpdate"), "task update");
 check("Jobs real page muestra progreso", page.includes("progress-track") && page.includes("progressPercent"), "progress ui");
 check("Workspace incluye obras reales", workspace.includes("<JobsRealPage") && workspace.includes('label: "Obras"'), "workspace");

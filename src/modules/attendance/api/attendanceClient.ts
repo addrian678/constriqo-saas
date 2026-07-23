@@ -37,6 +37,22 @@ export type TimeEntry = {
   payrollStatus?: "unpaid" | "paid" | "excluded";
 };
 
+export type AttendanceBlockedAttempt = {
+  attendanceExceptionId: string;
+  workerId: string;
+  workerName: string;
+  jobId?: string | null;
+  jobNumber: string;
+  jobTitle: string;
+  status: string;
+  description: string;
+  attemptedAt: string;
+  attemptedLocation: AttendanceLocation;
+  jobDistanceMeters?: number | null;
+  locationStatus?: "outside_radius" | "job_without_location" | "missing_worker_location" | "not_assigned_to_job" | "not_checked";
+  createdAt: string;
+};
+
 export type MyAttendance = {
   worker: { workerId: string; name: string; status: string };
   openEntry: TimeEntry | null;
@@ -44,8 +60,8 @@ export type MyAttendance = {
   summary: Record<string, number>;
 };
 
-export async function listTimeEntries(token: string): Promise<{ items: TimeEntry[]; summary: Record<string, number> }> {
-  return requestJson<{ items: TimeEntry[]; summary: Record<string, number> }>("/api/attendance/time-entries", {
+export async function listTimeEntries(token: string): Promise<{ items: TimeEntry[]; blockedAttempts: AttendanceBlockedAttempt[]; summary: Record<string, number> }> {
+  return requestJson<{ items: TimeEntry[]; blockedAttempts: AttendanceBlockedAttempt[]; summary: Record<string, number> }>("/api/attendance/time-entries", {
     method: "GET",
     token,
   });

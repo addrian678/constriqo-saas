@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, CheckCircle2, ClipboardList, Edit3, Plus, RefreshCw, Save, UserPlus } from "lucide-react";
+import { BriefcaseBusiness, CheckCircle2, ClipboardList, Edit3, MapPin, Plus, RefreshCw, Save, UserPlus } from "lucide-react";
 import type { FormEvent } from "react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -26,6 +26,7 @@ import {
   updateJobTask,
 } from "../api/jobClient";
 import { listWorkers, type WorkerSummary } from "../../workforce/api/workforceClient";
+import { capturePointInTimeLocation } from "../../../app/native/nativeCapabilities";
 
 type JobsRealPageProps = {
   session: AuthenticatedSession;
@@ -288,6 +289,36 @@ export function JobsRealPage({ session }: JobsRealPageProps) {
     }
   }
 
+  async function useCurrentLocation(target: "create" | "edit") {
+    setSaving(true);
+    setMessage(null);
+    try {
+      const location = await capturePointInTimeLocation();
+      if (!location) {
+        setMessage("No se pudo obtener la ubicacion. Revisa permisos del navegador o dispositivo.");
+        return;
+      }
+      if (target === "create") {
+        setForm((current) => ({
+          ...current,
+          projectLatitude: Number(location.lat.toFixed(7)),
+          projectLongitude: Number(location.lng.toFixed(7)),
+        }));
+      } else {
+        setEditForm((current) => ({
+          ...current,
+          projectLatitude: Number(location.lat.toFixed(7)),
+          projectLongitude: Number(location.lng.toFixed(7)),
+        }));
+      }
+      setMessage("Ubicacion GPS cargada. Ajusta el radio antes de guardar si es necesario.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo capturar la ubicacion.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <section className="production-module-content">
       <PageHeader
@@ -349,7 +380,29 @@ export function JobsRealPage({ session }: JobsRealPageProps) {
               <span>Direccion de obra</span>
               <input className="input" value={form.projectAddress || ""} onChange={(event) => setForm({ ...form, projectAddress: event.target.value })} />
             </label>
+            <div className="card-title-row">
+              <span className="activity-meta">Control GPS para asistencia: coordenadas + radio permitido.</span>
+              <StatusBadge label={form.projectLatitude && form.projectLongitude ? "GPS completo" : "Falta GPS"} tone={form.projectLatitude && form.projectLongitude ? "success" : "warning"} />
+            </div>
             <div className="grid proof-grid">
+              <label className="form-control">
+                <span>Latitud GPS</span>
+                <input className="input" type="number" step="0.000001" value={form.projectLatitude ?? ""} onChange={(event) => setForm({ ...form, projectLatitude: event.target.value ? Number(event.target.value) : null })} />
+              </label>
+              <label className="form-control">
+                <span>Longitud GPS</span>
+                <input className="input" type="number" step="0.000001" value={form.projectLongitude ?? ""} onChange={(event) => setForm({ ...form, projectLongitude: event.target.value ? Number(event.target.value) : null })} />
+              </label>
+              <label className="form-control">
+                <span>Radio permitido para asistencia (m)</span>
+                <input className="input" type="number" min="25" max="5000" value={form.allowedRadiusMeters || 250} onChange={(event) => setForm({ ...form, allowedRadiusMeters: Number(event.target.value) })} />
+              </label>
+              <div className="form-control">
+                <span>Ubicacion actual</span>
+                <Button variant="secondary" type="button" icon={<MapPin size={16} />} onClick={() => void useCurrentLocation("create")} disabled={saving}>
+                  Usar mi ubicacion
+                </Button>
+              </div>
               <label className="form-control">
                 <span>Inicio</span>
                 <input className="input" type="date" value={form.scheduledStart || ""} onChange={(event) => setForm({ ...form, scheduledStart: event.target.value })} />
@@ -357,10 +410,6 @@ export function JobsRealPage({ session }: JobsRealPageProps) {
               <label className="form-control">
                 <span>Fin estimado</span>
                 <input className="input" type="date" value={form.scheduledEnd || ""} onChange={(event) => setForm({ ...form, scheduledEnd: event.target.value })} />
-              </label>
-              <label className="form-control">
-                <span>Radio permitido para asistencia (m)</span>
-                <input className="input" type="number" min="25" value={form.allowedRadiusMeters || 250} onChange={(event) => setForm({ ...form, allowedRadiusMeters: Number(event.target.value) })} />
               </label>
             </div>
             <Button variant="primary" type="submit" icon={<Save size={16} />} disabled={saving || clients.length === 0}>
@@ -515,7 +564,7 @@ export function JobsRealPage({ session }: JobsRealPageProps) {
         <form className="auth-form" onSubmit={handleUpdateJob}>
           <div className="card-title-row">
             <span className="activity-meta">La direccion y radio alimentan el control de asistencia por ubicacion.</span>
-            <StatusBadge label="Auditable" tone="info" />
+            <StatusBadge label={editForm.projectLatitude && editForm.projectLongitude ? "GPS completo" : "Falta GPS"} tone={editForm.projectLatitude && editForm.projectLongitude ? "success" : "warning"} />
           </div>
           <label className="form-control">
             <span>Titulo</span>
@@ -536,8 +585,14 @@ export function JobsRealPage({ session }: JobsRealPageProps) {
             </label>
             <label className="form-control">
               <span>Radio permitido (m)</span>
-              <input className="input" type="number" min="25" value={editForm.allowedRadiusMeters || 250} onChange={(event) => setEditForm({ ...editForm, allowedRadiusMeters: Number(event.target.value) })} />
+              <input className="input" type="number" min="25" max="5000" value={editForm.allowedRadiusMeters || 250} onChange={(event) => setEditForm({ ...editForm, allowedRadiusMeters: Number(event.target.value) })} />
             </label>
+            <div className="form-control">
+              <span>Ubicacion actual</span>
+              <Button variant="secondary" type="button" icon={<MapPin size={16} />} onClick={() => void useCurrentLocation("edit")} disabled={saving}>
+                Usar mi ubicacion
+              </Button>
+            </div>
             <label className="form-control">
               <span>Estado</span>
               <select className="select" value={editForm.status || "planned"} onChange={(event) => setEditForm({ ...editForm, status: event.target.value as JobStatus })}>

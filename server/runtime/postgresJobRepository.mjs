@@ -654,7 +654,7 @@ async function insertDefaultPhases(client, tenantId, jobId, phases) {
 }
 
 function validateJobInput(input) {
-  return {
+  const clean = {
     clientId: requiredText(input?.clientId, 80, "Cliente requerido."),
     estimateId: nullableText(input?.estimateId, 80),
     jobNumber: nullableText(input?.jobNumber, 40),
@@ -664,9 +664,11 @@ function validateJobInput(input) {
     projectAddress: nullableText(input?.projectAddress, 240),
     projectLatitude: nullableCoordinate(input?.projectLatitude, -90, 90),
     projectLongitude: nullableCoordinate(input?.projectLongitude, -180, 180),
-    allowedRadiusMeters: clampNumber(input?.allowedRadiusMeters, 25, 100000, 250),
+    allowedRadiusMeters: clampNumber(input?.allowedRadiusMeters, 25, 5000, 250),
     phases: Array.isArray(input?.phases) ? input.phases.slice(0, 8).map((phase) => requiredText(phase, 100, "Fase no valida.")) : [],
   };
+  validateCoordinatePair(clean.projectLatitude, clean.projectLongitude);
+  return clean;
 }
 
 function validateJobUpdateInput(input = {}) {
@@ -680,7 +682,7 @@ function validateJobUpdateInput(input = {}) {
   if (status && !JOB_STATUSES.has(status)) {
     validationError("Estado de obra no valido.");
   }
-  return {
+  const clean = {
     title: input.title === undefined ? null : requiredText(input.title, 180, "Titulo de obra requerido."),
     status,
     scheduledStart: hasScheduledStart ? nullableDate(input.scheduledStart) : null,
@@ -688,7 +690,7 @@ function validateJobUpdateInput(input = {}) {
     projectAddress: hasProjectAddress ? nullableText(input.projectAddress, 240) : null,
     projectLatitude: hasProjectLatitude ? nullableCoordinate(input.projectLatitude, -90, 90) : null,
     projectLongitude: hasProjectLongitude ? nullableCoordinate(input.projectLongitude, -180, 180) : null,
-    allowedRadiusMeters: hasAllowedRadiusMeters ? clampNumber(input.allowedRadiusMeters, 25, 100000, 250) : null,
+    allowedRadiusMeters: hasAllowedRadiusMeters ? clampNumber(input.allowedRadiusMeters, 25, 5000, 250) : null,
     hasScheduledStart,
     hasScheduledEnd,
     hasProjectAddress,
@@ -696,6 +698,11 @@ function validateJobUpdateInput(input = {}) {
     hasProjectLongitude,
     hasAllowedRadiusMeters,
   };
+  if (hasProjectLatitude !== hasProjectLongitude) {
+    validationError("Latitud y longitud deben guardarse juntas.");
+  }
+  validateCoordinatePair(clean.projectLatitude, clean.projectLongitude);
+  return clean;
 }
 
 function validateTaskInput(input) {
@@ -726,6 +733,14 @@ function validateWorkerTaskUpdateInput(input) {
     validationError("Estado de tarea no valido.");
   }
   return { status, reportNote: nullableText(input?.reportNote, 1000) || "" };
+}
+
+function validateCoordinatePair(latitude, longitude) {
+  const hasLatitude = latitude !== null && latitude !== undefined;
+  const hasLongitude = longitude !== null && longitude !== undefined;
+  if (hasLatitude !== hasLongitude) {
+    validationError("Configura latitud y longitud juntas para activar el control GPS de la obra.");
+  }
 }
 
 function validateChangeRequestInput(input) {

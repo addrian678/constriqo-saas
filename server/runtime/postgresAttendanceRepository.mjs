@@ -27,7 +27,13 @@ export function createPostgresAttendanceRepository(pool) {
       await client.query("COMMIT");
       return result;
     } catch (error) {
-      await client.query("ROLLBACK").catch(() => {});
+      if (error?.commitBeforeThrow) {
+        await client.query("COMMIT").catch(async () => {
+          await client.query("ROLLBACK").catch(() => {});
+        });
+      } else {
+        await client.query("ROLLBACK").catch(() => {});
+      }
       throw error;
     } finally {
       client.release();
@@ -91,7 +97,8 @@ export function createPostgresAttendanceRepository(pool) {
         `,
         [context.tenant.tenantId],
       );
-      return { items: result.rows.map(mapTimeEntry), total: result.rowCount, summary: summary.rows[0] || {} };
+      const blockedAttempts = await listBlockedAttempts(client, context.tenant.tenantId, filters);
+      return { items: result.rows.map(mapTimeEntry), blockedAttempts, total: result.rowCount, summary: { ...(summary.rows[0] || {}), blocked_attempts: blockedAttempts.length } };
     });
   }
 
@@ -124,9 +131,19 @@ export function createPostgresAttendanceRepository(pool) {
       }
       let jobLocation = null;
       if (clean.jobId) {
-        jobLocation = await requireJobForTenant(client, context.tenant.tenantId, clean.jobId);
+        jobLocation = await requireAssignedJobForWorker(client, context.tenant.tenantId, clean.jobId, worker.worker_id);
       }
       const locationCheck = evaluateJobLocation(clean.location, jobLocation);
+      if (locationCheck.status !== "inside_radius") {
+        await recordBlockedClockInAttempt(client, context, {
+          worker,
+          jobId: clean.jobId,
+          location: clean.location,
+          locationCheck,
+          jobLocation,
+        });
+        attendanceBlockedError(locationBlockedMessage(locationCheck, jobLocation));
+      }
       const result = await client.query(
         `
           INSERT INTO time_entries (
@@ -157,16 +174,13 @@ export function createPostgresAttendanceRepository(pool) {
         locationStatus: locationCheck.status,
         distanceMeters: locationCheck.distanceMeters,
       });
-      const isOutside = locationCheck.status === "outside_radius";
       await enqueueNotificationForRoles(
         client,
         context.tenant.tenantId,
         ["admin", "manager"],
-        isOutside ? "Entrada fuera de radio" : "Entrada registrada",
-        isOutside
-          ? `${worker.name} inicio jornada fuera del radio de la obra (${locationCheck.distanceMeters} m).`
-          : `${worker.name} inicio jornada.`,
-        isOutside ? "warning" : "info",
+        "Entrada registrada",
+        `${worker.name} inicio jornada.`,
+        "info",
         entry.timeEntryId,
         "attendance.clock_in",
       );
@@ -361,6 +375,30 @@ async function listWorkerEntries(client, tenantId, workerId) {
   return result.rows.map(mapTimeEntry);
 }
 
+async function listBlockedAttempts(client, tenantId, filters = {}) {
+  const params = [tenantId];
+  const where = ["ae.tenant_id = $1", "ae.exception_type = 'clock_in_blocked'"];
+  if (filters.workerId) {
+    params.push(String(filters.workerId));
+    where.push(`ae.worker_id = $${params.length}`);
+  }
+  const result = await client.query(
+    `
+      SELECT ae.attendance_exception_id, ae.worker_id, w.name AS worker_name, ae.job_id, j.job_number, j.title AS job_title,
+             ae.status, ae.description, ae.attempted_at, ae.attempted_lat, ae.attempted_lng, ae.attempted_accuracy_m,
+             ae.job_distance_meters, ae.location_status, ae.created_at
+      FROM attendance_exceptions ae
+      JOIN workers w ON w.tenant_id = ae.tenant_id AND w.worker_id = ae.worker_id
+      LEFT JOIN jobs j ON j.tenant_id = ae.tenant_id AND j.job_id = ae.job_id
+      WHERE ${where.join(" AND ")}
+      ORDER BY ae.attempted_at DESC, ae.created_at DESC
+      LIMIT 50
+    `,
+    params,
+  );
+  return result.rows.map(mapBlockedAttempt);
+}
+
 async function getTimeEntryById(client, tenantId, timeEntryId) {
   const result = await client.query(
     `
@@ -427,6 +465,32 @@ async function requireJobForTenant(client, tenantId, jobId) {
   };
 }
 
+async function requireAssignedJobForWorker(client, tenantId, jobId, workerId) {
+  const result = await client.query(
+    `
+      SELECT j.job_id, j.project_latitude, j.project_longitude, j.allowed_radius_meters
+      FROM jobs j
+      JOIN assignments a ON a.tenant_id = j.tenant_id
+        AND a.job_id = j.job_id
+        AND a.worker_id = $3
+        AND a.status <> 'completed'
+      WHERE j.tenant_id = $1
+        AND j.job_id = $2
+        AND j.status <> 'closed'
+      LIMIT 1
+    `,
+    [tenantId, jobId, workerId],
+  );
+  if (!result.rows[0]) {
+    forbidden("No puedes registrar jornada en una obra que no esta asignada a tu perfil.");
+  }
+  return {
+    latitude: result.rows[0].project_latitude === null || result.rows[0].project_latitude === undefined ? null : Number(result.rows[0].project_latitude),
+    longitude: result.rows[0].project_longitude === null || result.rows[0].project_longitude === undefined ? null : Number(result.rows[0].project_longitude),
+    allowedRadiusMeters: Number(result.rows[0].allowed_radius_meters || 250),
+  };
+}
+
 async function writeAudit(client, context, action, entityType, entityId, metadata) {
   await client.query(
     `
@@ -438,12 +502,13 @@ async function writeAudit(client, context, action, entityType, entityId, metadat
 }
 
 async function enqueueNotification(client, tenantId, audienceRole, title, message, severity, relatedId, eventKey) {
+  const relatedEntityType = eventKey === "attendance.clock_in_blocked" ? "attendance_exception" : "time_entry";
   await client.query(
     `
       INSERT INTO notification_queue (tenant_id, audience_role, channel, event_key, title, message, severity, related_entity_type, related_entity_id)
-      VALUES ($1, $2, 'in_app', $3, $4, $5, $6, 'time_entry', $7)
+      VALUES ($1, $2, 'in_app', $3, $4, $5, $6, $7, $8)
     `,
-    [tenantId, audienceRole, eventKey, title, message, severity, relatedId],
+    [tenantId, audienceRole, eventKey, title, message, severity, relatedEntityType, relatedId],
   );
 }
 
@@ -529,6 +594,24 @@ function mapTimeEntry(row) {
   };
 }
 
+function mapBlockedAttempt(row) {
+  return {
+    attendanceExceptionId: row.attendance_exception_id,
+    workerId: row.worker_id,
+    workerName: row.worker_name || "",
+    jobId: row.job_id || null,
+    jobNumber: row.job_number || "",
+    jobTitle: row.job_title || "",
+    status: row.status,
+    description: row.description || "",
+    attemptedAt: row.attempted_at?.toISOString?.() || row.attempted_at,
+    attemptedLocation: mapLocation(row.attempted_lat, row.attempted_lng, row.attempted_accuracy_m),
+    jobDistanceMeters: row.job_distance_meters === null || row.job_distance_meters === undefined ? null : Number(row.job_distance_meters),
+    locationStatus: row.location_status || "not_checked",
+    createdAt: row.created_at?.toISOString?.() || row.created_at,
+  };
+}
+
 function mapWorker(row) {
   return {
     workerId: row.worker_id,
@@ -561,6 +644,70 @@ function evaluateJobLocation(location, jobLocation) {
     distanceMeters,
     status: distanceMeters <= jobLocation.allowedRadiusMeters ? "inside_radius" : "outside_radius",
   };
+}
+
+async function recordBlockedClockInAttempt(client, context, input) {
+  const message = locationBlockedMessage(input.locationCheck, input.jobLocation);
+  const result = await client.query(
+    `
+      INSERT INTO attendance_exceptions (
+        tenant_id, worker_id, job_id, exception_type, status, description,
+        attempted_at, attempted_lat, attempted_lng, attempted_accuracy_m,
+        job_distance_meters, location_status
+      )
+      VALUES ($1, $2, $3, 'clock_in_blocked', 'open', $4, now(), $5, $6, $7, $8, $9)
+      RETURNING attendance_exception_id
+    `,
+    [
+      context.tenant.tenantId,
+      input.worker.worker_id,
+      input.jobId,
+      message,
+      input.location?.lat || null,
+      input.location?.lng || null,
+      input.location?.accuracyM || null,
+      input.locationCheck.distanceMeters,
+      input.locationCheck.status,
+    ],
+  );
+  const exceptionId = result.rows[0].attendance_exception_id;
+  await writeAudit(client, context, "attendance.clock_in_blocked", "attendance_exception", exceptionId, {
+    workerId: input.worker.worker_id,
+    jobId: input.jobId,
+    locationStatus: input.locationCheck.status,
+    distanceMeters: input.locationCheck.distanceMeters,
+  });
+  await enqueueNotificationForRoles(
+    client,
+    context.tenant.tenantId,
+    ["admin", "manager"],
+    "Entrada bloqueada por ubicacion",
+    `${input.worker.name}: ${message}`,
+    "warning",
+    exceptionId,
+    "attendance.clock_in_blocked",
+  );
+}
+
+function locationBlockedMessage(locationCheck, jobLocation) {
+  if (locationCheck.status === "outside_radius") {
+    return `No estas dentro del radio permitido de la obra. Distancia detectada: ${locationCheck.distanceMeters} m; radio permitido: ${jobLocation?.allowedRadiusMeters || "configurado"} m.`;
+  }
+  if (locationCheck.status === "missing_worker_location") {
+    return "No se pudo validar tu ubicacion. Activa el permiso de ubicacion e intenta registrar la entrada nuevamente.";
+  }
+  if (locationCheck.status === "job_without_location") {
+    return "La obra no tiene ubicacion GPS configurada. Contacta al administrador para habilitar el control de asistencia.";
+  }
+  return "No se pudo validar la ubicacion para registrar entrada.";
+}
+
+function attendanceBlockedError(message) {
+  const error = new Error(message);
+  error.status = 409;
+  error.code = "ATTENDANCE_LOCATION_BLOCKED";
+  error.commitBeforeThrow = true;
+  throw error;
 }
 
 function distanceBetweenMeters(lat1, lng1, lat2, lng2) {

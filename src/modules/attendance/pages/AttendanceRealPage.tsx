@@ -5,7 +5,7 @@ import { Button } from "../../../shared/components/Button";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { PageHeader } from "../../../shared/components/PageHeader";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
-import { approveTimeEntry, listTimeEntries, type AttendanceStatus, type TimeEntry } from "../api/attendanceClient";
+import { approveTimeEntry, listTimeEntries, type AttendanceBlockedAttempt, type AttendanceStatus, type TimeEntry } from "../api/attendanceClient";
 
 type AttendanceRealPageProps = {
   session: AuthenticatedSession;
@@ -31,6 +31,7 @@ const statusTone: Record<AttendanceStatus, "neutral" | "info" | "warning" | "suc
 
 export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [blockedAttempts, setBlockedAttempts] = useState<AttendanceBlockedAttempt[]>([]);
   const [summary, setSummary] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,6 +49,7 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
     try {
       const result = await listTimeEntries(session.sessionToken);
       setEntries(result.items);
+      setBlockedAttempts(result.blockedAttempts || []);
       setSummary(result.summary || {});
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo cargar asistencia.");
@@ -94,7 +96,35 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
         <SummaryCard label="Canceladas" value={loading && entries.length === 0 ? "Cargando" : summary.cancelled || 0} icon={<XCircle size={20} />} />
         <SummaryCard label="Fuera de radio" value={loading && entries.length === 0 ? "Cargando" : summary.outside_radius || 0} icon={<XCircle size={20} />} />
         <SummaryCard label="Alertas GPS" value={loading && entries.length === 0 ? "Cargando" : summary.location_warnings || 0} icon={<RefreshCw size={20} />} />
+        <SummaryCard label="Entradas bloqueadas" value={loading && entries.length === 0 ? "Cargando" : summary.blocked_attempts || 0} icon={<AlertIcon />} />
       </section>
+
+      {blockedAttempts.length > 0 ? (
+        <section className="card">
+          <div className="card-title-row">
+            <h2 className="card-title">Intentos bloqueados por ubicacion</h2>
+            <StatusBadge label={`${blockedAttempts.length} recientes`} tone="warning" />
+          </div>
+          <div className="responsive-table">
+            {blockedAttempts.map((attempt) => (
+              <article className="table-row attendance-table-grid" key={attempt.attendanceExceptionId}>
+                <div>
+                  <strong>{attempt.workerName}</strong>
+                  <span className="activity-meta">{attempt.jobTitle || "Obra no disponible"}</span>
+                </div>
+                <div>
+                  <strong>{formatDateTime(attempt.attemptedAt)}</strong>
+                  <span className="activity-meta">{attempt.attemptedLocation ? `${attempt.attemptedLocation.lat.toFixed(5)}, ${attempt.attemptedLocation.lng.toFixed(5)}` : "Sin GPS trabajador"}</span>
+                </div>
+                <StatusBadge label={blockedLocationLabel(attempt)} tone="danger" />
+                <span>{attempt.description}</span>
+                <span className="activity-meta">No genero jornada ni horas de nomina.</span>
+                <span className="activity-meta">Pendiente de revision</span>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="card">
         <div className="card-title-row">
@@ -173,6 +203,23 @@ function locationLabel(entry: TimeEntry) {
     return "Obra sin GPS";
   }
   return "No verificado";
+}
+
+function blockedLocationLabel(attempt: AttendanceBlockedAttempt) {
+  if (attempt.locationStatus === "outside_radius") {
+    return `Fuera de radio${attempt.jobDistanceMeters !== null && attempt.jobDistanceMeters !== undefined ? ` ${attempt.jobDistanceMeters} m` : ""}`;
+  }
+  if (attempt.locationStatus === "missing_worker_location") {
+    return "Sin GPS trabajador";
+  }
+  if (attempt.locationStatus === "job_without_location") {
+    return "Obra sin GPS";
+  }
+  return "Entrada bloqueada";
+}
+
+function AlertIcon() {
+  return <XCircle size={20} />;
 }
 
 function dispatchDataChanged(module: string) {

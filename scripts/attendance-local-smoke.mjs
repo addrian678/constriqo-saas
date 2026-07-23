@@ -61,10 +61,11 @@ async function setupFixtures() {
     await client.query("INSERT INTO users (user_id, tenant_id, email, display_name, status) VALUES ($1, $2, 'worker-att-a@local.test', 'Worker A', 'active')", [workerUserA, tenantA]);
     await client.query("INSERT INTO clients (client_id, tenant_id, name, status, primary_contact, email) VALUES ($1, $2, 'Cliente asistencia', 'active', 'Cliente A', 'cliente-att-a@local.test')", [clientA, tenantA]);
     await client.query(
-      "INSERT INTO jobs (job_id, tenant_id, client_id, job_number, title, status, scheduled_start) VALUES ($1, $2, $3, 'JOB-ATT-001', 'Obra asistencia', 'in_progress', CURRENT_DATE)",
+      "INSERT INTO jobs (job_id, tenant_id, client_id, job_number, title, status, scheduled_start, project_latitude, project_longitude, allowed_radius_meters) VALUES ($1, $2, $3, 'JOB-ATT-001', 'Obra asistencia', 'in_progress', CURRENT_DATE, 40.7608, -111.8910, 250)",
       [jobA, tenantA, clientA],
     );
     await client.query("INSERT INTO workers (worker_id, tenant_id, user_id, name, status, trade) VALUES ($1, $2, $3, 'Worker A', 'active', 'Installer')", [workerA, tenantA, workerUserA]);
+    await client.query("INSERT INTO assignments (tenant_id, job_id, worker_id, starts_at, status) VALUES ($1, $2, $3, now(), 'assigned')", [tenantA, jobA, workerA]);
   });
   await withTenantAdmin(tenantB, async (client) => {
     await client.query("INSERT INTO users (user_id, tenant_id, email, display_name, status) VALUES ($1, $2, 'manager-att-b@local.test', 'Manager B', 'active')", [managerB, tenantB]);
@@ -120,6 +121,12 @@ try {
     server.listen(0, "127.0.0.1", () => resolve(server.address()));
   });
 
+  const blockedClockIn = await request("worker-a", "/api/attendance/clock-in", {
+    method: "POST",
+    body: { jobId: jobA, location: { lat: 41.7608, lng: -111.891, accuracyM: 12 } },
+  });
+  check("Worker A fuera de radio queda bloqueado", blockedClockIn.status === 409 && blockedClockIn.body.code === "ATTENDANCE_LOCATION_BLOCKED", JSON.stringify(blockedClockIn.body));
+
   const clockIn = await request("worker-a", "/api/attendance/clock-in", {
     method: "POST",
     body: { jobId: jobA, location: { lat: 40.7608, lng: -111.891, accuracyM: 12 } },
@@ -142,6 +149,7 @@ try {
 
   const listA = await request("manager-a", "/api/attendance/time-entries");
   check("Manager A ve jornada A", listA.status === 200 && listA.body.items.some((item) => item.timeEntryId === timeEntryId), JSON.stringify(listA.body));
+  check("Manager A ve intento bloqueado", listA.status === 200 && listA.body.blockedAttempts?.length === 1, JSON.stringify(listA.body));
 
   const listB = await request("tenant-b", "/api/attendance/time-entries");
   check("Tenant B no ve jornada A", listB.status === 200 && !listB.body.items.some((item) => item.timeEntryId === timeEntryId), JSON.stringify(listB.body));
@@ -179,6 +187,8 @@ try {
       await client.query("DELETE FROM attendance_approvals WHERE tenant_id = $1", [tenantId]);
       await client.query("DELETE FROM break_entries WHERE tenant_id = $1", [tenantId]);
       await client.query("DELETE FROM time_entries WHERE tenant_id = $1", [tenantId]);
+      await client.query("DELETE FROM attendance_exceptions WHERE tenant_id = $1", [tenantId]);
+      await client.query("DELETE FROM assignments WHERE tenant_id = $1", [tenantId]);
       await client.query("DELETE FROM workers WHERE tenant_id = $1", [tenantId]);
       await client.query("DELETE FROM jobs WHERE tenant_id = $1", [tenantId]);
       await client.query("DELETE FROM clients WHERE tenant_id = $1", [tenantId]);
