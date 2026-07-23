@@ -33,16 +33,31 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [blockedAttempts, setBlockedAttempts] = useState<AttendanceBlockedAttempt[]>([]);
   const [summary, setSummary] = useState<Record<string, number>>({});
+  const [attendanceLoadedAt, setAttendanceLoadedAt] = useState(() => Date.now());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const hasOpenEntries = entries.some((entry) => !entry.clockOut && (entry.status === "active" || entry.status === "on_break"));
+  const now = useClockTicker(hasOpenEntries);
 
   useEffect(() => {
     void refresh();
   }, []);
 
-  async function refresh(options: { preserveMessage?: boolean } = {}) {
-    setLoading(true);
+  useEffect(() => {
+    if (!hasOpenEntries) {
+      return;
+    }
+    const interval = window.setInterval(() => {
+      void refresh({ preserveMessage: true, silent: true });
+    }, 60_000);
+    return () => window.clearInterval(interval);
+  }, [hasOpenEntries]);
+
+  async function refresh(options: { preserveMessage?: boolean; silent?: boolean } = {}) {
+    if (!options.silent) {
+      setLoading(true);
+    }
     if (!options.preserveMessage) {
       setMessage(null);
     }
@@ -51,10 +66,13 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
       setEntries(result.items);
       setBlockedAttempts(result.blockedAttempts || []);
       setSummary(result.summary || {});
+      setAttendanceLoadedAt(Date.now());
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo cargar asistencia.");
     } finally {
-      setLoading(false);
+      if (!options.silent) {
+        setLoading(false);
+      }
     }
   }
 
@@ -133,33 +151,38 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
         </div>
         {!loading && entries.length === 0 ? <EmptyState title="Sin registros" description="Cuando un trabajador registre entrada apareceran aqui." /> : null}
         <div className="responsive-table">
-          {entries.map((entry) => (
-            <article className="table-row attendance-table-grid" key={entry.timeEntryId}>
-              <div>
-                <strong>{entry.workerName}</strong>
-                <span className="activity-meta">{entry.jobTitle || "Sin obra asignada"}</span>
-              </div>
-              <div>
-                <strong>{formatDateTime(entry.clockIn)}</strong>
-                <span className="activity-meta">{entry.clockOut ? formatDateTime(entry.clockOut) : "Jornada abierta"}</span>
-              </div>
-              <StatusBadge label={statusLabels[entry.status]} tone={statusTone[entry.status]} />
-              <StatusBadge label={locationLabel(entry)} tone={entry.locationStatus === "outside_radius" ? "danger" : entry.locationStatus === "inside_radius" ? "success" : "warning"} />
-              <div>
-                <strong>{formatHours(entry.totalSeconds)} h</strong>
-                <span className="activity-meta">Descanso {formatHours(entry.breakSeconds)} h · {entry.payrollStatus === "paid" ? "Pagada" : entry.payrollStatus === "excluded" ? "Excluida" : "Por pagar"}</span>
-                {entry.cancelReason ? <span className="activity-meta">Motivo: {entry.cancelReason}</span> : null}
-              </div>
-              <div className="segmented-actions">
-                <Button variant="secondary" type="button" icon={<CheckCircle2 size={16} />} onClick={() => void review(entry, "approved")} disabled={saving || entry.status === "approved" || entry.status === "cancelled"}>
-                  Aprobar
-                </Button>
-                <Button variant="secondary" type="button" icon={<XCircle size={16} />} onClick={() => void review(entry, "rejected")} disabled={saving || entry.status === "rejected" || entry.status === "cancelled"}>
-                  Rechazar
-                </Button>
-              </div>
-            </article>
-          ))}
+          {entries.map((entry) => {
+            const live = calculateEntryLiveSeconds(entry, now, attendanceLoadedAt);
+            const isLive = !entry.clockOut && (entry.status === "active" || entry.status === "on_break");
+            return (
+              <article className="table-row attendance-table-grid" key={entry.timeEntryId}>
+                <div>
+                  <strong>{entry.workerName}</strong>
+                  <span className="activity-meta">{entry.jobTitle || "Sin obra asignada"}</span>
+                </div>
+                <div>
+                  <strong>{formatDateTime(entry.clockIn)}</strong>
+                  <span className="activity-meta">{entry.clockOut ? formatDateTime(entry.clockOut) : "Jornada abierta"}</span>
+                </div>
+                <StatusBadge label={statusLabels[entry.status]} tone={statusTone[entry.status]} />
+                <StatusBadge label={locationLabel(entry)} tone={entry.locationStatus === "outside_radius" ? "danger" : entry.locationStatus === "inside_radius" ? "success" : "warning"} />
+                <div>
+                  <strong>{isLive ? formatClockDuration(live.workedSeconds) : `${formatHours(live.workedSeconds)} h`}</strong>
+                  <span className="activity-meta">Descanso {isLive ? formatWorkDuration(live.breakSeconds) : `${formatHours(live.breakSeconds)} h`} · {entry.payrollStatus === "paid" ? "Pagada" : entry.payrollStatus === "excluded" ? "Excluida" : "Por pagar"}</span>
+                  {isLive ? <span className="activity-meta">Estimado en vivo desde datos oficiales · sincroniza cada 60 s</span> : null}
+                  {entry.cancelReason ? <span className="activity-meta">Motivo: {entry.cancelReason}</span> : null}
+                </div>
+                <div className="segmented-actions">
+                  <Button variant="secondary" type="button" icon={<CheckCircle2 size={16} />} onClick={() => void review(entry, "approved")} disabled={saving || entry.status === "approved" || entry.status === "cancelled"}>
+                    Aprobar
+                  </Button>
+                  <Button variant="secondary" type="button" icon={<XCircle size={16} />} onClick={() => void review(entry, "rejected")} disabled={saving || entry.status === "rejected" || entry.status === "cancelled"}>
+                    Rechazar
+                  </Button>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
     </section>
@@ -187,6 +210,63 @@ function formatDateTime(value: string) {
 
 function formatHours(seconds: number) {
   return (Math.max(0, seconds) / 3600).toFixed(2);
+}
+
+function formatClockDuration(seconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const rest = safeSeconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+}
+
+function formatWorkDuration(seconds: number) {
+  const totalMinutes = Math.max(0, Math.round(seconds / 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours <= 0) {
+    return `${minutes} min`;
+  }
+  return `${hours} h ${minutes} min`;
+}
+
+function useClockTicker(active: boolean) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    setNow(Date.now());
+    if (!active) {
+      return;
+    }
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, [active]);
+
+  return now;
+}
+
+function calculateEntryLiveSeconds(entry: TimeEntry, nowMs: number, attendanceLoadedAt: number) {
+  const clockInMs = Date.parse(entry.clockIn);
+  const clockOutMs = entry.clockOut ? Date.parse(entry.clockOut) : nowMs;
+  const safeClockOutMs = Number.isFinite(clockOutMs) ? clockOutMs : nowMs;
+  let breakSeconds = Math.max(0, Number(entry.breakSeconds || 0));
+
+  if (!entry.clockOut && entry.activeBreak) {
+    breakSeconds += Math.max(0, Math.floor((nowMs - attendanceLoadedAt) / 1000));
+  }
+
+  if (entry.clockOut) {
+    return {
+      workedSeconds: Math.max(0, Number(entry.totalSeconds || 0)),
+      breakSeconds,
+    };
+  }
+
+  const grossSeconds = Math.max(0, Math.floor((safeClockOutMs - clockInMs) / 1000));
+  return {
+    workedSeconds: Math.max(0, grossSeconds - breakSeconds),
+    breakSeconds,
+  };
 }
 
 function locationLabel(entry: TimeEntry) {
