@@ -67,6 +67,8 @@ check("Production workspace incluye asistencia", productionWorkspace.includes("<
 check("Worker workspace usa asistencia real", workerWorkspace.includes("getMyAttendance") && workerWorkspace.includes("Registrar entrada"), "worker real");
 check("Worker workspace usa confirmaciones antes de guardar", workerWorkspace.includes("Confirmar entrada") && workerWorkspace.includes("confirmAttendanceIntent"), "confirmations");
 check("Worker workspace usa puente nativo de ubicacion", workerWorkspace.includes("capturePointInTimeLocation"), "native bridge");
+check("Worker workspace muestra horas trabajadas y descansadas", workerWorkspace.includes("Trabajado hoy") && workerWorkspace.includes("Descanso semana"), "worker hour summary");
+check("Worker workspace calcula jornada en cliente sin llamadas por segundo", workerWorkspace.includes("calculateWorkerAttendanceStats") && workerWorkspace.includes("useClockTicker") && workerWorkspace.includes("attendanceLoadedAt"), "worker local timer");
 check("Puente nativo captura geolocalizacion puntual", nativeCapabilities.includes("navigator.geolocation") && nativeCapabilities.includes("enableHighAccuracy"), "location");
 
 check("Attendance smoke valida clock flow", localSmoke.includes("clock-in") && localSmoke.includes("break-start") && localSmoke.includes("clock-out"), "flow");

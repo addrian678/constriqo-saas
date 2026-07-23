@@ -80,6 +80,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
   const [tasks, setTasks] = useState<WorkerTask[]>([]);
   const [notifications, setNotifications] = useState<RuntimeNotification[]>([]);
   const [attendance, setAttendance] = useState<MyAttendance | null>(null);
+  const [attendanceLoadedAt, setAttendanceLoadedAt] = useState(() => Date.now());
   const [settings, setSettings] = useState<TenantSettings | null>(null);
   const [summary, setSummary] = useState<Record<string, number>>({});
   const [workerName, setWorkerName] = useState(session.user.displayName);
@@ -155,6 +156,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
       setNotifications(notificationResult.items);
       setSummary(result.summary || {});
       setAttendance(attendanceResult);
+      setAttendanceLoadedAt(Date.now());
       setSettings(settingsResult);
       setSelectedClockJobId((current) => {
         if (attendanceResult?.openEntry?.jobId) {
@@ -349,6 +351,8 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
           {activeSection === "dashboard" ? (
             <WorkerDashboard
               summary={summary}
+              attendance={attendance}
+              attendanceLoadedAt={attendanceLoadedAt}
               loading={loading}
               jobProgress={jobProgress}
               unreadNotifications={unreadNotifications.length}
@@ -359,6 +363,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
           {activeSection === "attendance" ? (
             <WorkerAttendance
               attendance={attendance}
+              attendanceLoadedAt={attendanceLoadedAt}
               assignedJobs={assignedJobs}
               selectedClockJobId={selectedClockJobId}
               setSelectedClockJobId={setSelectedClockJobId}
@@ -456,17 +461,24 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
 
 function WorkerDashboard({
   summary,
+  attendance,
+  attendanceLoadedAt,
   loading,
   jobProgress,
   unreadNotifications,
   onOpenSection,
 }: {
   summary: Record<string, number>;
+  attendance: MyAttendance | null;
+  attendanceLoadedAt: number;
   loading: boolean;
   jobProgress: Array<{ jobId: string; jobNumber: string; jobTitle: string; clientName: string; total: number; completed: number; progress: number }>;
   unreadNotifications: number;
   onOpenSection: (section: WorkerSection) => void;
 }) {
+  const now = useClockTicker(Boolean(attendance?.openEntry));
+  const attendanceStats = calculateWorkerAttendanceStats(attendance, now, attendanceLoadedAt);
+
   return (
     <>
       <section className="grid stats-grid crm-real-stats">
@@ -474,6 +486,13 @@ function WorkerDashboard({
         <SummaryCard label="En progreso" value={summary.in_progress || 0} icon={<ShieldCheck size={20} />} />
         <SummaryCard label="Bloqueadas" value={summary.blocked || 0} icon={<RefreshCw size={20} />} />
         <SummaryCard label="Completadas" value={summary.completed || 0} icon={<CheckCircle2 size={20} />} />
+      </section>
+
+      <section className="grid stats-grid crm-real-stats">
+        <SummaryCard label="Trabajado hoy" value={formatWorkDuration(attendanceStats.workedTodaySeconds)} icon={<Clock3 size={20} />} />
+        <SummaryCard label="Descanso hoy" value={formatWorkDuration(attendanceStats.breakTodaySeconds)} icon={<Coffee size={20} />} />
+        <SummaryCard label="Trabajado semana" value={formatWorkDuration(attendanceStats.workedWeekSeconds)} icon={<CheckCircle2 size={20} />} />
+        <SummaryCard label="Descanso semana" value={formatWorkDuration(attendanceStats.breakWeekSeconds)} icon={<Coffee size={20} />} />
       </section>
 
       <section className="grid two-column crm-real-grid">
@@ -527,6 +546,7 @@ function WorkerDashboard({
 
 function WorkerAttendance({
   attendance,
+  attendanceLoadedAt,
   assignedJobs,
   selectedClockJobId,
   setSelectedClockJobId,
@@ -539,6 +559,7 @@ function WorkerAttendance({
   onClockOut,
 }: {
   attendance: MyAttendance | null;
+  attendanceLoadedAt: number;
   assignedJobs: WorkerTask[];
   selectedClockJobId: string;
   setSelectedClockJobId: (value: string) => void;
@@ -551,6 +572,10 @@ function WorkerAttendance({
   onClockOut: () => Promise<void>;
 }) {
   const openStatus = attendance?.openEntry?.status || "";
+  const now = useClockTicker(Boolean(attendance?.openEntry));
+  const attendanceStats = calculateWorkerAttendanceStats(attendance, now, attendanceLoadedAt);
+  const isOnBreak = openStatus === "on_break";
+
   return (
     <section className="card">
       <div className="card-title-row">
@@ -562,6 +587,23 @@ function WorkerAttendance({
       </div>
       {currentJobLabel ? <p className="login-security-note">Jornada activa en {currentJobLabel}.</p> : null}
       {attendance?.openEntry?.activeBreak ? <BreakCountdown activeBreak={attendance.openEntry.activeBreak} /> : null}
+      {attendance?.openEntry ? (
+        <div className={`global-retention-banner ${isOnBreak ? "warning" : "info"}`} role="status">
+          <Clock3 size={18} />
+          <span>
+            <strong>{isOnBreak ? "Jornada pausada por descanso" : "Jornada en vivo"}</strong>
+            <small>
+              Trabajado hoy: {formatClockDuration(attendanceStats.workedTodaySeconds)} · Descanso hoy: {formatWorkDuration(attendanceStats.breakTodaySeconds)}
+            </small>
+          </span>
+        </div>
+      ) : null}
+      <section className="grid stats-grid crm-real-stats" style={{ marginTop: 12 }}>
+        <SummaryCard label="Trabajado hoy" value={formatWorkDuration(attendanceStats.workedTodaySeconds)} icon={<Clock3 size={20} />} />
+        <SummaryCard label="Descanso hoy" value={formatWorkDuration(attendanceStats.breakTodaySeconds)} icon={<Coffee size={20} />} />
+        <SummaryCard label="Trabajado semana" value={formatWorkDuration(attendanceStats.workedWeekSeconds)} icon={<CheckCircle2 size={20} />} />
+        <SummaryCard label="Descanso semana" value={formatWorkDuration(attendanceStats.breakWeekSeconds)} icon={<Coffee size={20} />} />
+      </section>
       <label className="form-control" style={{ marginTop: 12 }}>
         <span>Obra para registrar entrada</span>
         <select className="select" value={selectedClockJobId} onChange={(event) => setSelectedClockJobId(event.target.value)} disabled={Boolean(attendance?.openEntry)}>
@@ -702,6 +744,21 @@ function BreakCountdown({ activeBreak }: { activeBreak: NonNullable<NonNullable<
   );
 }
 
+function useClockTicker(active: boolean) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    setNow(Date.now());
+    if (!active) {
+      return;
+    }
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, [active]);
+
+  return now;
+}
+
 function attendanceIntentTitle(intent: AttendanceIntent | null) {
   if (!intent) {
     return "Confirmar accion";
@@ -725,6 +782,107 @@ function formatDuration(seconds: number) {
   const minutes = Math.floor(seconds / 60);
   const rest = seconds % 60;
   return `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+}
+
+function formatClockDuration(seconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const rest = safeSeconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+}
+
+function formatWorkDuration(seconds: number) {
+  const totalMinutes = Math.max(0, Math.round(seconds / 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours <= 0) {
+    return `${minutes} min`;
+  }
+  return `${hours} h ${minutes} min`;
+}
+
+function calculateWorkerAttendanceStats(attendance: MyAttendance | null, nowMs: number, attendanceLoadedAt: number) {
+  const stats = {
+    workedTodaySeconds: 0,
+    breakTodaySeconds: 0,
+    workedWeekSeconds: 0,
+    breakWeekSeconds: 0,
+  };
+  if (!attendance) {
+    return stats;
+  }
+
+  const todayStart = startOfDayMs(nowMs);
+  const weekStart = startOfWeekMs(nowMs);
+  const entries = new Map<string, NonNullable<MyAttendance["openEntry"]>>();
+
+  for (const entry of attendance.recentEntries || []) {
+    entries.set(entry.timeEntryId, entry);
+  }
+  if (attendance.openEntry) {
+    entries.set(attendance.openEntry.timeEntryId, attendance.openEntry);
+  }
+
+  for (const entry of entries.values()) {
+    if (entry.status === "cancelled") {
+      continue;
+    }
+    const clockInMs = Date.parse(entry.clockIn);
+    if (!Number.isFinite(clockInMs)) {
+      continue;
+    }
+    const live = calculateEntryLiveSeconds(entry, nowMs, attendanceLoadedAt);
+    if (clockInMs >= todayStart) {
+      stats.workedTodaySeconds += live.workedSeconds;
+      stats.breakTodaySeconds += live.breakSeconds;
+    }
+    if (clockInMs >= weekStart) {
+      stats.workedWeekSeconds += live.workedSeconds;
+      stats.breakWeekSeconds += live.breakSeconds;
+    }
+  }
+
+  return stats;
+}
+
+function calculateEntryLiveSeconds(entry: NonNullable<MyAttendance["openEntry"]>, nowMs: number, attendanceLoadedAt: number) {
+  const clockInMs = Date.parse(entry.clockIn);
+  const clockOutMs = entry.clockOut ? Date.parse(entry.clockOut) : nowMs;
+  const safeClockOutMs = Number.isFinite(clockOutMs) ? clockOutMs : nowMs;
+  let breakSeconds = Math.max(0, Number(entry.breakSeconds || 0));
+
+  if (!entry.clockOut && entry.activeBreak) {
+    breakSeconds += Math.max(0, Math.floor((nowMs - attendanceLoadedAt) / 1000));
+  }
+
+  if (entry.clockOut) {
+    return {
+      workedSeconds: Math.max(0, Number(entry.totalSeconds || 0)),
+      breakSeconds,
+    };
+  }
+
+  const grossSeconds = Math.max(0, Math.floor((safeClockOutMs - clockInMs) / 1000));
+  return {
+    workedSeconds: Math.max(0, grossSeconds - breakSeconds),
+    breakSeconds,
+  };
+}
+
+function startOfDayMs(nowMs: number) {
+  const date = new Date(nowMs);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
+function startOfWeekMs(nowMs: number) {
+  const date = new Date(nowMs);
+  date.setHours(0, 0, 0, 0);
+  const day = date.getDay();
+  const daysSinceMonday = day === 0 ? 6 : day - 1;
+  date.setDate(date.getDate() - daysSinceMonday);
+  return date.getTime();
 }
 
 function WorkerChecklist({
