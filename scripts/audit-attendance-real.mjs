@@ -65,6 +65,8 @@ check("Admin attendance page no usa mock data", !adminPage.includes("mock-data")
 check("Admin attendance page muestra intentos bloqueados GPS", adminPage.includes("Intentos bloqueados por ubicacion") && adminPage.includes("blockedAttempts"), "blocked attempts ui");
 check("Admin attendance page muestra contador vivo sin llamadas por segundo", adminPage.includes("useClockTicker") && adminPage.includes("attendanceLoadedAt") && adminPage.includes("Estimado en vivo desde datos oficiales"), "admin live clock");
 check("Admin attendance page sincroniza jornadas abiertas de forma moderada", adminPage.includes("silent") && adminPage.includes("60_000"), "admin moderate refresh");
+check("Admin attendance page usa tarjetas legibles con etiquetas", adminPage.includes("attendance-record-card") && adminPage.includes("Inicio de jornada") && adminPage.includes("Horas trabajadas"), "admin record cards");
+check("Admin attendance page confirma aprobacion o rechazo", adminPage.includes("reviewIntent") && adminPage.includes("Confirmar aprobacion") && adminPage.includes("Si, rechazar jornada"), "admin review confirmation");
 check("Production workspace incluye asistencia", productionWorkspace.includes("<AttendanceRealPage") && productionWorkspace.includes('label: "Asistencia"'), "workspace");
 check("Worker workspace usa asistencia real", workerWorkspace.includes("getMyAttendance") && workerWorkspace.includes("Registrar entrada"), "worker real");
 check("Worker workspace usa confirmaciones antes de guardar", workerWorkspace.includes("Confirmar entrada") && workerWorkspace.includes("confirmAttendanceIntent"), "confirmations");

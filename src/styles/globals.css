@@ -1545,6 +1545,66 @@ button {
   min-width: 0;
 }
 
+.record-card {
+  align-items: stretch;
+  gap: 14px;
+}
+
+.attendance-record-card {
+  grid-template-columns: minmax(220px, 1.1fr) minmax(150px, 0.75fr) minmax(150px, 0.75fr) minmax(180px, 0.9fr) minmax(150px, 0.75fr) minmax(190px, 0.7fr);
+}
+
+.payroll-record-card {
+  grid-template-columns: minmax(230px, 1.1fr) minmax(150px, 0.7fr) minmax(150px, 0.7fr) minmax(160px, 0.75fr) minmax(170px, 0.85fr) minmax(180px, 0.7fr);
+}
+
+.payroll-payment-record-card {
+  grid-template-columns: minmax(240px, 1.2fr) minmax(130px, 0.65fr) minmax(150px, 0.75fr) minmax(170px, 0.75fr);
+}
+
+.record-main,
+.record-field {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  align-content: center;
+}
+
+.record-main {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.record-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.record-label,
+.record-field > span:first-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.record-field strong,
+.record-main strong {
+  overflow-wrap: anywhere;
+}
+
+.record-field.highlight strong {
+  font-size: 18px;
+}
+
+.record-actions {
+  align-content: center;
+  justify-content: end;
+}
+
 .crm-table-grid {
   grid-template-columns: minmax(220px, 1.2fr) minmax(220px, 1fr) 140px 150px 120px;
 }
@@ -2385,6 +2445,7 @@ button {
   .worker-assignment-grid,
   .worker-document-grid,
   .attendance-table-grid,
+  .attendance-record-card,
   .field-report-grid,
   .material-row-grid,
   .documents-table-grid,
@@ -2397,6 +2458,8 @@ button {
   .finance-table-grid,
   .payroll-table-grid,
   .payroll-payments-grid,
+  .payroll-record-card,
+  .payroll-payment-record-card,
   .profitability-table-grid,
   .assets-table-grid,
   .liabilities-table-grid,
@@ -2420,6 +2483,14 @@ button {
 
   .table-row {
     align-items: stretch;
+  }
+
+  .record-card {
+    gap: 10px;
+  }
+
+  .record-actions {
+    justify-content: stretch;
   }
 
   .table-row > *,

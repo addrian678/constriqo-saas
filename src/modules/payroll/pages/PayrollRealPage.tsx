@@ -168,21 +168,35 @@ export function PayrollRealPage({ session }: PayrollRealPageProps) {
         {!loading && workers.length === 0 ? <EmptyState title="Sin trabajadores" description="Crea trabajadores activos para calcular nomina." /> : null}
         <div className="responsive-table">
           {workers.map((worker) => (
-            <article className="table-row payroll-table-grid" key={worker.workerId}>
-              <div>
-                <strong>{worker.name}</strong>
-                <span className="activity-meta">{worker.trade || "Sin oficio"} · {worker.email || "Sin usuario ligado"}</span>
+            <article className="table-row record-card payroll-record-card" key={worker.workerId}>
+              <div className="record-main">
+                <div>
+                  <p className="record-label">Trabajador</p>
+                  <strong>{worker.name}</strong>
+                  <span className="activity-meta">{worker.trade || "Sin oficio"} · {worker.email || "Sin usuario ligado"}</span>
+                </div>
+                <StatusBadge label={frequencyLabel(worker.paymentFrequency)} tone="info" />
               </div>
-              <div>
+
+              <div className="record-field highlight">
+                <span>Horas por pagar</span>
                 <strong>{worker.pendingHours.toFixed(2)} h</strong>
-                <span className="activity-meta">Descansos {formatHours(worker.pendingBreakSeconds)} h · {worker.pendingEntries} jornadas</span>
               </div>
-              <div>
+              <div className="record-field">
+                <span>Descansos descontados</span>
+                <strong>{formatHours(worker.pendingBreakSeconds)} h</strong>
+                <span className="activity-meta">{worker.pendingEntries} jornadas cerradas</span>
+              </div>
+              <div className="record-field highlight">
+                <span>Total por pagar</span>
                 <strong>{formatMoney(worker.pendingAmount, worker.currency)}</strong>
-                <span className="activity-meta">{worker.payType === "daily" ? `${formatMoney(worker.dailyRate, worker.currency)} / dia` : `${formatMoney(worker.hourlyRate, worker.currency)} / hora`}</span>
               </div>
-              <StatusBadge label={frequencyLabel(worker.paymentFrequency)} tone="info" />
-              <div className="segmented-actions">
+              <div className="record-field">
+                <span>Tarifa configurada</span>
+                <strong>{worker.payType === "daily" ? `${formatMoney(worker.dailyRate, worker.currency)} / dia` : `${formatMoney(worker.hourlyRate, worker.currency)} / hora`}</strong>
+                <span className="activity-meta">{worker.payType === "daily" ? "Pago por dia" : "Pago por hora"}</span>
+              </div>
+              <div className="segmented-actions record-actions">
                 <Button variant="secondary" type="button" icon={<Save size={16} />} onClick={() => openSettings(worker)}>
                   Tarifa
                 </Button>
@@ -203,15 +217,27 @@ export function PayrollRealPage({ session }: PayrollRealPageProps) {
         {payments.length === 0 ? <EmptyState title="Sin pagos registrados" description="Cuando pagues nomina apareceran los pagos y el movimiento financiero relacionado." /> : null}
         <div className="responsive-table">
           {payments.map((payment) => (
-            <article className="table-row payroll-payments-grid" key={payment.payrollPaymentId}>
-              <div>
-                <strong>{payment.workerName}</strong>
-                <span className="activity-meta">{payment.periodStart} a {payment.periodEnd}</span>
+            <article className="table-row record-card payroll-payment-record-card" key={payment.payrollPaymentId}>
+              <div className="record-main">
+                <div>
+                  <p className="record-label">Trabajador</p>
+                  <strong>{payment.workerName}</strong>
+                  <span className="activity-meta">{payment.periodStart} a {payment.periodEnd}</span>
+                </div>
+                <StatusBadge label="Egreso creado" tone={payment.financeTransactionId ? "success" : "warning"} />
               </div>
-              <span>{payment.payableHours.toFixed(2)} h</span>
-              <strong>{formatMoney(payment.amount, payment.currency)}</strong>
-              <StatusBadge label="Egreso creado" tone={payment.financeTransactionId ? "success" : "warning"} />
-              <span className="activity-meta">{formatDateTime(payment.paidAt)}</span>
+              <div className="record-field">
+                <span>Horas pagadas</span>
+                <strong>{payment.payableHours.toFixed(2)} h</strong>
+              </div>
+              <div className="record-field highlight">
+                <span>Total pagado</span>
+                <strong>{formatMoney(payment.amount, payment.currency)}</strong>
+              </div>
+              <div className="record-field">
+                <span>Fecha de pago</span>
+                <strong>{formatDateTime(payment.paidAt)}</strong>
+              </div>
             </article>
           ))}
         </div>

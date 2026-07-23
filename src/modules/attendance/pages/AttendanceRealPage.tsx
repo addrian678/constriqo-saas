@@ -1,6 +1,7 @@
 import { CheckCircle2, Clock3, RefreshCw, ShieldCheck, XCircle } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import type { AuthenticatedSession } from "../../../app/auth/authClient";
+import { BasicModal } from "../../../shared/components/BasicModal";
 import { Button } from "../../../shared/components/Button";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { PageHeader } from "../../../shared/components/PageHeader";
@@ -37,6 +38,7 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [reviewIntent, setReviewIntent] = useState<{ entry: TimeEntry; status: "approved" | "rejected" } | null>(null);
   const hasOpenEntries = entries.some((entry) => !entry.clockOut && (entry.status === "active" || entry.status === "on_break"));
   const now = useClockTicker(hasOpenEntries);
 
@@ -76,12 +78,17 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
     }
   }
 
-  async function review(entry: TimeEntry, status: "approved" | "rejected") {
+  async function review() {
+    if (!reviewIntent) {
+      return;
+    }
+    const { entry, status } = reviewIntent;
     setSaving(true);
     setMessage(null);
     try {
       await approveTimeEntry(session.sessionToken, entry.timeEntryId, { status });
       setMessage(status === "approved" ? "Jornada aprobada." : "Jornada rechazada.");
+      setReviewIntent(null);
       dispatchDataChanged("attendance");
       await refresh({ preserveMessage: true });
     } catch (error) {
@@ -155,28 +162,43 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
             const live = calculateEntryLiveSeconds(entry, now, attendanceLoadedAt);
             const isLive = !entry.clockOut && (entry.status === "active" || entry.status === "on_break");
             return (
-              <article className="table-row attendance-table-grid" key={entry.timeEntryId}>
-                <div>
-                  <strong>{entry.workerName}</strong>
-                  <span className="activity-meta">{entry.jobTitle || "Sin obra asignada"}</span>
+              <article className="table-row record-card attendance-record-card" key={entry.timeEntryId}>
+                <div className="record-main">
+                  <div>
+                    <p className="record-label">Trabajador</p>
+                    <strong>{entry.workerName}</strong>
+                    <span className="activity-meta">{entry.jobTitle || "Sin obra asignada"}</span>
+                  </div>
+                  <div className="record-badges">
+                    <StatusBadge label={statusLabels[entry.status]} tone={statusTone[entry.status]} />
+                    <StatusBadge label={locationLabel(entry)} tone={entry.locationStatus === "outside_radius" ? "danger" : entry.locationStatus === "inside_radius" ? "success" : "warning"} />
+                  </div>
                 </div>
-                <div>
+
+                <div className="record-field">
+                  <span>Inicio de jornada</span>
                   <strong>{formatDateTime(entry.clockIn)}</strong>
-                  <span className="activity-meta">{entry.clockOut ? formatDateTime(entry.clockOut) : "Jornada abierta"}</span>
                 </div>
-                <StatusBadge label={statusLabels[entry.status]} tone={statusTone[entry.status]} />
-                <StatusBadge label={locationLabel(entry)} tone={entry.locationStatus === "outside_radius" ? "danger" : entry.locationStatus === "inside_radius" ? "success" : "warning"} />
-                <div>
+                <div className="record-field">
+                  <span>Fin de jornada</span>
+                  <strong>{entry.clockOut ? formatDateTime(entry.clockOut) : "Jornada abierta"}</strong>
+                </div>
+                <div className="record-field highlight">
+                  <span>{isLive ? "Contador trabajado hoy" : "Horas trabajadas"}</span>
                   <strong>{isLive ? formatClockDuration(live.workedSeconds) : `${formatHours(live.workedSeconds)} h`}</strong>
-                  <span className="activity-meta">Descanso {isLive ? formatWorkDuration(live.breakSeconds) : `${formatHours(live.breakSeconds)} h`} · {entry.payrollStatus === "paid" ? "Pagada" : entry.payrollStatus === "excluded" ? "Excluida" : "Por pagar"}</span>
                   {isLive ? <span className="activity-meta">Estimado en vivo desde datos oficiales · sincroniza cada 60 s</span> : null}
+                </div>
+                <div className="record-field">
+                  <span>Descanso</span>
+                  <strong>{isLive ? formatWorkDuration(live.breakSeconds) : `${formatHours(live.breakSeconds)} h`}</strong>
+                  <span className="activity-meta">{entry.payrollStatus === "paid" ? "Pagada" : entry.payrollStatus === "excluded" ? "Excluida" : "Por pagar"}</span>
                   {entry.cancelReason ? <span className="activity-meta">Motivo: {entry.cancelReason}</span> : null}
                 </div>
-                <div className="segmented-actions">
-                  <Button variant="secondary" type="button" icon={<CheckCircle2 size={16} />} onClick={() => void review(entry, "approved")} disabled={saving || entry.status === "approved" || entry.status === "cancelled"}>
+                <div className="segmented-actions record-actions">
+                  <Button variant="secondary" type="button" icon={<CheckCircle2 size={16} />} onClick={() => setReviewIntent({ entry, status: "approved" })} disabled={saving || entry.status === "approved" || entry.status === "cancelled"}>
                     Aprobar
                   </Button>
-                  <Button variant="secondary" type="button" icon={<XCircle size={16} />} onClick={() => void review(entry, "rejected")} disabled={saving || entry.status === "rejected" || entry.status === "cancelled"}>
+                  <Button variant="secondary" type="button" icon={<XCircle size={16} />} onClick={() => setReviewIntent({ entry, status: "rejected" })} disabled={saving || entry.status === "rejected" || entry.status === "cancelled"}>
                     Rechazar
                   </Button>
                 </div>
@@ -185,6 +207,40 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
           })}
         </div>
       </section>
+
+      <BasicModal title={reviewIntent?.status === "approved" ? "Confirmar aprobacion" : "Confirmar rechazo"} open={Boolean(reviewIntent)} onClose={() => setReviewIntent(null)} footer={null}>
+        <div className="activity-list">
+          <p className="login-security-note">
+            {reviewIntent?.status === "approved"
+              ? "La jornada quedara aprobada para control interno y procesos relacionados. El registro no se elimina."
+              : "La jornada quedara rechazada para revision interna. El registro se conserva en el historial."}
+          </p>
+          {reviewIntent ? (
+            <div className="compact-fact-grid">
+              <span>
+                <strong>Trabajador</strong>
+                {reviewIntent.entry.workerName}
+              </span>
+              <span>
+                <strong>Inicio</strong>
+                {formatDateTime(reviewIntent.entry.clockIn)}
+              </span>
+              <span>
+                <strong>Horas</strong>
+                {formatHours(calculateEntryLiveSeconds(reviewIntent.entry, now, attendanceLoadedAt).workedSeconds)} h
+              </span>
+            </div>
+          ) : null}
+        </div>
+        <div className="segmented-actions">
+          <Button variant={reviewIntent?.status === "rejected" ? "danger" : "primary"} type="button" onClick={() => void review()} disabled={saving}>
+            {reviewIntent?.status === "approved" ? "Si, aprobar jornada" : "Si, rechazar jornada"}
+          </Button>
+          <Button variant="secondary" type="button" onClick={() => setReviewIntent(null)} disabled={saving}>
+            Cancelar
+          </Button>
+        </div>
+      </BasicModal>
     </section>
   );
 }

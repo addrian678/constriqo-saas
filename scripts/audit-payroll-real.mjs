@@ -42,6 +42,7 @@ check("Rutas payroll declaradas", routes.includes("/api/payroll/workers") && rou
 check("Manifest incluye payroll", manifest.includes('"payroll"') && manifest.includes("/api/payroll/workers"), "manifest");
 check("Frontend API real", apiClient.includes("listPayrollWorkers") && apiClient.includes("createPayrollPayment"), "api client");
 check("Pagina usa modales y no mock", page.includes("BasicModal") && !page.includes("mock-data") && page.includes("Nomina pagada"), "page");
+check("Pagina usa tarjetas legibles con etiquetas", page.includes("payroll-record-card") && page.includes("Horas por pagar") && page.includes("Total por pagar"), "record cards");
 check("Workspace incluye modulo nomina", workspace.includes("<PayrollRealPage") && workspace.includes('label: "Nomina"'), "workspace");
 check("Package script audit:payroll-real", Boolean(packageJson.scripts?.["audit:payroll-real"]), "audit script");
 check("Package script audit:payroll-integrity-real", Boolean(packageJson.scripts?.["audit:payroll-integrity-real"]), "real integrity audit script");
