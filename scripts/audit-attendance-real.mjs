@@ -35,6 +35,8 @@ check("Migration define matriz manager/worker", migration.includes("r.code = 'ma
 
 check("Attendance repository activa tenant context", repository.includes("set_config('app.tenant_id'"), "tenant context");
 check("Attendance repository resuelve worker por actor", repository.includes("resolveWorkerForActor") && repository.includes("context.actor.userId"), "worker actor");
+check("Attendance repository filtra historial por fechas sin salir del tenant", repository.includes("validateDateOnly") && repository.includes("te.clock_in >=") && repository.includes("te.clock_in <"), "date filters");
+check("Attendance repository limita lectura de historial", repository.includes("validateLimit") && repository.includes("LIMIT $"), "bounded history query");
 check("Attendance repository bloquea jornada doble", repository.includes("Ya tienes una jornada abierta"), "single open entry");
 check("Attendance repository exige obra asignada al trabajador", repository.includes("requireAssignedJobForWorker") && repository.includes("a.worker_id = $3"), "assigned job");
 check("Attendance repository bloquea fuera de radio antes de crear jornada", repository.includes("ATTENDANCE_LOCATION_BLOCKED") && repository.indexOf("attendanceBlockedError") < repository.indexOf("INSERT INTO time_entries"), "strict geofence");
@@ -57,6 +59,7 @@ check("Rutas attendance incluyen descansos", routes.includes("/api/attendance/br
 check("Rutas attendance separan review", routes.includes("attendance.review.visual") && routes.includes("/api/attendance/time-entries/:timeEntryId/approve"), "review route");
 
 check("Attendance API cubre worker y admin", apiClient.includes("getMyAttendance") && apiClient.includes("listTimeEntries"), "api read");
+check("Attendance API permite filtros seguros de historial", apiClient.includes("AttendanceListFilters") && apiClient.includes("startDate") && apiClient.includes("endDate") && apiClient.includes("limit"), "history filters api");
 check("Attendance API cubre acciones", apiClient.includes("clockIn") && apiClient.includes("clockOut") && apiClient.includes("startBreak"), "api actions");
 check("Attendance API cubre cancelar entrada y descanso planificado", apiClient.includes("cancelEntry") && apiClient.includes("plannedMinutes"), "api cancel planned");
 check("Attendance API expone intentos bloqueados", apiClient.includes("AttendanceBlockedAttempt") && apiClient.includes("blockedAttempts"), "blocked attempts api");
@@ -66,6 +69,8 @@ check("Admin attendance page muestra intentos bloqueados GPS", adminPage.include
 check("Admin attendance page muestra contador vivo sin llamadas por segundo", adminPage.includes("useClockTicker") && adminPage.includes("attendanceLoadedAt") && adminPage.includes("Estimado en vivo desde datos oficiales"), "admin live clock");
 check("Admin attendance page sincroniza jornadas abiertas de forma moderada", adminPage.includes("silent") && adminPage.includes("60_000"), "admin moderate refresh");
 check("Admin attendance page usa tarjetas legibles con etiquetas", adminPage.includes("attendance-record-card") && adminPage.includes("Inicio de jornada") && adminPage.includes("Horas trabajadas"), "admin record cards");
+check("Admin attendance page muestra historial por periodo", adminPage.includes("Historial de asistencia") && adminPage.includes("historyGroup") && adminPage.includes("attendance-history-card"), "history ui");
+check("Admin attendance page muestra estado aprobado/rechazado en acciones", adminPage.includes("review-state-button success") && adminPage.includes("review-state-button danger"), "review state buttons");
 check("Admin attendance page confirma aprobacion o rechazo", adminPage.includes("reviewIntent") && adminPage.includes("Confirmar aprobacion") && adminPage.includes("Si, rechazar jornada"), "admin review confirmation");
 check("Production workspace incluye asistencia", productionWorkspace.includes("<AttendanceRealPage") && productionWorkspace.includes('label: "Asistencia"'), "workspace");
 check("Worker workspace usa asistencia real", workerWorkspace.includes("getMyAttendance") && workerWorkspace.includes("Registrar entrada"), "worker real");

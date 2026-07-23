@@ -60,8 +60,33 @@ export type MyAttendance = {
   summary: Record<string, number>;
 };
 
-export async function listTimeEntries(token: string): Promise<{ items: TimeEntry[]; blockedAttempts: AttendanceBlockedAttempt[]; summary: Record<string, number> }> {
-  return requestJson<{ items: TimeEntry[]; blockedAttempts: AttendanceBlockedAttempt[]; summary: Record<string, number> }>("/api/attendance/time-entries", {
+export type AttendanceListFilters = {
+  status?: AttendanceStatus | "";
+  workerId?: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+};
+
+export async function listTimeEntries(token: string, filters: AttendanceListFilters = {}): Promise<{ items: TimeEntry[]; blockedAttempts: AttendanceBlockedAttempt[]; summary: Record<string, number> }> {
+  const params = new URLSearchParams();
+  if (filters.status) {
+    params.set("status", filters.status);
+  }
+  if (filters.workerId) {
+    params.set("workerId", filters.workerId);
+  }
+  if (filters.startDate) {
+    params.set("startDate", filters.startDate);
+  }
+  if (filters.endDate) {
+    params.set("endDate", filters.endDate);
+  }
+  if (filters.limit) {
+    params.set("limit", String(filters.limit));
+  }
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return requestJson<{ items: TimeEntry[]; blockedAttempts: AttendanceBlockedAttempt[]; summary: Record<string, number> }>(`/api/attendance/time-entries${suffix}`, {
     method: "GET",
     token,
   });

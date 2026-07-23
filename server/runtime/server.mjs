@@ -1319,6 +1319,9 @@ async function handleAttendanceRoute(options, request, response, url, route, con
       const result = await attendanceRepository.listTimeEntries(context, {
         status: url.searchParams.get("status") || "",
         workerId: url.searchParams.get("workerId") || "",
+        startDate: url.searchParams.get("startDate") || "",
+        endDate: url.searchParams.get("endDate") || "",
+        limit: url.searchParams.get("limit") || "",
       });
       sendJson(request, response, 200, { requestId, ...result });
       return;

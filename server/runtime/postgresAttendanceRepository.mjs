@@ -42,6 +42,9 @@ export function createPostgresAttendanceRepository(pool) {
 
   async function listTimeEntries(context, filters = {}) {
     return queryForTenant(context, async (client) => {
+      const startDate = validateDateOnly(filters.startDate);
+      const endDate = validateDateOnly(filters.endDate);
+      const limit = validateLimit(filters.limit, 150, 500);
       const params = [context.tenant.tenantId];
       const where = ["te.tenant_id = $1"];
       if (filters.status && ENTRY_STATUSES.has(filters.status)) {
@@ -52,6 +55,15 @@ export function createPostgresAttendanceRepository(pool) {
         params.push(String(filters.workerId));
         where.push(`te.worker_id = $${params.length}`);
       }
+      if (startDate) {
+        params.push(startDate);
+        where.push(`te.clock_in >= $${params.length}::date`);
+      }
+      if (endDate) {
+        params.push(endDate);
+        where.push(`te.clock_in < ($${params.length}::date + INTERVAL '1 day')`);
+      }
+      params.push(limit);
       const result = await client.query(
         `
           SELECT te.time_entry_id, te.worker_id, w.name AS worker_name, te.job_id, j.job_number, j.title AS job_title,
@@ -78,7 +90,7 @@ export function createPostgresAttendanceRepository(pool) {
           WHERE ${where.join(" AND ")}
           GROUP BY te.time_entry_id, w.name, j.job_number, j.title, open_break.break_entry_id, open_break.started_at, open_break.planned_minutes
           ORDER BY te.clock_in DESC
-          LIMIT 150
+          LIMIT $${params.length}
         `,
         params,
       );
@@ -92,10 +104,10 @@ export function createPostgresAttendanceRepository(pool) {
             count(*) FILTER (WHERE location_status = 'outside_radius')::integer AS outside_radius,
             count(*) FILTER (WHERE location_status IN ('missing_worker_location', 'job_without_location'))::integer AS location_warnings,
             count(*) FILTER (WHERE status = 'cancelled')::integer AS cancelled
-          FROM time_entries
-          WHERE tenant_id = $1
+          FROM time_entries te
+          WHERE ${where.join(" AND ")}
         `,
-        [context.tenant.tenantId],
+        params.slice(0, -1),
       );
       const blockedAttempts = await listBlockedAttempts(client, context.tenant.tenantId, filters);
       return { items: result.rows.map(mapTimeEntry), blockedAttempts, total: result.rowCount, summary: { ...(summary.rows[0] || {}), blocked_attempts: blockedAttempts.length } };
@@ -376,12 +388,24 @@ async function listWorkerEntries(client, tenantId, workerId) {
 }
 
 async function listBlockedAttempts(client, tenantId, filters = {}) {
+  const startDate = validateDateOnly(filters.startDate);
+  const endDate = validateDateOnly(filters.endDate);
+  const limit = validateLimit(filters.limit, 50, 200);
   const params = [tenantId];
   const where = ["ae.tenant_id = $1", "ae.exception_type = 'clock_in_blocked'"];
   if (filters.workerId) {
     params.push(String(filters.workerId));
     where.push(`ae.worker_id = $${params.length}`);
   }
+  if (startDate) {
+    params.push(startDate);
+    where.push(`ae.attempted_at >= $${params.length}::date`);
+  }
+  if (endDate) {
+    params.push(endDate);
+    where.push(`ae.attempted_at < ($${params.length}::date + INTERVAL '1 day')`);
+  }
+  params.push(limit);
   const result = await client.query(
     `
       SELECT ae.attendance_exception_id, ae.worker_id, w.name AS worker_name, ae.job_id, j.job_number, j.title AS job_title,
@@ -392,7 +416,7 @@ async function listBlockedAttempts(client, tenantId, filters = {}) {
       LEFT JOIN jobs j ON j.tenant_id = ae.tenant_id AND j.job_id = ae.job_id
       WHERE ${where.join(" AND ")}
       ORDER BY ae.attempted_at DESC, ae.created_at DESC
-      LIMIT 50
+      LIMIT $${params.length}
     `,
     params,
   );
@@ -556,6 +580,25 @@ function validateReviewStatus(value) {
     validationError("Estado de revision no valido.");
   }
   return status;
+}
+
+function validateDateOnly(value) {
+  const text = nullableText(value, 10);
+  if (!text) {
+    return "";
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    validationError("Fecha de asistencia no valida.");
+  }
+  return text;
+}
+
+function validateLimit(value, fallback, max) {
+  const numeric = Number(value || fallback);
+  if (!Number.isInteger(numeric) || numeric < 1) {
+    return fallback;
+  }
+  return Math.min(numeric, max);
 }
 
 function mapTimeEntry(row) {

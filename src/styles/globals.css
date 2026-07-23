@@ -678,6 +678,12 @@ button {
   letter-spacing: 0;
 }
 
+.section-subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .inline-alert {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1562,6 +1568,18 @@ button {
   grid-template-columns: minmax(240px, 1.2fr) minmax(130px, 0.65fr) minmax(150px, 0.75fr) minmax(170px, 0.75fr);
 }
 
+.attendance-history-card {
+  grid-template-columns: minmax(180px, 1.1fr) minmax(150px, 0.8fr) minmax(130px, 0.7fr) minmax(110px, 0.55fr) minmax(120px, 0.55fr);
+}
+
+.attendance-history-list {
+  margin-top: 14px;
+}
+
+.attendance-history-totals {
+  margin-top: 14px;
+}
+
 .record-main,
 .record-field {
   min-width: 0;
@@ -1603,6 +1621,31 @@ button {
 .record-actions {
   align-content: center;
   justify-content: end;
+}
+
+.review-state-button {
+  width: 100%;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-weight: 900;
+  border: 1px solid transparent;
+}
+
+.review-state-button.success {
+  color: #076b47;
+  background: #e5f7ee;
+  border-color: #b8ead1;
+}
+
+.review-state-button.danger {
+  color: #9a1818;
+  background: #fde8e8;
+  border-color: #f7c1c1;
 }
 
 .crm-table-grid {
@@ -2446,6 +2489,7 @@ button {
   .worker-document-grid,
   .attendance-table-grid,
   .attendance-record-card,
+  .attendance-history-card,
   .field-report-grid,
   .material-row-grid,
   .documents-table-grid,
