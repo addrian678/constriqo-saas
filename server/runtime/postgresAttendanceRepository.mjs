@@ -1,6 +1,6 @@
 import { createPostgresPoolFromEnv } from "./postgresAuthRepository.mjs";
 
-const ENTRY_STATUSES = new Set(["active", "on_break", "submitted", "approved", "rejected"]);
+const ENTRY_STATUSES = new Set(["active", "on_break", "submitted", "approved", "rejected", "cancelled"]);
 const REVIEW_STATUSES = new Set(["approved", "rejected"]);
 
 export function createPostgresAttendanceRepositoryFromEnv(env = process.env) {
@@ -53,13 +53,24 @@ export function createPostgresAttendanceRepository(pool) {
                  te.clock_in_lat, te.clock_in_lng, te.clock_in_accuracy_m,
                  te.clock_out_lat, te.clock_out_lng, te.clock_out_accuracy_m,
                  te.clock_in_note, te.clock_out_note, te.job_distance_meters, te.location_status, te.created_at,
-                 COALESCE(sum(EXTRACT(EPOCH FROM (COALESCE(be.ended_at, now()) - be.started_at))) FILTER (WHERE be.status IN ('closed', 'open')), 0)::integer AS break_seconds
+                 te.cancelled_at, te.cancelled_by_user_id, te.cancel_reason, te.payroll_status,
+                 COALESCE(sum(EXTRACT(EPOCH FROM (COALESCE(be.ended_at, now()) - be.started_at))) FILTER (WHERE be.status IN ('closed', 'open')), 0)::integer AS break_seconds,
+                 open_break.break_entry_id AS active_break_id,
+                 open_break.started_at AS active_break_started_at,
+                 open_break.planned_minutes AS active_break_planned_minutes
           FROM time_entries te
           JOIN workers w ON w.tenant_id = te.tenant_id AND w.worker_id = te.worker_id
           LEFT JOIN jobs j ON j.tenant_id = te.tenant_id AND j.job_id = te.job_id
           LEFT JOIN break_entries be ON be.tenant_id = te.tenant_id AND be.time_entry_id = te.time_entry_id
+          LEFT JOIN LATERAL (
+            SELECT break_entry_id, started_at, planned_minutes
+            FROM break_entries
+            WHERE tenant_id = te.tenant_id AND time_entry_id = te.time_entry_id AND status = 'open'
+            ORDER BY started_at DESC
+            LIMIT 1
+          ) open_break ON true
           WHERE ${where.join(" AND ")}
-          GROUP BY te.time_entry_id, w.name, j.job_number, j.title
+          GROUP BY te.time_entry_id, w.name, j.job_number, j.title, open_break.break_entry_id, open_break.started_at, open_break.planned_minutes
           ORDER BY te.clock_in DESC
           LIMIT 150
         `,
@@ -73,7 +84,8 @@ export function createPostgresAttendanceRepository(pool) {
             count(*) FILTER (WHERE status = 'submitted')::integer AS submitted,
             count(*) FILTER (WHERE status = 'approved')::integer AS approved,
             count(*) FILTER (WHERE location_status = 'outside_radius')::integer AS outside_radius,
-            count(*) FILTER (WHERE location_status IN ('missing_worker_location', 'job_without_location'))::integer AS location_warnings
+            count(*) FILTER (WHERE location_status IN ('missing_worker_location', 'job_without_location'))::integer AS location_warnings,
+            count(*) FILTER (WHERE status = 'cancelled')::integer AS cancelled
           FROM time_entries
           WHERE tenant_id = $1
         `,
@@ -162,7 +174,46 @@ export function createPostgresAttendanceRepository(pool) {
     });
   }
 
-  async function startBreak(context) {
+  async function cancelEntry(context, input = {}) {
+    const reason = nullableText(input.reason, 500);
+    return queryForTenant(context, async (client) => {
+      const worker = await resolveWorkerForActor(client, context);
+      const open = await findOpenEntry(client, context.tenant.tenantId, worker.worker_id);
+      if (!open) {
+        validationError("No tienes una entrada activa para cancelar.");
+      }
+      if (open.status === "on_break") {
+        validationError("No se puede cancelar una entrada con descanso iniciado. Finaliza la jornada con salida.");
+      }
+      const breakCount = await client.query(
+        "SELECT count(*)::integer AS total FROM break_entries WHERE tenant_id = $1 AND time_entry_id = $2",
+        [context.tenant.tenantId, open.time_entry_id],
+      );
+      if (Number(breakCount.rows[0]?.total || 0) > 0) {
+        validationError("No se puede cancelar una entrada que ya tiene descansos registrados.");
+      }
+      await client.query(
+        `
+          UPDATE time_entries
+          SET status = 'cancelled',
+              clock_out = COALESCE(clock_out, now()),
+              cancelled_at = now(),
+              cancelled_by_user_id = $3,
+              cancel_reason = $4,
+              payroll_status = 'excluded'
+          WHERE tenant_id = $1 AND time_entry_id = $2
+        `,
+        [context.tenant.tenantId, open.time_entry_id, context.actor.userId, reason],
+      );
+      const entry = await getTimeEntryById(client, context.tenant.tenantId, open.time_entry_id);
+      await writeAudit(client, context, "attendance.clock_in_cancelled", "time_entry", entry.timeEntryId, { workerId: worker.worker_id, reason: reason || "" });
+      await enqueueNotificationForRoles(client, context.tenant.tenantId, ["admin", "manager"], "Entrada cancelada", `${worker.name} cancelo una entrada registrada.`, "warning", entry.timeEntryId, "attendance.clock_in_cancelled");
+      return entry;
+    });
+  }
+
+  async function startBreak(context, input = {}) {
+    const plannedMinutes = validateBreakStartInput(input).plannedMinutes;
     return queryForTenant(context, async (client) => {
       const worker = await resolveWorkerForActor(client, context);
       const open = await findOpenEntry(client, context.tenant.tenantId, worker.worker_id);
@@ -173,13 +224,13 @@ export function createPostgresAttendanceRepository(pool) {
         validationError("Ya tienes un descanso abierto.");
       }
       await client.query(
-        "INSERT INTO break_entries (tenant_id, time_entry_id, started_at, status) VALUES ($1, $2, now(), 'open')",
-        [context.tenant.tenantId, open.time_entry_id],
+        "INSERT INTO break_entries (tenant_id, time_entry_id, started_at, status, planned_minutes) VALUES ($1, $2, now(), 'open', $3)",
+        [context.tenant.tenantId, open.time_entry_id, plannedMinutes],
       );
       await client.query("UPDATE time_entries SET status = 'on_break' WHERE tenant_id = $1 AND time_entry_id = $2", [context.tenant.tenantId, open.time_entry_id]);
       const entry = await getTimeEntryById(client, context.tenant.tenantId, open.time_entry_id);
-      await writeAudit(client, context, "attendance.break_started", "time_entry", entry.timeEntryId, { workerId: worker.worker_id });
-      await enqueueNotificationForRoles(client, context.tenant.tenantId, ["admin", "manager"], "Descanso iniciado", `${worker.name} inicio descanso.`, "info", entry.timeEntryId, "attendance.break_started");
+      await writeAudit(client, context, "attendance.break_started", "time_entry", entry.timeEntryId, { workerId: worker.worker_id, plannedMinutes });
+      await enqueueNotificationForRoles(client, context.tenant.tenantId, ["admin", "manager"], "Descanso iniciado", `${worker.name} inicio descanso por ${plannedMinutes} minutos.`, "info", entry.timeEntryId, "attendance.break_started");
       return entry;
     });
   }
@@ -268,6 +319,7 @@ export function createPostgresAttendanceRepository(pool) {
     listTimeEntries,
     getMyAttendance,
     clockIn,
+    cancelEntry,
     startBreak,
     endBreak,
     clockOut,
@@ -283,13 +335,24 @@ async function listWorkerEntries(client, tenantId, workerId) {
              te.clock_in_lat, te.clock_in_lng, te.clock_in_accuracy_m,
              te.clock_out_lat, te.clock_out_lng, te.clock_out_accuracy_m,
              te.clock_in_note, te.clock_out_note, te.job_distance_meters, te.location_status, te.created_at,
-             COALESCE(sum(EXTRACT(EPOCH FROM (COALESCE(be.ended_at, now()) - be.started_at))) FILTER (WHERE be.status IN ('closed', 'open')), 0)::integer AS break_seconds
+             te.cancelled_at, te.cancelled_by_user_id, te.cancel_reason, te.payroll_status,
+             COALESCE(sum(EXTRACT(EPOCH FROM (COALESCE(be.ended_at, now()) - be.started_at))) FILTER (WHERE be.status IN ('closed', 'open')), 0)::integer AS break_seconds,
+             open_break.break_entry_id AS active_break_id,
+             open_break.started_at AS active_break_started_at,
+             open_break.planned_minutes AS active_break_planned_minutes
       FROM time_entries te
       JOIN workers w ON w.tenant_id = te.tenant_id AND w.worker_id = te.worker_id
       LEFT JOIN jobs j ON j.tenant_id = te.tenant_id AND j.job_id = te.job_id
       LEFT JOIN break_entries be ON be.tenant_id = te.tenant_id AND be.time_entry_id = te.time_entry_id
+      LEFT JOIN LATERAL (
+        SELECT break_entry_id, started_at, planned_minutes
+        FROM break_entries
+        WHERE tenant_id = te.tenant_id AND time_entry_id = te.time_entry_id AND status = 'open'
+        ORDER BY started_at DESC
+        LIMIT 1
+      ) open_break ON true
       WHERE te.tenant_id = $1 AND te.worker_id = $2
-      GROUP BY te.time_entry_id, w.name, j.job_number, j.title
+      GROUP BY te.time_entry_id, w.name, j.job_number, j.title, open_break.break_entry_id, open_break.started_at, open_break.planned_minutes
       ORDER BY te.clock_in DESC
       LIMIT 30
     `,
@@ -306,13 +369,24 @@ async function getTimeEntryById(client, tenantId, timeEntryId) {
              te.clock_in_lat, te.clock_in_lng, te.clock_in_accuracy_m,
              te.clock_out_lat, te.clock_out_lng, te.clock_out_accuracy_m,
              te.clock_in_note, te.clock_out_note, te.job_distance_meters, te.location_status, te.created_at,
-             COALESCE(sum(EXTRACT(EPOCH FROM (COALESCE(be.ended_at, now()) - be.started_at))) FILTER (WHERE be.status IN ('closed', 'open')), 0)::integer AS break_seconds
+             te.cancelled_at, te.cancelled_by_user_id, te.cancel_reason, te.payroll_status,
+             COALESCE(sum(EXTRACT(EPOCH FROM (COALESCE(be.ended_at, now()) - be.started_at))) FILTER (WHERE be.status IN ('closed', 'open')), 0)::integer AS break_seconds,
+             open_break.break_entry_id AS active_break_id,
+             open_break.started_at AS active_break_started_at,
+             open_break.planned_minutes AS active_break_planned_minutes
       FROM time_entries te
       JOIN workers w ON w.tenant_id = te.tenant_id AND w.worker_id = te.worker_id
       LEFT JOIN jobs j ON j.tenant_id = te.tenant_id AND j.job_id = te.job_id
       LEFT JOIN break_entries be ON be.tenant_id = te.tenant_id AND be.time_entry_id = te.time_entry_id
+      LEFT JOIN LATERAL (
+        SELECT break_entry_id, started_at, planned_minutes
+        FROM break_entries
+        WHERE tenant_id = te.tenant_id AND time_entry_id = te.time_entry_id AND status = 'open'
+        ORDER BY started_at DESC
+        LIMIT 1
+      ) open_break ON true
       WHERE te.tenant_id = $1 AND te.time_entry_id = $2
-      GROUP BY te.time_entry_id, w.name, j.job_number, j.title
+      GROUP BY te.time_entry_id, w.name, j.job_number, j.title, open_break.break_entry_id, open_break.started_at, open_break.planned_minutes
     `,
     [tenantId, timeEntryId],
   );
@@ -387,6 +461,14 @@ function validateClockInput(input, options = {}) {
   };
 }
 
+function validateBreakStartInput(input = {}) {
+  const plannedMinutes = Number(input.plannedMinutes || 0);
+  if (!Number.isInteger(plannedMinutes) || ![30, 60, 120].includes(plannedMinutes)) {
+    validationError("Selecciona un descanso valido de 30, 60 o 120 minutos.");
+  }
+  return { plannedMinutes };
+}
+
 function validateLocation(value) {
   if (!value || value.lat === undefined || value.lng === undefined) {
     return null;
@@ -428,12 +510,22 @@ function mapTimeEntry(row) {
     serverRecorded: Boolean(row.server_recorded),
     breakSeconds,
     totalSeconds: row.clock_out ? Math.max(0, Math.round(grossSeconds - breakSeconds)) : 0,
+    activeBreak: row.active_break_id
+      ? {
+          breakEntryId: row.active_break_id,
+          startedAt: row.active_break_started_at?.toISOString?.() || row.active_break_started_at,
+          plannedMinutes: Number(row.active_break_planned_minutes || 0),
+        }
+      : null,
     clockInLocation: mapLocation(row.clock_in_lat, row.clock_in_lng, row.clock_in_accuracy_m),
     clockOutLocation: mapLocation(row.clock_out_lat, row.clock_out_lng, row.clock_out_accuracy_m),
     jobDistanceMeters: row.job_distance_meters === null || row.job_distance_meters === undefined ? null : Number(row.job_distance_meters),
     locationStatus: row.location_status || "not_checked",
     clockInNote: row.clock_in_note || "",
     clockOutNote: row.clock_out_note || "",
+    cancelledAt: row.cancelled_at?.toISOString?.() || row.cancelled_at || "",
+    cancelReason: row.cancel_reason || "",
+    payrollStatus: row.payroll_status || "unpaid",
   };
 }
 

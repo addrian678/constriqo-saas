@@ -38,7 +38,7 @@ check("Server persiste PDFs generados", server.includes("persistGeneratedPdf") &
 check("Estimate repo registra storage", estimateRepo.includes("recordGeneratedDocumentStorage") && estimateRepo.includes("documents.storage.persisted"), "estimate repo");
 check("Invoice repo registra storage", invoiceRepo.includes("recordGeneratedDocumentStorage") && invoiceRepo.includes("documents.storage.persisted"), "invoice repo");
 check("Documents repo expone metadata storage", documentsRepo.includes("storageProvider") && documentsRepo.includes("storageChecksumSha256") && documentsRepo.includes("storagePersisted"), "documents repo");
-check("Readiness exige migracion 0055", server.includes("0055_supabase_readiness_schema_migrations_rls.sql") && server.includes("SUPABASE_STORAGE_SECRETS"), "readiness");
+check("Readiness exige migracion productiva vigente", server.includes("0057_attendance_payroll_runtime.sql") && server.includes("SUPABASE_STORAGE_SECRETS"), "readiness");
 check("Env documenta local storage", envExample.includes("LOCAL_STORAGE_ROOT") && envExample.includes("SUPABASE_SERVICE_ROLE_KEY"), ".env.example");
 check("Runbook exige migracion actual", runbook.includes("0052_document_storage_persistence.sql") && runbook.includes("Supabase Storage"), "runbook");
 check("Smoke local valida storage", smoke.includes("storeGeneratedDocumentBuffer") && smoke.includes("local-dev storage writes file"), "smoke");

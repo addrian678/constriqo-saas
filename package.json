@@ -26,6 +26,7 @@
     "audit:jobs-real": "node scripts/audit-jobs-real.mjs",
     "audit:workforce-real": "node scripts/audit-workforce-real.mjs",
     "audit:attendance-real": "node scripts/audit-attendance-real.mjs",
+    "audit:payroll-real": "node scripts/audit-payroll-real.mjs",
     "audit:finance-real": "node scripts/audit-finance-real.mjs",
     "audit:invoicing-real": "node scripts/audit-invoicing-real.mjs",
     "audit:assets-real": "node scripts/audit-assets-real.mjs",
@@ -78,7 +79,7 @@
     "email:worker": "node server/runtime/emailWorker.mjs",
     "email:worker:once": "node server/runtime/emailWorker.mjs --once",
     "production:preflight": "node scripts/production-preflight.mjs",
-    "verify": "npm run audit:visual && npm run audit:database && npm run audit:operations && npm run audit:runtime && npm run audit:local-db && npm run audit:install && npm run audit:update && npm run audit:distribution && npm run audit:commercial-security && npm run audit:pwa && npm run audit:mobile-responsive && npm run audit:auth-entry && npm run audit:crm-real && npm run audit:estimates-real && npm run audit:localization-services && npm run audit:jobs-real && npm run audit:workforce-real && npm run audit:attendance-real && npm run audit:finance-real && npm run audit:invoicing-real && npm run audit:assets-real && npm run audit:notifications-real && npm run audit:marketing-real && npm run audit:reports-real && npm run audit:documents-real && npm run audit:super-admin-real && npm run audit:email-real && npm run audit:email-worker && npm run audit:storage-real && npm run audit:production-preflight && npm run audit:backup-restore && npm run audit:performance && npm run audit:form-modals && npm run smoke:test && npm run build",
+    "verify": "npm run audit:visual && npm run audit:database && npm run audit:operations && npm run audit:runtime && npm run audit:local-db && npm run audit:install && npm run audit:update && npm run audit:distribution && npm run audit:commercial-security && npm run audit:pwa && npm run audit:mobile-responsive && npm run audit:auth-entry && npm run audit:crm-real && npm run audit:estimates-real && npm run audit:localization-services && npm run audit:jobs-real && npm run audit:workforce-real && npm run audit:attendance-real && npm run audit:payroll-real && npm run audit:finance-real && npm run audit:invoicing-real && npm run audit:assets-real && npm run audit:notifications-real && npm run audit:marketing-real && npm run audit:reports-real && npm run audit:documents-real && npm run audit:super-admin-real && npm run audit:email-real && npm run audit:email-worker && npm run audit:storage-real && npm run audit:production-preflight && npm run audit:backup-restore && npm run audit:performance && npm run audit:form-modals && npm run smoke:test && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {

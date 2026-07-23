@@ -17,6 +17,7 @@ const statusLabels: Record<AttendanceStatus, string> = {
   submitted: "Pendiente",
   approved: "Aprobada",
   rejected: "Rechazada",
+  cancelled: "Cancelada",
 };
 
 const statusTone: Record<AttendanceStatus, "neutral" | "info" | "warning" | "success" | "danger"> = {
@@ -25,6 +26,7 @@ const statusTone: Record<AttendanceStatus, "neutral" | "info" | "warning" | "suc
   submitted: "info",
   approved: "success",
   rejected: "danger",
+  cancelled: "warning",
 };
 
 export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
@@ -89,6 +91,7 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
         <SummaryCard label="Abiertas" value={loading && entries.length === 0 ? "Cargando" : summary.open || 0} icon={<ShieldCheck size={20} />} />
         <SummaryCard label="Pendientes" value={loading && entries.length === 0 ? "Cargando" : summary.submitted || 0} icon={<RefreshCw size={20} />} />
         <SummaryCard label="Aprobadas" value={loading && entries.length === 0 ? "Cargando" : summary.approved || 0} icon={<CheckCircle2 size={20} />} />
+        <SummaryCard label="Canceladas" value={loading && entries.length === 0 ? "Cargando" : summary.cancelled || 0} icon={<XCircle size={20} />} />
         <SummaryCard label="Fuera de radio" value={loading && entries.length === 0 ? "Cargando" : summary.outside_radius || 0} icon={<XCircle size={20} />} />
         <SummaryCard label="Alertas GPS" value={loading && entries.length === 0 ? "Cargando" : summary.location_warnings || 0} icon={<RefreshCw size={20} />} />
       </section>
@@ -112,12 +115,16 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
               </div>
               <StatusBadge label={statusLabels[entry.status]} tone={statusTone[entry.status]} />
               <StatusBadge label={locationLabel(entry)} tone={entry.locationStatus === "outside_radius" ? "danger" : entry.locationStatus === "inside_radius" ? "success" : "warning"} />
-              <span>{formatHours(entry.totalSeconds)} h</span>
+              <div>
+                <strong>{formatHours(entry.totalSeconds)} h</strong>
+                <span className="activity-meta">Descanso {formatHours(entry.breakSeconds)} h · {entry.payrollStatus === "paid" ? "Pagada" : entry.payrollStatus === "excluded" ? "Excluida" : "Por pagar"}</span>
+                {entry.cancelReason ? <span className="activity-meta">Motivo: {entry.cancelReason}</span> : null}
+              </div>
               <div className="segmented-actions">
-                <Button variant="secondary" type="button" icon={<CheckCircle2 size={16} />} onClick={() => void review(entry, "approved")} disabled={saving || entry.status === "approved"}>
+                <Button variant="secondary" type="button" icon={<CheckCircle2 size={16} />} onClick={() => void review(entry, "approved")} disabled={saving || entry.status === "approved" || entry.status === "cancelled"}>
                   Aprobar
                 </Button>
-                <Button variant="secondary" type="button" icon={<XCircle size={16} />} onClick={() => void review(entry, "rejected")} disabled={saving || entry.status === "rejected"}>
+                <Button variant="secondary" type="button" icon={<XCircle size={16} />} onClick={() => void review(entry, "rejected")} disabled={saving || entry.status === "rejected" || entry.status === "cancelled"}>
                   Rechazar
                 </Button>
               </div>

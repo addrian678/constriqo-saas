@@ -24,7 +24,7 @@ const repositorySources = readdirSync("server/runtime")
   .join("\n");
 check("Runtime usa pool PostgreSQL compartido", serverSource.includes("const sharedPool") && serverSource.includes("createPostgresCrmRepository(sharedPool)") && serverSource.includes("createPostgresInvoiceRepository(sharedPool)"), "sharedPool");
 check("Runtime no crea pools tenant por modulo FromEnv", !serverSource.includes("createPostgresCrmRepositoryFromEnv") && !serverSource.includes("createPostgresInvoiceRepositoryFromEnv"), "no FromEnv tenant factories");
-check("Runtime readiness valida migracion requerida", serverSource.includes("0055_supabase_readiness_schema_migrations_rls.sql") && serverSource.includes("MIGRATIONS_NOT_READY"), "readiness migration");
+check("Runtime readiness valida migracion requerida", serverSource.includes("0057_attendance_payroll_runtime.sql") && serverSource.includes("MIGRATIONS_NOT_READY"), "readiness migration");
 check("Runtime errores internos usan mensaje publico", serverSource.includes("publicErrorMessage") && !serverSource.includes("message: error.message ||"), "public errors");
 check("Runtime no usa count mas uno para numeracion", !/count\(\*\)::integer\s*\+\s*1/iu.test(repositorySources), "document_sequences required");
 check("Runtime define helper de secuencias atomicas", readFileSync("server/runtime/documentSequences.mjs", "utf8").includes("ON CONFLICT (tenant_id, document_type, series, fiscal_year)"), "documentSequences");
@@ -81,7 +81,7 @@ try {
 
   const readyServer = createRuntimeServer({
     async readinessProbe() {
-      return { requiredMigration: "0055_supabase_readiness_schema_migrations_rls.sql" };
+      return { requiredMigration: "0057_attendance_payroll_runtime.sql" };
     },
   });
   const readyAddress = await new Promise((resolve) => {

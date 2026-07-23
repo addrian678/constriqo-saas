@@ -20,6 +20,7 @@ import { createPostgresJobRepository } from "./postgresJobRepository.mjs";
 import { createPostgresMarketingRepository } from "./postgresMarketingRepository.mjs";
 import { createPostgresNotificationsRepository } from "./postgresNotificationsRepository.mjs";
 import { createPostgresOrganizationRepository } from "./postgresOrganizationRepository.mjs";
+import { createPostgresPayrollRepository } from "./postgresPayrollRepository.mjs";
 import { createPostgresReportsRepository } from "./postgresReportsRepository.mjs";
 import { createPostgresServiceCatalogRepository } from "./postgresServiceCatalogRepository.mjs";
 import { createPostgresSuperAdminRepositoryFromEnv } from "./postgresSuperAdminRepository.mjs";
@@ -1336,8 +1337,16 @@ async function handleAttendanceRoute(options, request, response, url, route, con
       return;
     }
 
+    if (request.method === "POST" && route.path === "/api/attendance/cancel-entry") {
+      const body = await readJsonBody(request);
+      const entry = await attendanceRepository.cancelEntry(context, body);
+      sendJson(request, response, 200, { requestId, entry });
+      return;
+    }
+
     if (request.method === "POST" && route.path === "/api/attendance/break-start") {
-      const entry = await attendanceRepository.startBreak(context);
+      const body = await readJsonBody(request);
+      const entry = await attendanceRepository.startBreak(context, body);
       sendJson(request, response, 200, { requestId, entry });
       return;
     }
@@ -1614,6 +1623,56 @@ async function handleFinanceRoute(options, request, response, route, context, re
       code: error.code || "INTERNAL_ERROR",
       requestId,
       message: publicErrorMessage(error, "No se pudo completar la operacion financiera."),
+    });
+  }
+}
+
+async function handlePayrollRoute(options, request, response, url, route, context, requestId) {
+  const payrollRepository = options.payrollRepository || null;
+
+  if (!payrollRepository) {
+    sendJson(request, response, 503, {
+      code: "PAYROLL_REPOSITORY_NOT_CONFIGURED",
+      requestId,
+      message: "El repositorio real de nomina no esta conectado al runtime.",
+    });
+    return;
+  }
+
+  try {
+    if (request.method === "GET" && route.path === "/api/payroll/workers") {
+      const result = await payrollRepository.listWorkers(context, {
+        periodStart: url.searchParams.get("periodStart") || "",
+        periodEnd: url.searchParams.get("periodEnd") || "",
+      });
+      sendJson(request, response, 200, { requestId, ...result });
+      return;
+    }
+
+    if (request.method === "PATCH" && route.path === "/api/payroll/workers/:workerId/settings") {
+      const body = await readJsonBody(request);
+      const settings = await payrollRepository.updateWorkerSettings(context, route.params.workerId, body);
+      sendJson(request, response, 200, { requestId, settings });
+      return;
+    }
+
+    if (request.method === "POST" && route.path === "/api/payroll/workers/:workerId/payments") {
+      const body = await readJsonBody(request);
+      const payment = await payrollRepository.createPayment(context, route.params.workerId, body);
+      sendJson(request, response, 201, { requestId, payment });
+      return;
+    }
+
+    sendJson(request, response, 405, {
+      code: "METHOD_NOT_ALLOWED",
+      requestId,
+      message: "La ruta de nomina no soporta este metodo.",
+    });
+  } catch (error) {
+    sendJson(request, response, error.status || 500, {
+      code: error.code || "INTERNAL_ERROR",
+      requestId,
+      message: publicErrorMessage(error, "No se pudo completar la operacion de nomina."),
     });
   }
 }
@@ -2220,6 +2279,11 @@ export function createRuntimeServer(options = {}) {
         return;
       }
 
+      if (route.moduleId === "payroll") {
+        await handlePayrollRoute(options, request, response, url, route, contextResult.context, requestId);
+        return;
+      }
+
       if (route.moduleId === "assets-liabilities") {
         await handleAssetsRoute(options, request, response, route, contextResult.context, requestId);
         return;
@@ -2346,6 +2410,10 @@ export function startRuntimeServer(options = {}) {
     options.financeRepository === undefined && sharedPool
       ? createPostgresFinanceRepository(sharedPool)
       : options.financeRepository;
+  const payrollRepository =
+    options.payrollRepository === undefined && sharedPool
+      ? createPostgresPayrollRepository(sharedPool)
+      : options.payrollRepository;
   const assetsRepository =
     options.assetsRepository === undefined && sharedPool
       ? createPostgresAssetsRepository(sharedPool)
@@ -2408,7 +2476,7 @@ export function startRuntimeServer(options = {}) {
               WHERE version = $1 AND status = 'applied'
               LIMIT 1
             `,
-            ["0055_supabase_readiness_schema_migrations_rls.sql"],
+            ["0057_attendance_payroll_runtime.sql"],
           );
           if (migration.rowCount !== 1) {
             const error = new Error("Required migrations are not applied.");
@@ -2416,7 +2484,7 @@ export function startRuntimeServer(options = {}) {
             throw error;
           }
           return {
-            requiredMigration: "0055_supabase_readiness_schema_migrations_rls.sql",
+            requiredMigration: "0057_attendance_payroll_runtime.sql",
             providers: validateProviderReadiness(process.env),
           };
         }
@@ -2426,6 +2494,7 @@ export function startRuntimeServer(options = {}) {
     authService,
     attendanceRepository,
     financeRepository,
+    payrollRepository,
     assetsRepository,
     invoiceRepository,
     crmRepository,
@@ -2464,6 +2533,12 @@ export function startRuntimeServer(options = {}) {
   if (financeRepository?.close) {
     server.on("close", () => {
       void financeRepository.close();
+    });
+  }
+
+  if (payrollRepository?.close) {
+    server.on("close", () => {
+      void payrollRepository.close();
     });
   }
 

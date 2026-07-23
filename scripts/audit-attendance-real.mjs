@@ -34,6 +34,8 @@ check("Attendance repository activa tenant context", repository.includes("set_co
 check("Attendance repository resuelve worker por actor", repository.includes("resolveWorkerForActor") && repository.includes("context.actor.userId"), "worker actor");
 check("Attendance repository bloquea jornada doble", repository.includes("Ya tienes una jornada abierta"), "single open entry");
 check("Attendance repository maneja descanso", repository.includes("startBreak") && repository.includes("endBreak"), "breaks");
+check("Attendance repository maneja descanso planificado", repository.includes("planned_minutes") && repository.includes("validateBreakStartInput"), "planned break");
+check("Attendance repository permite cancelar entrada auditada", repository.includes("cancelEntry") && repository.includes("attendance.clock_in_cancelled"), "cancel entry");
 check("Attendance repository escribe auditoria", repository.includes("INSERT INTO audit_events") && repository.includes("attendance.clock_in"), "audit");
 check("Attendance repository crea notificacion", repository.includes("notification_queue") && repository.includes("Entrada registrada"), "notifications");
 check("Attendance repository no toma tenant desde input", !repository.includes("input.tenantId") && !repository.includes("body.tenantId"), "no tenant input");
@@ -44,15 +46,18 @@ check("Runtime devuelve 503 si no conectado", server.includes("ATTENDANCE_REPOSI
 
 check("Rutas attendance incluyen my day", routes.includes("/api/attendance/me"), "me route");
 check("Rutas attendance incluyen clock in/out", routes.includes("/api/attendance/clock-in") && routes.includes("/api/attendance/clock-out"), "clock routes");
+check("Rutas attendance incluyen cancelar entrada", routes.includes("/api/attendance/cancel-entry"), "cancel route");
 check("Rutas attendance incluyen descansos", routes.includes("/api/attendance/break-start") && routes.includes("/api/attendance/break-end"), "break routes");
 check("Rutas attendance separan review", routes.includes("attendance.review.visual") && routes.includes("/api/attendance/time-entries/:timeEntryId/approve"), "review route");
 
 check("Attendance API cubre worker y admin", apiClient.includes("getMyAttendance") && apiClient.includes("listTimeEntries"), "api read");
 check("Attendance API cubre acciones", apiClient.includes("clockIn") && apiClient.includes("clockOut") && apiClient.includes("startBreak"), "api actions");
+check("Attendance API cubre cancelar entrada y descanso planificado", apiClient.includes("cancelEntry") && apiClient.includes("plannedMinutes"), "api cancel planned");
 
 check("Admin attendance page no usa mock data", !adminPage.includes("mock-data") && adminPage.includes("listTimeEntries"), "admin real");
 check("Production workspace incluye asistencia", productionWorkspace.includes("<AttendanceRealPage") && productionWorkspace.includes('label: "Asistencia"'), "workspace");
 check("Worker workspace usa asistencia real", workerWorkspace.includes("getMyAttendance") && workerWorkspace.includes("Registrar entrada"), "worker real");
+check("Worker workspace usa confirmaciones antes de guardar", workerWorkspace.includes("Confirmar entrada") && workerWorkspace.includes("confirmAttendanceIntent"), "confirmations");
 check("Worker workspace usa puente nativo de ubicacion", workerWorkspace.includes("capturePointInTimeLocation"), "native bridge");
 check("Puente nativo captura geolocalizacion puntual", nativeCapabilities.includes("navigator.geolocation") && nativeCapabilities.includes("enableHighAccuracy"), "location");
 

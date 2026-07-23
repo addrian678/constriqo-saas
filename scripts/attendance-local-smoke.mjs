@@ -127,8 +127,9 @@ try {
   timeEntryId = clockIn.body.entry?.timeEntryId;
   check("Worker A registra entrada", clockIn.status === 201 && Boolean(timeEntryId), JSON.stringify(clockIn.body));
 
-  const breakStart = await request("worker-a", "/api/attendance/break-start", { method: "POST" });
+  const breakStart = await request("worker-a", "/api/attendance/break-start", { method: "POST", body: { plannedMinutes: 30 } });
   check("Worker A inicia descanso", breakStart.status === 200 && breakStart.body.entry?.status === "on_break", JSON.stringify(breakStart.body));
+  check("Descanso conserva duracion planificada", breakStart.body.entry?.activeBreak?.plannedMinutes === 30, JSON.stringify(breakStart.body));
 
   const breakEnd = await request("worker-a", "/api/attendance/break-end", { method: "POST" });
   check("Worker A termina descanso", breakEnd.status === 200 && breakEnd.body.entry?.status === "active", JSON.stringify(breakEnd.body));
@@ -151,10 +152,21 @@ try {
   });
   check("Manager A aprueba jornada", approval.status === 200 && approval.body.entry?.status === "approved", JSON.stringify(approval.body));
 
+  const secondClockIn = await request("worker-a", "/api/attendance/clock-in", {
+    method: "POST",
+    body: { jobId: jobA, location: { lat: 40.7608, lng: -111.891, accuracyM: 12 } },
+  });
+  check("Worker A puede registrar segunda entrada", secondClockIn.status === 201 && secondClockIn.body.entry?.status === "active", JSON.stringify(secondClockIn.body));
+  const cancelled = await request("worker-a", "/api/attendance/cancel-entry", {
+    method: "POST",
+    body: { reason: "Entrada de prueba cancelada" },
+  });
+  check("Worker A cancela entrada sin borrar historial", cancelled.status === 200 && cancelled.body.entry?.status === "cancelled", JSON.stringify(cancelled.body));
+
   const audit = await withTenantAdmin(tenantA, (client) =>
     client.query("SELECT count(*)::integer AS total FROM audit_events WHERE tenant_id = $1 AND module_id = 'attendance'", [tenantA]),
   );
-  check("Asistencia genera auditoria", audit.rows[0].total >= 4, JSON.stringify(audit.rows[0]));
+  check("Asistencia genera auditoria", audit.rows[0].total >= 6, JSON.stringify(audit.rows[0]));
 } finally {
   if (server) {
     await new Promise((resolve) => server.close(resolve));

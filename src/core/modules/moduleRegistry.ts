@@ -13,6 +13,7 @@ import { jobsModuleManifest } from "../../modules/jobs/moduleManifest";
 import { marketingModuleManifest } from "../../modules/marketing/moduleManifest";
 import { notificationsModuleManifest } from "../../modules/notifications/moduleManifest";
 import { organizationModuleManifest } from "../../modules/organization/moduleManifest";
+import { payrollModuleManifest } from "../../modules/payroll/moduleManifest";
 import { workforceModuleManifest } from "../../modules/workforce/moduleManifest";
 import { workProofsModuleManifest } from "../../modules/work-proofs/moduleManifest";
 
@@ -28,6 +29,7 @@ export const moduleRegistry: ModuleManifest[] = [
   invoicingModuleManifest,
   expensesModuleManifest,
   financeModuleManifest,
+  payrollModuleManifest,
   assetsModuleManifest,
   marketingModuleManifest,
   notificationsModuleManifest,

@@ -1,6 +1,6 @@
 import { requestJson } from "../../../app/auth/authClient";
 
-export type AttendanceStatus = "active" | "on_break" | "submitted" | "approved" | "rejected";
+export type AttendanceStatus = "active" | "on_break" | "submitted" | "approved" | "rejected" | "cancelled";
 
 export type AttendanceLocation = {
   lat: number;
@@ -21,12 +21,20 @@ export type TimeEntry = {
   submittedAt: string;
   breakSeconds: number;
   totalSeconds: number;
+  activeBreak?: {
+    breakEntryId: string;
+    startedAt: string;
+    plannedMinutes: number;
+  } | null;
   clockInLocation: AttendanceLocation;
   clockOutLocation: AttendanceLocation;
   jobDistanceMeters?: number | null;
   locationStatus?: "inside_radius" | "outside_radius" | "job_without_location" | "missing_worker_location" | "not_checked";
   clockInNote: string;
   clockOutNote: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+  payrollStatus?: "unpaid" | "paid" | "excluded";
 };
 
 export type MyAttendance = {
@@ -59,11 +67,20 @@ export async function clockIn(token: string, input: { jobId?: string | null; loc
   return response.entry;
 }
 
-export async function startBreak(token: string): Promise<TimeEntry> {
+export async function cancelEntry(token: string, input: { reason?: string } = {}): Promise<TimeEntry> {
+  const response = await requestJson<{ entry: TimeEntry }>("/api/attendance/cancel-entry", {
+    method: "POST",
+    token,
+    body: input,
+  });
+  return response.entry;
+}
+
+export async function startBreak(token: string, input: { plannedMinutes: number }): Promise<TimeEntry> {
   const response = await requestJson<{ entry: TimeEntry }>("/api/attendance/break-start", {
     method: "POST",
     token,
-    body: {},
+    body: input,
   });
   return response.entry;
 }

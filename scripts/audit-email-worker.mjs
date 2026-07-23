@@ -34,7 +34,7 @@ check("Worker procesa sandbox y SMTP", worker.includes('provider === "sandbox"')
 check("Worker implementa reintentos", worker.includes("retryDelaySeconds") && worker.includes("EMAIL_WORKER_MAX_ATTEMPTS") && worker.includes("email.delivery.retry_scheduled"), "retry");
 check("Worker escribe auditoria tenant", worker.includes("INSERT INTO audit_events") && worker.includes("SELECT set_config('app.tenant_id'"), "audit");
 check("Historial expone intentos", notificationsRepo.includes("attempt_count") && notificationsRepo.includes("provider_message_id"), "notifications history");
-check("Readiness exige migracion productiva vigente", server.includes("0055_supabase_readiness_schema_migrations_rls.sql") && server.includes("EMAIL_DELIVERY_WORKER_ENABLED"), "readiness");
+check("Readiness exige migracion productiva vigente", server.includes("0057_attendance_payroll_runtime.sql") && server.includes("EMAIL_DELIVERY_WORKER_ENABLED"), "readiness");
 check("Env documenta worker", envExample.includes("EMAIL_WORKER_DATABASE_URL") && envExample.includes("EMAIL_WORKER_MAX_ATTEMPTS") && envExample.includes("SMTP_SECURE"), ".env.example");
 check("Runbook documenta worker", runbook.includes("npm run email:worker") && runbook.includes("EMAIL_WORKER_DATABASE_URL"), "runbook");
 check("Smoke local valida worker", smoke.includes("processEmailDeliveryBatch") && smoke.includes("email delivery sandboxed by worker"), "smoke");

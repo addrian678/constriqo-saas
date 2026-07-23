@@ -25,9 +25,11 @@ import { ToastViewport } from "../shared/components/ToastViewport";
 import {
   clockIn,
   clockOut,
+  cancelEntry,
   endBreak,
   getMyAttendance,
   startBreak,
+  type AttendanceLocation,
   type MyAttendance,
 } from "../modules/attendance/api/attendanceClient";
 import { listWorkerTasks, type JobTask, type WorkerTask, updateWorkerTask } from "../modules/jobs/api/jobClient";
@@ -43,6 +45,12 @@ type WorkerProductionWorkspaceProps = {
 };
 
 type WorkerSection = "dashboard" | "attendance" | "checklist" | "alerts";
+type AttendanceIntent =
+  | { type: "clock-in"; location: AttendanceLocation; jobId: string }
+  | { type: "cancel-entry"; reason: string }
+  | { type: "break-start"; plannedMinutes: number }
+  | { type: "break-end" }
+  | { type: "clock-out"; location: AttendanceLocation };
 
 const taskStatusLabels: Record<JobTask["status"], string> = {
   pending: "Pendiente",
@@ -81,6 +89,9 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
   const [message, setMessage] = useState<string | null>(null);
   const [reportingTask, setReportingTask] = useState<WorkerTask | null>(null);
   const [reportNote, setReportNote] = useState("");
+  const [attendanceIntent, setAttendanceIntent] = useState<AttendanceIntent | null>(null);
+  const [breakMinutes, setBreakMinutes] = useState(30);
+  const [cancelReason, setCancelReason] = useState("");
 
   const activeTasks = useMemo(() => tasks.filter((task) => task.status !== "completed"), [tasks]);
   const completedTasks = useMemo(() => tasks.filter((task) => task.status === "completed"), [tasks]);
@@ -167,61 +178,76 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
     setSavingTaskId("attendance");
     setMessage(null);
     try {
-      await clockIn(session.sessionToken, { jobId: selectedClockJobId, location: await capturePointInTimeLocation() });
-      setMessage("Entrada registrada correctamente.");
-      setActiveSection("attendance");
-      dispatchDataChanged("attendance");
-      await refresh({ preserveMessage: true });
+      const location = await capturePointInTimeLocation();
+      setAttendanceIntent({ type: "clock-in", location, jobId: selectedClockJobId });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo registrar entrada.");
+      setMessage(error instanceof Error ? error.message : "No se pudo preparar la entrada.");
     } finally {
       setSavingTaskId(null);
     }
   }
 
   async function handleBreakStart() {
-    setSavingTaskId("attendance");
-    setMessage(null);
-    try {
-      await startBreak(session.sessionToken);
-      setMessage("Descanso iniciado.");
-      setActiveSection("attendance");
-      dispatchDataChanged("attendance");
-      await refresh({ preserveMessage: true });
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo iniciar descanso.");
-    } finally {
-      setSavingTaskId(null);
-    }
+    setBreakMinutes(30);
+    setAttendanceIntent({ type: "break-start", plannedMinutes: 30 });
   }
 
   async function handleBreakEnd() {
-    setSavingTaskId("attendance");
-    setMessage(null);
-    try {
-      await endBreak(session.sessionToken);
-      setMessage("Descanso terminado.");
-      setActiveSection("attendance");
-      dispatchDataChanged("attendance");
-      await refresh({ preserveMessage: true });
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo terminar descanso.");
-    } finally {
-      setSavingTaskId(null);
-    }
+    setAttendanceIntent({ type: "break-end" });
   }
 
   async function handleClockOut() {
     setSavingTaskId("attendance");
     setMessage(null);
     try {
-      await clockOut(session.sessionToken, { location: await capturePointInTimeLocation() });
-      setMessage("Salida registrada correctamente.");
+      const location = await capturePointInTimeLocation();
+      setAttendanceIntent({ type: "clock-out", location });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo preparar la salida.");
+    } finally {
+      setSavingTaskId(null);
+    }
+  }
+
+  async function handleCancelEntry() {
+    setCancelReason("");
+    setAttendanceIntent({ type: "cancel-entry", reason: "" });
+  }
+
+  async function confirmAttendanceIntent() {
+    if (!attendanceIntent) {
+      return;
+    }
+    setSavingTaskId("attendance");
+    setMessage(null);
+    try {
+      if (attendanceIntent.type === "clock-in") {
+        await clockIn(session.sessionToken, { jobId: attendanceIntent.jobId, location: attendanceIntent.location });
+        setMessage("Entrada registrada correctamente.");
+      }
+      if (attendanceIntent.type === "cancel-entry") {
+        await cancelEntry(session.sessionToken, { reason: cancelReason });
+        setMessage("Entrada cancelada y visible en asistencia.");
+      }
+      if (attendanceIntent.type === "break-start") {
+        await startBreak(session.sessionToken, { plannedMinutes: breakMinutes });
+        setMessage("Descanso iniciado correctamente.");
+      }
+      if (attendanceIntent.type === "break-end") {
+        await endBreak(session.sessionToken);
+        setMessage("Descanso terminado correctamente.");
+      }
+      if (attendanceIntent.type === "clock-out") {
+        await clockOut(session.sessionToken, { location: attendanceIntent.location });
+        setMessage("Salida registrada correctamente.");
+      }
+      setAttendanceIntent(null);
       setActiveSection("attendance");
       dispatchDataChanged("attendance");
+      dispatchDataChanged("finance");
       await refresh({ preserveMessage: true });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo registrar salida.");
+      setMessage(error instanceof Error ? error.message : "No se pudo completar la accion de jornada.");
     } finally {
       setSavingTaskId(null);
     }
@@ -341,6 +367,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
               onClockIn={handleClockIn}
               onBreakStart={handleBreakStart}
               onBreakEnd={handleBreakEnd}
+              onCancelEntry={handleCancelEntry}
               onClockOut={handleClockOut}
             />
           ) : null}
@@ -393,6 +420,30 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
           </Button>
           <Button variant="secondary" type="button" onClick={() => setReportingTask(null)}>
             Cancelar
+          </Button>
+        </div>
+      </BasicModal>
+
+      <BasicModal title={attendanceIntentTitle(attendanceIntent)} open={Boolean(attendanceIntent)} onClose={() => setAttendanceIntent(null)} footer={null}>
+        <AttendanceConfirmBody
+          intent={attendanceIntent}
+          breakMinutes={breakMinutes}
+          setBreakMinutes={(value) => {
+            setBreakMinutes(value);
+            if (attendanceIntent?.type === "break-start") {
+              setAttendanceIntent({ type: "break-start", plannedMinutes: value });
+            }
+          }}
+          cancelReason={cancelReason}
+          setCancelReason={setCancelReason}
+          currentJobLabel={currentJobLabel || assignedJobs.find((job) => job.jobId === selectedClockJobId)?.jobTitle || ""}
+        />
+        <div className="segmented-actions">
+          <Button variant={attendanceIntent?.type === "cancel-entry" ? "danger" : "primary"} type="button" onClick={() => void confirmAttendanceIntent()} disabled={savingTaskId === "attendance"}>
+            Confirmar
+          </Button>
+          <Button variant="secondary" type="button" onClick={() => setAttendanceIntent(null)} disabled={savingTaskId === "attendance"}>
+            Volver
           </Button>
         </div>
       </BasicModal>
@@ -484,6 +535,7 @@ function WorkerAttendance({
   onClockIn,
   onBreakStart,
   onBreakEnd,
+  onCancelEntry,
   onClockOut,
 }: {
   attendance: MyAttendance | null;
@@ -493,8 +545,9 @@ function WorkerAttendance({
   saving: boolean;
   currentJobLabel: string;
   onClockIn: () => Promise<void>;
-  onBreakStart: () => Promise<void>;
-  onBreakEnd: () => Promise<void>;
+  onBreakStart: () => void;
+  onBreakEnd: () => void;
+  onCancelEntry: () => void;
   onClockOut: () => Promise<void>;
 }) {
   const openStatus = attendance?.openEntry?.status || "";
@@ -508,6 +561,7 @@ function WorkerAttendance({
         <StatusBadge label={openStatus || "sin_jornada"} tone={attendance?.openEntry ? "success" : "neutral"} />
       </div>
       {currentJobLabel ? <p className="login-security-note">Jornada activa en {currentJobLabel}.</p> : null}
+      {attendance?.openEntry?.activeBreak ? <BreakCountdown activeBreak={attendance.openEntry.activeBreak} /> : null}
       <label className="form-control" style={{ marginTop: 12 }}>
         <span>Obra para registrar entrada</span>
         <select className="select" value={selectedClockJobId} onChange={(event) => setSelectedClockJobId(event.target.value)} disabled={Boolean(attendance?.openEntry)}>
@@ -526,6 +580,9 @@ function WorkerAttendance({
         <Button variant="secondary" type="button" icon={<Coffee size={18} />} onClick={() => void onBreakStart()} disabled={openStatus !== "active" || saving}>
           Iniciar descanso
         </Button>
+        <Button variant="secondary" type="button" icon={<AlertTriangle size={18} />} onClick={() => void onCancelEntry()} disabled={openStatus !== "active" || saving}>
+          Cancelar entrada
+        </Button>
         <Button variant="secondary" type="button" icon={<Clock3 size={18} />} onClick={() => void onBreakEnd()} disabled={openStatus !== "on_break" || saving}>
           Terminar descanso
         </Button>
@@ -535,6 +592,139 @@ function WorkerAttendance({
       </div>
     </section>
   );
+}
+
+function AttendanceConfirmBody({
+  intent,
+  breakMinutes,
+  setBreakMinutes,
+  cancelReason,
+  setCancelReason,
+  currentJobLabel,
+}: {
+  intent: AttendanceIntent | null;
+  breakMinutes: number;
+  setBreakMinutes: (value: number) => void;
+  cancelReason: string;
+  setCancelReason: (value: string) => void;
+  currentJobLabel: string;
+}) {
+  if (!intent) {
+    return null;
+  }
+  if (intent.type === "clock-in") {
+    return (
+      <div className="activity-list">
+        <p className="login-security-note">Confirma que quieres registrar entrada en {currentJobLabel || "la obra seleccionada"}. La ubicacion se guarda solo para esta accion.</p>
+        <LocationPreview location={intent.location} />
+      </div>
+    );
+  }
+  if (intent.type === "cancel-entry") {
+    return (
+      <div className="activity-list">
+        <p className="login-security-note">La entrada quedara cancelada y visible para el administrador en el historial de asistencia. Esta accion no elimina datos.</p>
+        <label className="form-control">
+          <span>Motivo opcional</span>
+          <textarea className="input" rows={3} value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} placeholder="Ejemplo: registre entrada por error." />
+        </label>
+      </div>
+    );
+  }
+  if (intent.type === "break-start") {
+    return (
+      <div className="activity-list">
+        <p className="login-security-note">El descanso no cuenta como tiempo trabajado. Al confirmarlo, esta accion es irreversible y deberas finalizarlo cuando vuelvas a trabajar.</p>
+        <label className="form-control">
+          <span>Tiempo de descanso</span>
+          <select className="select" value={breakMinutes} onChange={(event) => setBreakMinutes(Number(event.target.value))}>
+            <option value={30}>30 minutos</option>
+            <option value={60}>1 hora</option>
+            <option value={120}>2 horas</option>
+          </select>
+        </label>
+      </div>
+    );
+  }
+  if (intent.type === "break-end") {
+    return <p className="login-security-note">Confirma que ya terminaste el descanso. Esta accion es irreversible y el tiempo siguiente vuelve a contar como jornada trabajada.</p>;
+  }
+  return (
+    <div className="activity-list">
+      <p className="login-security-note">Confirma que quieres terminar la jornada. Esta accion es irreversible y guardara tu ubicacion puntual de salida.</p>
+      <LocationPreview location={intent.location} />
+    </div>
+  );
+}
+
+function LocationPreview({ location }: { location: AttendanceLocation }) {
+  if (!location) {
+    return <StatusBadge label="GPS no disponible" tone="warning" />;
+  }
+  return (
+    <div className="compact-fact-grid">
+      <span>
+        <strong>Latitud</strong>
+        {location.lat.toFixed(6)}
+      </span>
+      <span>
+        <strong>Longitud</strong>
+        {location.lng.toFixed(6)}
+      </span>
+      <span>
+        <strong>Precision</strong>
+        {location.accuracyM ? `${Math.round(location.accuracyM)} m` : "No informada"}
+      </span>
+    </div>
+  );
+}
+
+function BreakCountdown({ activeBreak }: { activeBreak: NonNullable<NonNullable<MyAttendance["openEntry"]>["activeBreak"]> }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const plannedMs = activeBreak.plannedMinutes * 60_000;
+  const elapsedMs = now - new Date(activeBreak.startedAt).getTime();
+  const remainingSeconds = Math.max(0, Math.ceil((plannedMs - elapsedMs) / 1000));
+  const expired = remainingSeconds <= 0;
+  return (
+    <div className={`global-retention-banner ${expired ? "danger" : "warning"}`} role="status">
+      <Coffee size={18} />
+      <span>
+        <strong>{expired ? "Descanso terminado" : "Descanso en curso"}</strong>
+        <small>{expired ? "Tu tiempo planificado finalizo. Confirma terminar descanso para volver a jornada activa." : `Tiempo restante: ${formatDuration(remainingSeconds)}`}</small>
+      </span>
+    </div>
+  );
+}
+
+function attendanceIntentTitle(intent: AttendanceIntent | null) {
+  if (!intent) {
+    return "Confirmar accion";
+  }
+  if (intent.type === "clock-in") {
+    return "Confirmar entrada";
+  }
+  if (intent.type === "cancel-entry") {
+    return "Cancelar entrada";
+  }
+  if (intent.type === "break-start") {
+    return "Iniciar descanso";
+  }
+  if (intent.type === "break-end") {
+    return "Terminar descanso";
+  }
+  return "Confirmar salida";
+}
+
+function formatDuration(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
 }
 
 function WorkerChecklist({

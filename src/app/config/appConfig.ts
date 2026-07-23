@@ -15,6 +15,7 @@ export const appConfig = {
     "invoicing",
     "expenses",
     "finance",
+    "payroll",
     "assets-liabilities",
     "marketing",
     "notifications-audit-reports",

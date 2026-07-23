@@ -1696,7 +1696,7 @@ Se agrega una fase tecnica para convertir el email real en un flujo operable y a
    - El worker debe fijar contexto tenant al escribir estado/auditoria.
 
 5. Preparacion para produccion
-   - `/ready` exige que las migraciones productivas vigentes esten aplicadas; esta fase introduce `0051_email_delivery_worker_outbox.sql`.
+   - `/ready` exige que las migraciones productivas vigentes esten aplicadas; esta fase introdujo `0051_email_delivery_worker_outbox.sql` y actualmente requiere `0057_attendance_payroll_runtime.sql`.
    - Produccion exige `EMAIL_DELIVERY_WORKER_ENABLED=true`.
    - SMTP real requiere dominio verificado, SPF/DKIM/DMARC y secretos fuera del repositorio.
    - Antes de abrir clientes reales se debe probar `npm run smoke:email-worker-local` y envio real a cuentas internas.
@@ -1728,7 +1728,7 @@ Se agrega persistencia fisica para PDFs generados y preparacion de migracion fut
    - Limpieza semestral sigue borrando solo referencia/archivo pesado archivado, no auditoria ni metadata.
 
 5. Readiness y pruebas
-   - `/ready` exige `0055_supabase_readiness_schema_migrations_rls.sql`.
+   - `/ready` exige la migracion productiva vigente `0057_attendance_payroll_runtime.sql`.
    - Se agrega `npm run audit:storage-real`.
    - Se agrega `npm run smoke:storage-local`.
    - Antes de produccion real se debe generar al menos una factura/cotizacion y comprobar archivo en bucket privado.
@@ -1746,7 +1746,7 @@ Se agrega una verificacion automatica antes de conectar clientes reales:
    - Dominio HTTPS (`APP_BASE_URL` y `VITE_API_BASE_URL` si aplica).
    - Secretos base (`SESSION_TOKEN_PEPPER`, `AUTH_MFA_ENCRYPTION_KEY`).
    - `DATABASE_URL` runtime y `MIGRATION_DATABASE_URL`/`ADMIN_DATABASE_URL`.
-   - Migracion vigente `0055_supabase_readiness_schema_migrations_rls.sql`.
+   - Migracion vigente `0057_attendance_payroll_runtime.sql`.
    - Email real, SMTP y worker.
    - Storage real, Supabase URL, service role y bucket.
    - `EXTERNAL_PROVIDERS_VERIFIED=true` solo despues de pruebas reales.

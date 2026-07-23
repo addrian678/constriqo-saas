@@ -7,7 +7,7 @@ Este runbook prepara Constriqo para pasar de local/sandbox a staging o produccio
 - Local permite `EMAIL_PROVIDER=sandbox`.
 - Local permite `STORAGE_PROVIDER=not-configured`.
 - Produccion (`APP_ENV=production`) queda bloqueada por `/ready` si faltan dominio HTTPS, email real, storage real o worker de email.
-- La base de datos debe tener aplicadas las migraciones productivas vigentes, incluida `0055_supabase_readiness_schema_migrations_rls.sql`, y la persistencia fisica de documentos de `0052_document_storage_persistence.sql`.
+- La base de datos debe tener aplicadas las migraciones productivas vigentes, incluida `0057_attendance_payroll_runtime.sql`, y la persistencia fisica de documentos de `0052_document_storage_persistence.sql`.
 - Las API keys y secretos no deben guardarse en frontend, Git, `.env.example`, PDF del plan ni capturas.
 
 ## Dominio
@@ -176,7 +176,7 @@ El comando valida:
 
 - dominio HTTPS,
 - secretos base,
-- base de datos y migracion `0055_supabase_readiness_schema_migrations_rls.sql`,
+- base de datos y migracion `0057_attendance_payroll_runtime.sql`,
 - email real y worker,
 - Supabase Storage,
 - proveedores externos verificados.

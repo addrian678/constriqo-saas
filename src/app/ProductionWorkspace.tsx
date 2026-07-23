@@ -1,4 +1,4 @@
-import { BarChart3, Bell, BriefcaseBusiness, Building2, Clock3, FileArchive, FileText, Home, Landmark, LockKeyhole, Megaphone, Menu, Receipt, Settings, Tags, UserCheck, Users, X, type LucideIcon } from "lucide-react";
+import { Banknote, BarChart3, Bell, BriefcaseBusiness, Building2, Clock3, FileArchive, FileText, Home, Landmark, LockKeyhole, Megaphone, Menu, Receipt, Settings, Tags, UserCheck, Users, X, type LucideIcon } from "lucide-react";
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import type { AuthenticatedSession } from "./auth/authClient";
 import { refreshTenantWorkspaceCache, warmTenantWorkspaceCache } from "./cache/workspaceCache";
@@ -17,6 +17,7 @@ const FinanceRealPage = lazy(() => import("../modules/finance/pages/FinanceRealP
 const InvoicingRealPage = lazy(() => import("../modules/invoicing/pages/InvoicingRealPage").then((module) => ({ default: module.InvoicingRealPage })));
 const JobsRealPage = lazy(() => import("../modules/jobs/pages/JobsRealPage").then((module) => ({ default: module.JobsRealPage })));
 const NotificationsAuditRealPage = lazy(() => import("../modules/notifications/pages/NotificationsAuditRealPage").then((module) => ({ default: module.NotificationsAuditRealPage })));
+const PayrollRealPage = lazy(() => import("../modules/payroll/pages/PayrollRealPage").then((module) => ({ default: module.PayrollRealPage })));
 const TenantSettingsRealPage = lazy(() => import("../modules/organization/pages/TenantSettingsRealPage").then((module) => ({ default: module.TenantSettingsRealPage })));
 const ReportsRealPage = lazy(() => import("../modules/reports/pages/ReportsRealPage").then((module) => ({ default: module.ReportsRealPage })));
 const ServiceCatalogRealPage = lazy(() => import("../modules/services/pages/ServiceCatalogRealPage").then((module) => ({ default: module.ServiceCatalogRealPage })));
@@ -28,7 +29,7 @@ type ProductionWorkspaceProps = {
   onLogout: () => void;
 };
 
-type WorkspaceModule = "home" | "crm" | "marketing" | "services" | "estimates" | "invoicing" | "jobs" | "workforce" | "attendance" | "finance" | "assets" | "documents" | "reports" | "notifications" | "settings";
+type WorkspaceModule = "home" | "crm" | "marketing" | "services" | "estimates" | "invoicing" | "jobs" | "workforce" | "attendance" | "finance" | "payroll" | "assets" | "documents" | "reports" | "notifications" | "settings";
 
 const modules: Array<{ id: WorkspaceModule; label: string; icon: LucideIcon; capabilities?: string[] }> = [
   { id: "home", label: "Inicio", icon: Home, capabilities: ["reports.read", "finance.read", "clients.read"] },
@@ -41,6 +42,7 @@ const modules: Array<{ id: WorkspaceModule; label: string; icon: LucideIcon; cap
   { id: "workforce", label: "Trabajadores", icon: UserCheck, capabilities: ["workforce.read"] },
   { id: "attendance", label: "Asistencia", icon: Clock3, capabilities: ["attendance.read", "attendance.review.visual"] },
   { id: "finance", label: "Finanzas", icon: Landmark, capabilities: ["finance.read"] },
+  { id: "payroll", label: "Nomina", icon: Banknote, capabilities: ["payroll.read"] },
   { id: "assets", label: "Activos", icon: Building2, capabilities: ["assets.read", "liabilities.read"] },
   { id: "documents", label: "Archivo", icon: FileArchive, capabilities: ["documents.read"] },
   { id: "reports", label: "Reportes", icon: BarChart3, capabilities: ["reports.read"] },
@@ -283,6 +285,7 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
           {activeModule === "workforce" ? <WorkforceRealPage session={session} /> : null}
           {activeModule === "attendance" ? <AttendanceRealPage session={session} /> : null}
           {activeModule === "finance" ? <FinanceRealPage session={session} /> : null}
+          {activeModule === "payroll" ? <PayrollRealPage session={session} /> : null}
           {activeModule === "assets" ? <AssetsLiabilitiesRealPage session={session} /> : null}
           {activeModule === "documents" ? <DocumentsRealPage session={session} /> : null}
           {activeModule === "reports" ? <ReportsRealPage session={session} /> : null}

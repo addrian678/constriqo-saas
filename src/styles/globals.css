@@ -1859,6 +1859,14 @@ button {
   grid-template-columns: 90px minmax(260px, 1.2fr) 170px 140px 120px;
 }
 
+.payroll-table-grid {
+  grid-template-columns: minmax(220px, 1.1fr) minmax(150px, 0.8fr) minmax(160px, 0.8fr) 120px minmax(190px, 0.8fr);
+}
+
+.payroll-payments-grid {
+  grid-template-columns: minmax(240px, 1.2fr) 110px 140px 140px 170px;
+}
+
 .profitability-table-grid {
   grid-template-columns: minmax(260px, 1.2fr) 120px 120px 120px 170px;
 }
@@ -2387,6 +2395,8 @@ button {
   .expenses-table-grid,
   .expense-items-grid,
   .finance-table-grid,
+  .payroll-table-grid,
+  .payroll-payments-grid,
   .profitability-table-grid,
   .assets-table-grid,
   .liabilities-table-grid,
