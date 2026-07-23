@@ -27,6 +27,7 @@
     "audit:workforce-real": "node scripts/audit-workforce-real.mjs",
     "audit:attendance-real": "node scripts/audit-attendance-real.mjs",
     "audit:payroll-real": "node scripts/audit-payroll-real.mjs",
+    "audit:payroll-integrity-real": "node scripts/payroll-integrity-real-audit.mjs",
     "audit:finance-real": "node scripts/audit-finance-real.mjs",
     "audit:invoicing-real": "node scripts/audit-invoicing-real.mjs",
     "audit:assets-real": "node scripts/audit-assets-real.mjs",

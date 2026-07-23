@@ -113,6 +113,10 @@ export function createPostgresPayrollRepository(pool) {
     return queryForTenant(context, async (client) => {
       const worker = await requireWorkerForTenant(client, context.tenant.tenantId, workerId);
       const settings = await getOrCreateWorkerSettings(client, context.tenant.tenantId, workerId);
+      await lockPendingTimeEntriesForPayment(client, context.tenant.tenantId, workerId, {
+        periodStart: clean.periodStart,
+        periodEnd: clean.periodEnd,
+      });
       const pending = await calculatePendingForWorker(client, context.tenant.tenantId, workerId, {
         periodStart: clean.periodStart,
         periodEnd: clean.periodEnd,
@@ -295,6 +299,36 @@ async function calculatePendingForWorker(client, tenantId, workerId, filters = {
     payableSeconds: entries.reduce((sum, entry) => sum + entry.payableSeconds, 0),
     paidDays: dayKeys.size,
   };
+}
+
+async function lockPendingTimeEntriesForPayment(client, tenantId, workerId, filters = {}) {
+  const params = [tenantId, workerId];
+  const where = [
+    "tenant_id = $1",
+    "worker_id = $2",
+    "clock_out IS NOT NULL",
+    "status IN ('submitted', 'approved')",
+    "payroll_status = 'unpaid'",
+  ];
+  if (filters.periodStart) {
+    params.push(filters.periodStart);
+    where.push(`clock_in::date >= $${params.length}::date`);
+  }
+  if (filters.periodEnd) {
+    params.push(filters.periodEnd);
+    where.push(`clock_in::date <= $${params.length}::date`);
+  }
+
+  await client.query(
+    `
+      SELECT time_entry_id
+      FROM time_entries
+      WHERE ${where.join(" AND ")}
+      ORDER BY clock_in ASC
+      FOR UPDATE
+    `,
+    params,
+  );
 }
 
 async function listRecentPayments(client, tenantId) {
