@@ -188,7 +188,7 @@ export function NotificationsAuditRealPage({ session }: NotificationsAuditRealPa
               Auditoria
             </Button>
             <Button variant={activeView === "email" ? "primary" : "secondary"} type="button" icon={<Mail size={16} />} onClick={() => setActiveView("email")}>
-              Email sandbox
+              Correos preparados
             </Button>
             <Button variant={activeView === "preferences" ? "primary" : "secondary"} type="button" icon={<CheckCircle2 size={16} />} onClick={() => setActiveView("preferences")}>
               Preferencias
@@ -360,7 +360,7 @@ export function NotificationsAuditRealPage({ session }: NotificationsAuditRealPa
               ))}
             </div>
           ) : (
-            <EmptyState title="Sin emails preparados" description="Todavia no hay correos sandbox para esta empresa." />
+            <EmptyState title="Sin correos preparados" description="Todavia no hay correos manuales o automaticos preparados para esta empresa." />
           )
         ) : preferences.length > 0 ? (
           <div className="responsive-table" style={{ marginTop: 16 }}>

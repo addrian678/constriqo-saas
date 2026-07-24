@@ -32,6 +32,7 @@ const estimatePage = readProjectFile("src/modules/estimates/pages/EstimatesRealP
 const invoicePage = readProjectFile("src/modules/invoicing/pages/InvoicingRealPage.tsx");
 const estimateClient = readProjectFile("src/modules/estimates/api/estimateClient.ts");
 const invoiceClient = readProjectFile("src/modules/invoicing/api/invoiceClient.ts");
+const manualEmailHelper = readProjectFile("src/shared/email/manualEmail.ts");
 const notificationsClient = readProjectFile("src/modules/notifications/api/notificationsClient.ts");
 const notificationsPage = readProjectFile("src/modules/notifications/pages/NotificationsAuditRealPage.tsx");
 const smoke = readProjectFile("scripts/email-local-smoke.mjs");
@@ -49,10 +50,11 @@ check("Facturas usan config de proveedor email", invoiceRepo.includes("resolveEm
 check("Usuarios preparan email sin persistir clave", organizationRepo.includes("user.temporary_access") && organizationRepo.includes("user.password_reset") && organizationRepo.includes("passwordPersisted: false") && organizationRepo.includes("resolveEmailDeliveryConfig"), "organization repo");
 check("Trabajadores preparan email con proveedor configurable", workforceRepo.includes("worker.temporary_access") && workforceRepo.includes("resolveEmailDeliveryConfig") && workforceRepo.includes("passwordPersisted: false"), "workforce repo");
 check("Notificaciones listan historial email", notificationsRepo.includes("listEmailDeliveries") && notificationsRepo.includes("email_deliveries"), "notifications repo");
-check("Frontend cotizaciones no usa mailto", estimatePage.includes("sendEstimateEmail") && !estimatePage.includes("mailto:"), "estimate ui");
-check("Frontend facturas no usa mailto", invoicePage.includes("sendInvoiceEmail") && !invoicePage.includes("mailto:"), "invoice ui");
+check("Frontend cotizaciones abre correo manual y conserva cola futura", estimatePage.includes("sendEstimateEmail") && estimatePage.includes("openManualEmailDraft") && estimatePage.includes("Enviar con mi correo"), "estimate manual email ui");
+check("Frontend facturas abre correo manual y conserva cola futura", invoicePage.includes("sendInvoiceEmail") && invoicePage.includes("openManualEmailDraft") && invoicePage.includes("Enviar con mi correo"), "invoice manual email ui");
+check("Helper email manual usa mailto aislado", manualEmailHelper.includes("mailto:") && manualEmailHelper.includes("ManualEmailDraft"), "manual email helper");
 check("Clientes API email", estimateClient.includes("sendEstimateEmail") && invoiceClient.includes("sendInvoiceEmail"), "api clients");
-check("UI muestra historial email sandbox", notificationsClient.includes("listEmailDeliveries") && notificationsPage.includes("Email sandbox"), "notifications ui");
+check("UI muestra historial de correos preparados", notificationsClient.includes("listEmailDeliveries") && notificationsPage.includes("Correos preparados"), "notifications ui");
 check("Smoke valida sandbox", smoke.includes("estimate email sandboxed") && smoke.includes("invoice email sandboxed") && smoke.includes("tenant B cannot send tenant A estimate") && smoke.includes("user access email sandboxed"), "smoke");
 check("Package registra auditoria email", Boolean(packageJson.scripts?.["audit:email-real"]), "audit script");
 check("Package registra smoke email", Boolean(packageJson.scripts?.["smoke:email-local"]), "smoke script");

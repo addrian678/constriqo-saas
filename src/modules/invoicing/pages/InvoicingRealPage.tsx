@@ -8,6 +8,7 @@ import { BasicModal } from "../../../shared/components/BasicModal";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { PageHeader } from "../../../shared/components/PageHeader";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
+import { openManualEmailDraft } from "../../../shared/email/manualEmail";
 import { listCrmClients, type CrmClient } from "../../crm/api/crmClient";
 import { listEstimates, type EstimateSummary } from "../../estimates/api/estimateClient";
 import {
@@ -300,13 +301,38 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
     setSaving(true);
     setMessage(null);
     try {
-      const delivery = await sendInvoiceEmail(session.sessionToken, invoice.invoiceId);
-      setMessage(`Correo preparado en sandbox para ${delivery.recipientEmail}. No se envio fuera del sistema.`);
+      let recipientEmail = invoice.clientEmail || "";
+      let subject = `Factura ${invoice.invoiceNumber}`;
+      let auditWarning = "";
+      try {
+        const delivery = await sendInvoiceEmail(session.sessionToken, invoice.invoiceId);
+        recipientEmail = recipientEmail || delivery.recipientEmail;
+        subject = delivery.subject || subject;
+      } catch {
+        auditWarning = " No se pudo guardar la traza tecnica del correo; el envio manual sigue disponible.";
+      }
+      openManualEmailDraft({
+        to: recipientEmail,
+        subject,
+        body: [
+          `Hola ${invoice.clientName || ""},`,
+          "",
+          `Te comparto la factura ${invoice.invoiceNumber}: ${invoice.title}.`,
+          `Total: ${formatMoney(invoice.totalAmount, invoice.currency)}.`,
+          `Saldo pendiente: ${formatMoney(invoice.balanceAmount, invoice.currency)}.`,
+          invoice.dueDate ? `Fecha de vencimiento: ${invoice.dueDate}.` : "",
+          "",
+          "Adjunto el PDF de la factura para tu revision.",
+          "",
+          "Quedo atento a cualquier comentario.",
+        ].filter(Boolean).join("\n"),
+      });
+      setMessage(`Correo abierto en tu app de email para ${recipientEmail || "el destinatario"}. Adjunta el PDF si tu correo no lo agrego automaticamente.${auditWarning}`);
       dispatchDataChanged("invoicing");
       await refresh({ preserveMessage: true });
       await loadDetail(invoice.invoiceId);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo preparar el correo de factura.");
+      setMessage(error instanceof Error ? error.message : "No se pudo abrir el correo de factura.");
     } finally {
       setSaving(false);
     }
@@ -576,7 +602,7 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
                     PDF
                   </Button>
                   <Button variant="secondary" type="button" icon={<Mail size={16} />} onClick={() => handlePrepareEmail(invoice)} disabled={saving}>
-                    Correo
+                    Enviar con mi correo
                   </Button>
                   <Button variant="secondary" type="button" icon={<Printer size={16} />} onClick={() => void handlePrintInvoice(invoice)} disabled={saving}>
                     Abrir PDF
@@ -620,7 +646,7 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
                 PDF
               </Button>
               <Button variant="secondary" type="button" icon={<Mail size={16} />} onClick={() => handlePrepareEmail(selectedInvoice)} disabled={saving}>
-                Correo
+                Enviar con mi correo
               </Button>
               <Button variant="secondary" type="button" icon={<Printer size={16} />} onClick={() => void handlePrintInvoice(selectedInvoice)} disabled={saving}>
                 Abrir PDF

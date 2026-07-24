@@ -8,6 +8,7 @@ import { Button } from "../../../shared/components/Button";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { PageHeader } from "../../../shared/components/PageHeader";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
+import { openManualEmailDraft } from "../../../shared/email/manualEmail";
 import { listCrmClients, type CrmClient } from "../../crm/api/crmClient";
 import { getTenantSettings, type TenantSettings } from "../../organization/api/organizationClient";
 import { listServices, type ServiceCatalogItem, type UnitCode } from "../../services/api/serviceCatalogClient";
@@ -470,18 +471,41 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
   }
 
   async function handlePrepareEmail() {
-    if (!selectedEstimateId) {
+    if (!selectedEstimateId || !detail) {
       return;
     }
     setSaving(true);
     setMessage(null);
     try {
-      const delivery = await sendEstimateEmail(session.sessionToken, selectedEstimateId);
-      setMessage(`Correo preparado en sandbox para ${delivery.recipientEmail}. No se envio fuera del sistema.`);
+      let recipientEmail = detail.estimate.clientEmail || "";
+      let subject = `Cotizacion ${detail.estimate.estimateNumber}`;
+      let auditWarning = "";
+      try {
+        const delivery = await sendEstimateEmail(session.sessionToken, selectedEstimateId);
+        recipientEmail = recipientEmail || delivery.recipientEmail;
+        subject = delivery.subject || subject;
+      } catch {
+        auditWarning = " No se pudo guardar la traza tecnica del correo; el envio manual sigue disponible.";
+      }
+      openManualEmailDraft({
+        to: recipientEmail,
+        subject,
+        body: [
+          `Hola ${detail.estimate.clientName || ""},`,
+          "",
+          `Te comparto la cotizacion ${detail.estimate.estimateNumber}: ${detail.estimate.title}.`,
+          `Total: ${formatMoney(detail.estimate.totalAmount, detail.estimate.currency)}.`,
+          "",
+          "Adjunto el PDF de la cotizacion para tu revision.",
+          "",
+          "Quedo atento a tus comentarios.",
+        ].join("\n"),
+      });
+      setMessage(`Correo abierto en tu app de email para ${recipientEmail || "el destinatario"}. Adjunta el PDF si tu correo no lo agrego automaticamente.${auditWarning}`);
       dispatchDataChanged("estimates");
       await refresh(selectedEstimateId, { preserveMessage: true });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo preparar el correo de cotizacion.");
+      setMessage(error instanceof Error ? error.message : "No se pudo abrir el correo de cotizacion.");
     } finally {
       setSaving(false);
     }
@@ -858,7 +882,7 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
             </div>
             <div className="crm-client-actions">
               <Button variant="secondary" type="button" onClick={handlePrepareEmail} disabled={saving}>
-                Enviar / reenviar
+                Enviar con mi correo
               </Button>
               <Button variant="secondary" type="button" onClick={() => requestEstimateAction("review")} disabled={saving || detail.estimate.status === "approved" || detail.estimate.status === "cancelled"}>
                 En revision

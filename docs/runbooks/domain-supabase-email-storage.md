@@ -90,6 +90,27 @@ En produccion, `local-dev` y `not-configured` no son validos.
 
 ## Email Real
 
+### Fase inicial: enviar con el correo del cliente
+
+Para el primer despliegue comercial, Constriqo puede operar sin proveedor SMTP real:
+
+1. El usuario pulsa `Enviar con mi correo` en cotizaciones o facturas.
+2. La app crea una traza en `email_deliveries` para auditoria y prepara el asunto/cuerpo.
+3. El navegador o Android abre Gmail, Outlook o el cliente de correo instalado mediante `mailto`.
+4. El usuario revisa el mensaje, adjunta el PDF generado si aplica y pulsa enviar desde su propia cuenta.
+
+Reglas de esta fase:
+
+- No se guarda contraseña de correo del cliente.
+- No se exponen credenciales SMTP en frontend.
+- El sistema no debe marcar el correo como entregado automaticamente, porque el envio ocurre fuera de Constriqo.
+- El estado visible correcto es correo preparado/manual, no entrega garantizada.
+- Esta fase es economica y segura para el inicio, pero no sustituye trazabilidad completa de email automatico.
+
+### Microservicio futuro: SMTP automatico
+
+El envio automatico desde la app queda reservado como microservicio/configuracion avanzada de pago. Debe usar solo secretos de backend y worker separado.
+
 1. Verificar dominio/remitente con el proveedor elegido.
 2. Configurar SPF, DKIM y DMARC segun proveedor.
 3. Configurar:

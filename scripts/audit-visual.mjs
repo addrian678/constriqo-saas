@@ -131,6 +131,7 @@ const allowedFunctionalUiPatterns = new Map([
   ["mailto:", new Set([
     join(root, "src", "modules", "estimates", "pages", "EstimatesRealPage.tsx"),
     join(root, "src", "modules", "invoicing", "pages", "InvoicingRealPage.tsx"),
+    join(root, "src", "shared", "email", "manualEmail.ts"),
   ])],
   ["FileReader", new Set([join(root, "src", "modules", "organization", "pages", "TenantSettingsRealPage.tsx")])],
   ['type="file"', new Set([join(root, "src", "modules", "organization", "pages", "TenantSettingsRealPage.tsx")])],
