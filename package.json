@@ -41,6 +41,7 @@
     "audit:storage-real": "node scripts/audit-storage-real.mjs",
     "audit:production-preflight": "node scripts/audit-production-preflight.mjs",
     "audit:backup-restore": "node scripts/audit-backup-restore.mjs",
+    "audit:final-readiness": "node scripts/audit-final-readiness.mjs",
     "audit:performance": "node scripts/audit-performance.mjs",
     "audit:form-modals": "node scripts/audit-form-modals.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
@@ -71,6 +72,7 @@
     "smoke:email-local": "node scripts/email-local-smoke.mjs",
     "smoke:email-worker-local": "node scripts/email-worker-local-smoke.mjs",
     "smoke:storage-local": "node scripts/storage-local-smoke.mjs",
+    "smoke:storage-production": "node scripts/storage-production-smoke.mjs",
     "smoke:test": "node scripts/smoke-test.mjs",
     "release:update": "node scripts/update-release.mjs",
     "release:artifact": "node scripts/prepare-release-artifact.mjs",
@@ -79,8 +81,9 @@
     "dev:web-local": "vite --host 127.0.0.1 --port 5174",
     "email:worker": "node server/runtime/emailWorker.mjs",
     "email:worker:once": "node server/runtime/emailWorker.mjs --once",
+    "monitor:production": "node scripts/production-health-check.mjs",
     "production:preflight": "node scripts/production-preflight.mjs",
-    "verify": "npm run audit:visual && npm run audit:database && npm run audit:operations && npm run audit:runtime && npm run audit:local-db && npm run audit:install && npm run audit:update && npm run audit:distribution && npm run audit:commercial-security && npm run audit:pwa && npm run audit:mobile-responsive && npm run audit:auth-entry && npm run audit:crm-real && npm run audit:estimates-real && npm run audit:localization-services && npm run audit:jobs-real && npm run audit:workforce-real && npm run audit:attendance-real && npm run audit:payroll-real && npm run audit:finance-real && npm run audit:invoicing-real && npm run audit:assets-real && npm run audit:notifications-real && npm run audit:marketing-real && npm run audit:reports-real && npm run audit:documents-real && npm run audit:super-admin-real && npm run audit:email-real && npm run audit:email-worker && npm run audit:storage-real && npm run audit:production-preflight && npm run audit:backup-restore && npm run audit:performance && npm run audit:form-modals && npm run smoke:test && npm run build",
+    "verify": "npm run audit:visual && npm run audit:database && npm run audit:operations && npm run audit:runtime && npm run audit:local-db && npm run audit:install && npm run audit:update && npm run audit:distribution && npm run audit:commercial-security && npm run audit:pwa && npm run audit:mobile-responsive && npm run audit:auth-entry && npm run audit:crm-real && npm run audit:estimates-real && npm run audit:localization-services && npm run audit:jobs-real && npm run audit:workforce-real && npm run audit:attendance-real && npm run audit:payroll-real && npm run audit:finance-real && npm run audit:invoicing-real && npm run audit:assets-real && npm run audit:notifications-real && npm run audit:marketing-real && npm run audit:reports-real && npm run audit:documents-real && npm run audit:super-admin-real && npm run audit:email-real && npm run audit:email-worker && npm run audit:storage-real && npm run audit:production-preflight && npm run audit:backup-restore && npm run audit:final-readiness && npm run audit:performance && npm run audit:form-modals && npm run smoke:test && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {
