@@ -9,12 +9,14 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
+  Menu,
   MessageCircle,
   Moon,
   Phone,
   RefreshCw,
   ShieldCheck,
   Sun,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AuthenticatedSession } from "./auth/authClient";
@@ -81,6 +83,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
   useMemo(() => warmTenantWorkspaceCache(session), [session]);
 
   const [activeSection, setActiveSection] = useState<WorkerSection>("dashboard");
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
   const [tasks, setTasks] = useState<WorkerTask[]>([]);
   const [notifications, setNotifications] = useState<RuntimeNotification[]>([]);
@@ -134,6 +137,36 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
   useEffect(() => {
     void refresh();
   }, []);
+
+  useEffect(() => {
+    if (!drawerOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setDrawerOpen(false);
+      }
+    }
+
+    function handleResize() {
+      if (window.innerWidth > 1180) {
+        setDrawerOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [drawerOpen]);
 
   useEffect(() => {
     function handleDataChanged() {
@@ -310,9 +343,36 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
     }
   }
 
+  function selectWorkerSection(section: WorkerSection) {
+    setActiveSection(section);
+    setDrawerOpen(false);
+  }
+
+  function renderWorkerNavigation() {
+    return (
+    <nav className="worker-module-tabs" aria-label="Menu trabajador">
+      {workerSections.map((section) => (
+        <button
+          className={activeSection === section.id ? "active" : ""}
+          type="button"
+          onClick={() => selectWorkerSection(section.id)}
+          key={section.id}
+          data-worker-section={section.id}
+        >
+          {section.icon}
+          <span>{section.label}</span>
+        </button>
+      ))}
+    </nav>
+    );
+  }
+
   return (
     <main className={`app-shell production-shell worker-shell ${themeMode === "dark" ? "theme-dark" : "theme-light"}`}>
       <div className="production-topbar">
+        <button className="icon-button production-drawer-button" type="button" onClick={() => setDrawerOpen((current) => !current)} aria-label={drawerOpen ? "Cerrar menu" : "Abrir menu"}>
+          {drawerOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
         <div className="brand-lockup">
           {brandLogoUrl ? <img className="brand-logo-image" src={brandLogoUrl} alt="" /> : <span className="brand-mark">{brandInitials(brandName)}</span>}
           <div>
@@ -320,19 +380,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
             <p className="brand-subtitle">Espacio operativo Constriqo</p>
           </div>
         </div>
-        <nav className="worker-module-tabs" aria-label="Menu trabajador">
-          {workerSections.map((section) => (
-            <button
-              className={activeSection === section.id ? "active" : ""}
-              type="button"
-              onClick={() => setActiveSection(section.id)}
-              key={section.id}
-            >
-              {section.icon}
-              <span>{section.label}</span>
-            </button>
-          ))}
-        </nav>
+        {renderWorkerNavigation()}
         <div className="production-session">
           <button
             className="theme-toggle-button"
@@ -349,6 +397,70 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
           </Button>
         </div>
       </div>
+
+      {drawerOpen ? (
+        <>
+          <button
+            className="production-mobile-backdrop"
+            type="button"
+            onPointerDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setDrawerOpen(false);
+            }}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setDrawerOpen(false);
+            }}
+            aria-label="Cerrar menu"
+          />
+          <aside
+            className="production-mobile-drawer worker-mobile-drawer open"
+            aria-label="Menu movil trabajador"
+            aria-modal="true"
+            role="dialog"
+            onPointerDownCapture={(event) => {
+              const target = event.target as HTMLElement | null;
+              if (target?.closest("[data-worker-section]")) {
+                setDrawerOpen(false);
+              }
+            }}
+          >
+            <div className="production-drawer-header">
+              <div className="brand-lockup">
+                {brandLogoUrl ? <img className="brand-logo-image" src={brandLogoUrl} alt="" /> : <span className="brand-mark">{brandInitials(brandName)}</span>}
+                <div>
+                  <p className="brand-name">{brandName}</p>
+                  <p className="brand-subtitle">Espacio operativo Constriqo</p>
+                </div>
+              </div>
+              <button className="icon-button" type="button" onClick={() => setDrawerOpen(false)} aria-label="Cerrar menu">
+                <X size={18} />
+              </button>
+            </div>
+            <button className="production-drawer-close-button" type="button" onClick={() => setDrawerOpen(false)}>
+              Cerrar menu
+            </button>
+            <button
+              className="theme-toggle-button"
+              type="button"
+              onClick={() => setThemeMode((current) => (current === "dark" ? "light" : "dark"))}
+              aria-label={themeMode === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            >
+              {themeMode === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+              <span>{themeMode === "dark" ? "Modo claro" : "Modo oscuro"}</span>
+            </button>
+            {renderWorkerNavigation()}
+            <Button variant="secondary" type="button" icon={<LogOut size={16} />} onClick={onLogout} disabled={busy}>
+              Cerrar sesion
+            </Button>
+            <button className="production-drawer-close-button secondary" type="button" onClick={() => setDrawerOpen(false)}>
+              Volver al modulo
+            </button>
+          </aside>
+        </>
+      ) : null}
 
       <section className="content">
         <section className="production-module-content">

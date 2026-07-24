@@ -276,8 +276,8 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
 
         <div className="production-main-area">
           <div className="production-topbar">
-            <button className="icon-button production-drawer-button" type="button" onClick={() => setDrawerOpen(true)} aria-label="Abrir menu">
-              <Menu size={20} />
+            <button className="icon-button production-drawer-button" type="button" onClick={() => setDrawerOpen((current) => !current)} aria-label={drawerOpen ? "Cerrar menu" : "Abrir menu"}>
+              {drawerOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
             {brandLockup}
           </div>

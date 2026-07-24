@@ -27,12 +27,14 @@ check("Workspace cierra drawer al seleccionar", workspace.includes("setDrawerOpe
 check("Workspace usa backdrop movil propio", workspace.includes("production-mobile-backdrop") && css.includes(".production-mobile-backdrop"), "production backdrop");
 check("Workspace muestra boton visible para cerrar menu", workspace.includes("production-drawer-close-button") && workspace.includes("Cerrar menu") && css.includes(".production-drawer-close-button"), "drawer close button");
 check("Worker conserva acciones moviles principales", workerWorkspace.includes("production-topbar") && workerWorkspace.includes("worker-actions") && workerWorkspace.includes("Cerrar sesion"), "worker mobile actions");
+check("Worker usa drawer movil cerrable", workerWorkspace.includes("worker-mobile-drawer") && workerWorkspace.includes("setDrawerOpen(false)") && workerWorkspace.includes("data-worker-section"), "worker drawer");
 
 check("CSS oculta overflow horizontal global", css.includes("overflow-x: hidden") && css.includes(".app-shell") && css.includes("overflow-x: hidden;"), "overflow shell");
-check("CSS tiene breakpoint tablet", css.includes("@media (max-width: 920px)") && css.includes(".production-tabs-desktop") && css.includes("display: none"), "tablet drawer");
+check("CSS tiene breakpoint tablet amplio", css.includes("@media (max-width: 1180px)") && css.includes(".production-sidebar") && css.includes(".production-drawer-button"), "tablet drawer");
 check("CSS tiene breakpoint movil 640", css.includes("@media (max-width: 640px)") && css.includes(".production-topbar") && css.includes("grid-template-columns: 42px minmax(0, 1fr)"), "mobile topbar");
 check("Drawer movil scrollea", css.includes("height: 100dvh") && css.includes("overflow-y: auto") && css.includes("overscroll-behavior: contain"), "drawer scroll");
 check("Drawer movil no corta botones", css.includes(".production-mobile-drawer .production-tabs button") && css.includes("white-space: normal"), "drawer labels");
+check("Drawer trabajador oculta pestañas superiores en movil", css.includes(".worker-shell > .production-topbar > .worker-module-tabs") && css.includes(".production-mobile-drawer .worker-module-tabs"), "worker mobile nav");
 check("Tablas responsive controlan overflow", css.includes(".responsive-table") && css.includes("overflow-x: auto") && css.includes("-webkit-overflow-scrolling: touch"), "tables");
 check("Tablas colapsan en movil", css.includes(".documents-table-grid") && css.includes(".finance-table-grid") && css.includes("grid-template-columns: 1fr"), "mobile grids");
 check("Botones no desbordan", css.includes(".button") && css.includes("max-width: 100%") && css.includes("white-space: normal"), "buttons");
