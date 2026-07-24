@@ -1,5 +1,5 @@
 import { Banknote, BarChart3, Bell, BriefcaseBusiness, Building2, Clock3, FileArchive, FileText, Home, Landmark, LockKeyhole, Megaphone, Menu, Moon, Receipt, Settings, Sun, Tags, UserCheck, Users, X, type LucideIcon } from "lucide-react";
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import type { AuthenticatedSession } from "./auth/authClient";
 import { refreshTenantWorkspaceCache, warmTenantWorkspaceCache } from "./cache/workspaceCache";
 import { brand } from "../branding/brand";
@@ -64,8 +64,6 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
   const [tenantUsage, setTenantUsage] = useState<TenantUsage | null>(null);
   const [cleanupStatus, setCleanupStatus] = useState<DocumentCleanupStatus | null>(null);
   const [requiredPoliciesAccepted, setRequiredPoliciesAccepted] = useState(true);
-  const drawerRef = useRef<HTMLElement | null>(null);
-  const drawerButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -199,26 +197,13 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
       }
     }
 
-    function handlePointerDown(event: PointerEvent) {
-      const target = event.target as Node | null;
-      if (!target) {
-        return;
-      }
-      if (drawerRef.current?.contains(target) || drawerButtonRef.current?.contains(target)) {
-        return;
-      }
-      setDrawerOpen(false);
-    }
-
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("resize", handleResize);
-    window.addEventListener("pointerdown", handlePointerDown, true);
 
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("resize", handleResize);
-      window.removeEventListener("pointerdown", handlePointerDown, true);
     };
   }, [drawerOpen]);
 
@@ -291,7 +276,7 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
 
         <div className="production-main-area">
           <div className="production-topbar">
-            <button className="icon-button production-drawer-button" type="button" onClick={() => setDrawerOpen(true)} aria-label="Abrir menu" ref={drawerButtonRef}>
+            <button className="icon-button production-drawer-button" type="button" onClick={() => setDrawerOpen(true)} aria-label="Abrir menu">
               <Menu size={20} />
             </button>
             {brandLockup}
@@ -299,14 +284,27 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
 
           {drawerOpen ? (
             <>
-              <button className="mobile-sidebar-backdrop" type="button" onClick={() => setDrawerOpen(false)} aria-label="Cerrar menu" />
+              <button
+                className="production-mobile-backdrop"
+                type="button"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setDrawerOpen(false);
+                }}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setDrawerOpen(false);
+                }}
+                aria-label="Cerrar menu"
+              />
               <aside
                 className="production-mobile-drawer open"
                 aria-label="Menu movil"
                 aria-modal="true"
                 role="dialog"
-                ref={drawerRef}
-                onClickCapture={(event) => {
+                onPointerDownCapture={(event) => {
                   const target = event.target as HTMLElement | null;
                   if (target?.closest("[data-workspace-module]")) {
                     setDrawerOpen(false);
@@ -319,8 +317,14 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
                     <X size={18} />
                   </button>
                 </div>
+                <button className="production-drawer-close-button" type="button" onClick={() => setDrawerOpen(false)}>
+                  Cerrar menu
+                </button>
                 {renderThemeToggle()}
                 {navigation}
+                <button className="production-drawer-close-button secondary" type="button" onClick={() => setDrawerOpen(false)}>
+                  Volver al modulo
+                </button>
               </aside>
             </>
           ) : null}
