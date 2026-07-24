@@ -2479,7 +2479,7 @@ export function startRuntimeServer(options = {}) {
               WHERE version = $1 AND status = 'applied'
               LIMIT 1
             `,
-            ["0057_attendance_payroll_runtime.sql"],
+            ["0064_attendance_daily_limit_payroll.sql"],
           );
           if (migration.rowCount !== 1) {
             const error = new Error("Required migrations are not applied.");
@@ -2487,7 +2487,7 @@ export function startRuntimeServer(options = {}) {
             throw error;
           }
           return {
-            requiredMigration: "0057_attendance_payroll_runtime.sql",
+            requiredMigration: "0064_attendance_daily_limit_payroll.sql",
             providers: validateProviderReadiness(process.env),
           };
         }

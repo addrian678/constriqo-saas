@@ -1,7 +1,7 @@
 import pg from "pg";
 
 const { Client } = pg;
-const REQUIRED_MIGRATION = "0055_supabase_readiness_schema_migrations_rls.sql";
+const REQUIRED_MIGRATION = "0064_attendance_daily_limit_payroll.sql";
 const checks = [];
 
 function check(name, passed, details = "", severity = "error") {

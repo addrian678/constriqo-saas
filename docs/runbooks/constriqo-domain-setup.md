@@ -11,7 +11,7 @@ Separar marca, aplicacion y API para que el SaaS pueda crecer sin mezclar el log
 - `constriqo.com`: pagina comercial publica del producto.
 - `www.constriqo.com`: alias/redireccion a `constriqo.com`.
 - `app.constriqo.com`: acceso privado al SaaS para clientes finales.
-- `api.constriqo.com`: backend/API runtime de Constriqo/Constriqo.
+- `api.constriqo.com`: backend/API runtime de Constriqo.
 - `help.constriqo.com`: centro de ayuda futuro.
 - `status.constriqo.com`: estado de servicios futuro.
 
@@ -103,6 +103,8 @@ Cuando el SaaS ya este estable:
 
 - `cliente.constriqo.com`: entrada directa por empresa/tenant.
 - `*.constriqo.com`: wildcard DNS hacia el frontend, si el proveedor lo soporta.
+- Cada subdominio de cliente debe usar el `tenant_slug` publico de la empresa; nombres reservados como `app`, `api`, `www`, `help`, `status` y `admin` no se usan para clientes.
+- El frontend puede prellenar el codigo publico desde `cliente.constriqo.com`, pero el backend sigue validando usuario, contrasena, MFA, licencia, rol, capability y `tenant_id`.
 
 El backend/API no cambia por cliente. Todos los frontends hablan con:
 

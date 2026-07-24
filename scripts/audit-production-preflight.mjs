@@ -23,7 +23,7 @@ const runbook = readProjectFile("docs/runbooks/domain-supabase-email-storage.md"
 const plan = readProjectFile("docs/product-delivery-update-security-plan.md");
 const packageJson = JSON.parse(readProjectFile("package.json") || "{}");
 
-check("Preflight existe", preflight.includes("REQUIRED_MIGRATION") && preflight.includes("0055_supabase_readiness_schema_migrations_rls.sql"), "migration");
+check("Preflight existe", preflight.includes("REQUIRED_MIGRATION") && preflight.includes("0064_attendance_daily_limit_payroll.sql"), "migration");
 check("Preflight valida dominio HTTPS", preflight.includes("APP_BASE_URL usa HTTPS") && preflight.includes("VITE_API_BASE_URL"), "https");
 check("Preflight valida dominios SaaS permitidos", preflight.includes("APP_ALLOWED_ORIGIN_DOMAINS configurado") && preflight.includes("hasAllowedOriginDomains"), "allowed origins");
 check("Preflight valida secretos base", preflight.includes("SESSION_TOKEN_PEPPER") && preflight.includes("AUTH_MFA_ENCRYPTION_KEY"), "secrets");

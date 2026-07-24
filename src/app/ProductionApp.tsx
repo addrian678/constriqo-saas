@@ -30,7 +30,7 @@ export function ProductionApp({ entry = "tenant" }: ProductionAppProps) {
   const [session, setSession] = useState<AuthenticatedSession | null>(null);
   const [authStep, setAuthStep] = useState<AuthStep>({ kind: "login" });
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [loginTenantId, setLoginTenantId] = useState("");
+  const [loginTenantId, setLoginTenantId] = useState(() => (entry === "tenant" ? detectTenantSlugFromHostname() : ""));
   const [loginBranding, setLoginBranding] = useState<PublicTenantBranding | null>(null);
   const [busy, setBusy] = useState(false);
   const [restoringSession, setRestoringSession] = useState(true);
@@ -269,6 +269,7 @@ export function ProductionApp({ entry = "tenant" }: ProductionAppProps) {
           heroDescription: "Acceso privado para administradores, gerentes y trabajadores autorizados.",
           brandSubtitle: "Usuarios creados solo por administradores. Sin registro publico.",
           clientLogoUrl: loginBranding?.logoUrl || "",
+          initialTenantId: loginTenantId,
           onTenantIdChange: setLoginTenantId,
         }
       : {};
@@ -285,6 +286,26 @@ export function ProductionApp({ entry = "tenant" }: ProductionAppProps) {
       {...superAdminLoginProps}
     />
   );
+}
+
+function detectTenantSlugFromHostname() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  const hostname = window.location.hostname.toLowerCase();
+  const parts = hostname.split(".").filter(Boolean);
+  if (parts.length < 3) {
+    return "";
+  }
+
+  const slug = parts[0] || "";
+  const reserved = new Set(["app", "api", "www", "help", "status", "admin"]);
+  if (reserved.has(slug)) {
+    return "";
+  }
+
+  return /^[a-z0-9][a-z0-9-]{1,58}[a-z0-9]$/u.test(slug) ? slug : "";
 }
 
 function validateEntrySession(entry: ProductionAppProps["entry"], session: AuthenticatedSession) {

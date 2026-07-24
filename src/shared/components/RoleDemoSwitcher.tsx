@@ -1,6 +1,6 @@
 import { LockKeyhole } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { brand } from "../../branding/brand";
 import type { DemoRole } from "../../core/types/roles";
 import { Button } from "./Button";
@@ -32,6 +32,7 @@ export type LoginPageProps = {
   heroDescription?: string;
   brandSubtitle?: string;
   clientLogoUrl?: string;
+  initialTenantId?: string;
   onLogin?: (input: { tenantId: string; email: string; password: string }) => Promise<void> | void;
   onTenantIdChange?: (tenantId: string) => void;
   onTotpSetup?: (label?: string) => Promise<void> | void;
@@ -60,17 +61,25 @@ export function LoginPage({
   heroDescription = "Software web y movil por roles para administrar obras, trabajadores, documentos, facturacion, asistencia y operaciones.",
   brandSubtitle = "Usuarios creados solo por administradores. Sin registro publico.",
   clientLogoUrl,
+  initialTenantId = "",
   onLogin,
   onTenantIdChange,
   onTotpSetup,
   onTotpVerify,
 }: LoginPageProps) {
-  const [tenantId, setTenantId] = useState("");
+  const [tenantId, setTenantId] = useState(initialTenantId);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [totpCode, setTotpCode] = useState("");
   const [localNotice, setLocalNotice] = useState<string | null>(null);
   const notice = controlledNotice ?? localNotice;
+
+  useEffect(() => {
+    if (initialTenantId) {
+      setTenantId(initialTenantId);
+      onTenantIdChange?.(initialTenantId);
+    }
+  }, [initialTenantId, onTenantIdChange]);
 
   function updateTenantId(value: string) {
     setTenantId(value);
