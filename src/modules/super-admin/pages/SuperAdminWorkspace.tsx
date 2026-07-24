@@ -402,7 +402,7 @@ export function SuperAdminWorkspace({ session, busy, onLogout }: SuperAdminWorks
                 <span>Notas internas</span>
                 <textarea className="textarea" name="notes" rows={3} />
               </label>
-              <div className="form-actions">
+              <div className="form-actions modal-form-actions">
                 <Button type="submit" disabled={saving} icon={<KeyRound size={16} />}>
                   {saving ? "Creando..." : "Crear cliente y admin"}
                 </Button>
@@ -630,7 +630,7 @@ export function SuperAdminWorkspace({ session, busy, onLogout }: SuperAdminWorks
                   <span>Evidencias fotograficas activo</span>
                 </label>
 
-                <div className="form-actions">
+                <div className="form-actions modal-form-actions">
                   <Button type="submit" disabled={saving || loading} icon={<ShieldCheck size={16} />}>
                     {saving ? "Guardando..." : "Guardar licencia"}
                   </Button>

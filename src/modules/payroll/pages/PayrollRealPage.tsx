@@ -282,7 +282,7 @@ export function PayrollRealPage({ session }: PayrollRealPageProps) {
             </select>
           </label>
         </div>
-        <div className="segmented-actions">
+        <div className="segmented-actions modal-form-actions">
           <Button variant="primary" type="button" icon={<Save size={16} />} onClick={() => void saveSettings()} disabled={saving}>
             Guardar tarifa
           </Button>
@@ -309,7 +309,7 @@ export function PayrollRealPage({ session }: PayrollRealPageProps) {
             <textarea className="input" rows={3} value={paymentNotes} onChange={(event) => setPaymentNotes(event.target.value)} />
           </label>
         </div>
-        <div className="segmented-actions">
+        <div className="segmented-actions modal-form-actions">
           <Button variant="primary" type="button" icon={<CheckCircle2 size={16} />} onClick={() => void payWorker()} disabled={saving || !selectedPreview || selectedPreview.pendingAmount <= 0}>
             Confirmar pago
           </Button>

@@ -412,9 +412,11 @@ export function JobsRealPage({ session }: JobsRealPageProps) {
                 <input className="input" type="date" value={form.scheduledEnd || ""} onChange={(event) => setForm({ ...form, scheduledEnd: event.target.value })} />
               </label>
             </div>
-            <Button variant="primary" type="submit" icon={<Save size={16} />} disabled={saving || clients.length === 0}>
-              Crear obra
-            </Button>
+            <div className="form-actions modal-form-actions">
+              <Button variant="primary" type="submit" icon={<Save size={16} />} disabled={saving || clients.length === 0}>
+                Crear obra
+              </Button>
+            </div>
           </form>
         </section>
       </BasicModal>
@@ -600,7 +602,9 @@ export function JobsRealPage({ session }: JobsRealPageProps) {
               </select>
             </label>
           </div>
-          <Button variant="primary" type="submit" icon={<Save size={16} />} disabled={saving}>Guardar obra</Button>
+          <div className="form-actions modal-form-actions">
+            <Button variant="primary" type="submit" icon={<Save size={16} />} disabled={saving}>Guardar obra</Button>
+          </div>
         </form>
       </BasicModal>
 
@@ -620,7 +624,9 @@ export function JobsRealPage({ session }: JobsRealPageProps) {
             </select>
           </label>
           {assignableWorkers.length === 0 ? <p className="activity-meta">Todos los trabajadores activos ya estan asignados o no hay trabajadores disponibles.</p> : null}
-          <Button variant="primary" type="submit" icon={<UserPlus size={16} />} disabled={saving || assignableWorkers.length === 0}>Asignar trabajador</Button>
+          <div className="form-actions modal-form-actions">
+            <Button variant="primary" type="submit" icon={<UserPlus size={16} />} disabled={saving || assignableWorkers.length === 0}>Asignar trabajador</Button>
+          </div>
         </form>
       </BasicModal>
 
@@ -659,7 +665,9 @@ export function JobsRealPage({ session }: JobsRealPageProps) {
               <input className="input" type="date" value={taskForm.dueAt} onChange={(event) => setTaskForm({ ...taskForm, dueAt: event.target.value })} />
             </label>
           </div>
-          <Button variant="primary" type="submit" icon={<Plus size={16} />} disabled={saving}>Agregar tarea</Button>
+          <div className="form-actions modal-form-actions">
+            <Button variant="primary" type="submit" icon={<Plus size={16} />} disabled={saving}>Agregar tarea</Button>
+          </div>
         </form>
       </BasicModal>
 
@@ -677,7 +685,9 @@ export function JobsRealPage({ session }: JobsRealPageProps) {
             <span>Diferencia de importe</span>
             <input className="input" type="number" step="0.01" value={changeAmount} onChange={(event) => setChangeAmount(Number(event.target.value))} />
           </label>
-          <Button variant="primary" type="submit" icon={<Plus size={16} />} disabled={saving}>Registrar cambio</Button>
+          <div className="form-actions modal-form-actions">
+            <Button variant="primary" type="submit" icon={<Plus size={16} />} disabled={saving}>Registrar cambio</Button>
+          </div>
         </form>
       </BasicModal>
     </section>

@@ -2338,12 +2338,13 @@ button {
   display: grid;
   place-items: center;
   padding: 16px;
+  overflow: auto;
   background: rgba(18, 35, 58, 0.46);
 }
 
 .modal {
   width: min(520px, 100%);
-  max-height: min(92dvh, 860px);
+  max-height: calc(100dvh - 32px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2367,6 +2368,7 @@ button {
   min-height: 0;
   max-height: none;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -5423,5 +5425,150 @@ button {
   .theme-light .stats-grid .stat-card::before,
   .theme-light .crm-real-stats .stat-card::before {
     display: none;
+  }
+}
+
+/* Final UX polish pass: keep module forms, worker views and provider console usable on small screens. */
+.theme-dark .modal-backdrop,
+.theme-light .modal-backdrop {
+  overflow: auto;
+  align-items: center;
+  justify-items: center;
+}
+
+.theme-dark .modal,
+.theme-light .modal {
+  max-height: calc(100dvh - 24px);
+}
+
+.theme-dark .modal-body,
+.theme-light .modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.theme-dark .modal .modal-form-actions,
+.theme-light .modal .modal-form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.theme-dark .modal .modal-form-actions .button,
+.theme-light .modal .modal-form-actions .button {
+  min-width: min(220px, 100%);
+}
+
+.theme-dark.super-admin-shell .super-admin-stats-grid,
+.theme-light.super-admin-shell .super-admin-stats-grid {
+  grid-template-columns: repeat(4, minmax(170px, 1fr));
+  align-items: stretch;
+}
+
+.theme-dark.super-admin-shell .super-admin-stats-grid .stat-card,
+.theme-light.super-admin-shell .super-admin-stats-grid .stat-card {
+  min-height: 132px;
+  padding: 16px;
+}
+
+.theme-dark.worker-shell .production-topbar,
+.theme-light.worker-shell .production-topbar {
+  gap: 12px;
+}
+
+.theme-dark.worker-shell .worker-module-tabs,
+.theme-light.worker-shell .worker-module-tabs {
+  max-width: min(680px, 100%);
+}
+
+.theme-dark.worker-shell .worker-task-card .card-title-row,
+.theme-light.worker-shell .worker-task-card .card-title-row {
+  align-items: flex-start;
+}
+
+.theme-dark.worker-shell .worker-task-actions .button,
+.theme-light.worker-shell .worker-task-actions .button {
+  flex: 0 1 auto;
+}
+
+.theme-dark .attendance-record-card,
+.theme-light .attendance-record-card,
+.theme-dark .payroll-record-card,
+.theme-light .payroll-record-card,
+.theme-dark .payroll-payment-record-card,
+.theme-light .payroll-payment-record-card {
+  align-items: center;
+}
+
+@media (max-width: 920px) {
+  .theme-dark.super-admin-shell .super-admin-stats-grid,
+  .theme-light.super-admin-shell .super-admin-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .theme-dark.worker-shell .production-topbar,
+  .theme-light.worker-shell .production-topbar {
+    align-items: stretch;
+  }
+
+  .theme-dark.worker-shell .worker-module-tabs,
+  .theme-light.worker-shell .worker-module-tabs {
+    order: 3;
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .theme-dark .modal-backdrop,
+  .theme-light .modal-backdrop {
+    padding: 8px;
+  }
+
+  .theme-dark .modal,
+  .theme-light .modal {
+    width: 100%;
+    max-height: calc(100dvh - 16px);
+  }
+
+  .theme-dark .modal-header,
+  .theme-dark .modal-body,
+  .theme-dark .modal-footer,
+  .theme-light .modal-header,
+  .theme-light .modal-body,
+  .theme-light .modal-footer {
+    padding: 14px;
+  }
+
+  .theme-dark .modal .modal-form-actions,
+  .theme-light .modal .modal-form-actions {
+    margin-inline: -14px;
+    padding-inline: 14px;
+  }
+
+  .theme-dark .modal .modal-form-actions .button,
+  .theme-light .modal .modal-form-actions .button {
+    flex: 1 1 100%;
+  }
+
+  .theme-dark.worker-shell .worker-task-actions,
+  .theme-light.worker-shell .worker-task-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .theme-dark.worker-shell .worker-task-actions .button,
+  .theme-light.worker-shell .worker-task-actions .button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .theme-dark.super-admin-shell .super-admin-stats-grid,
+  .theme-light.super-admin-shell .super-admin-stats-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -436,7 +436,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
             onChange={(event) => setReportNote(event.target.value)}
           />
         </label>
-        <div className="segmented-actions">
+        <div className="segmented-actions modal-form-actions">
           <Button variant="primary" type="button" icon={<AlertTriangle size={16} />} onClick={() => void handleSubmitReport()}>
             Reportar problema
           </Button>
@@ -460,7 +460,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
           setCancelReason={setCancelReason}
           currentJobLabel={currentJobLabel || assignedJobs.find((job) => job.jobId === selectedClockJobId)?.jobTitle || ""}
         />
-        <div className="segmented-actions">
+        <div className="segmented-actions modal-form-actions">
           <Button variant={attendanceIntent?.type === "cancel-entry" ? "danger" : "primary"} type="button" onClick={() => void confirmAttendanceIntent()} disabled={savingTaskId === "attendance"}>
             Confirmar
           </Button>

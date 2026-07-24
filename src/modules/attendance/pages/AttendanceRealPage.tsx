@@ -354,7 +354,7 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
             </div>
           ) : null}
         </div>
-        <div className="segmented-actions">
+        <div className="segmented-actions modal-form-actions">
           <Button variant={reviewIntent?.status === "rejected" ? "danger" : "primary"} type="button" onClick={() => void review()} disabled={saving}>
             {reviewIntent?.status === "approved" ? "Si, aprobar jornada" : "Si, rechazar jornada"}
           </Button>
