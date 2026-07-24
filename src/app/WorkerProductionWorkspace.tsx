@@ -120,6 +120,8 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
   }, [assignedJobs, tasks]);
   const supportPhone = settings?.workerSupportPhone || settings?.companyPhone || "";
   const supportWhatsappUrl = settings?.workerSupportWhatsappUrl || buildWhatsappUrl(supportPhone);
+  const brandName = settings?.companyName || session.tenant.companyName || "Empresa";
+  const brandLogoUrl = settings?.logoUrl || "";
   const currentJobLabel = attendance?.openEntry?.jobNumber
     ? `${attendance.openEntry.jobNumber} - ${attendance.openEntry.jobTitle || "Obra activa"}`
     : "";
@@ -303,13 +305,13 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
   }
 
   return (
-    <main className="app-shell production-shell">
+    <main className="app-shell production-shell worker-shell theme-dark">
       <div className="production-topbar">
         <div className="brand-lockup">
-          <span className="brand-mark">CF</span>
+          {brandLogoUrl ? <img className="brand-logo-image" src={brandLogoUrl} alt="" /> : <span className="brand-mark">{brandInitials(brandName)}</span>}
           <div>
-            <p className="brand-name">Constriqo</p>
-            <p className="brand-subtitle">{session.tenant.companyName}</p>
+            <p className="brand-name">{brandName}</p>
+            <p className="brand-subtitle">Software Constriqo</p>
           </div>
         </div>
         <nav className="worker-module-tabs" aria-label="Menu trabajador">
@@ -1097,6 +1099,15 @@ function sectionTitle(section: WorkerSection) {
 function buildWhatsappUrl(phone: string) {
   const clean = phone.replace(/[^\d+]/gu, "").replace(/^\+/u, "");
   return clean ? `https://wa.me/${clean}` : "";
+}
+
+function brandInitials(value: string) {
+  return value
+    .split(/\s+/u)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("") || "E";
 }
 
 function calculatePercent(completed: number, total: number) {

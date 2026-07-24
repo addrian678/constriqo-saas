@@ -103,7 +103,7 @@ export function LoginPage({
   }
 
   return (
-    <main className="login-page">
+    <main className="login-page theme-dark">
       <section className="login-hero">
         <div className="brand-lockup">
           <span className="brand-mark">{brand.mark}</span>
