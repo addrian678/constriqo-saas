@@ -78,6 +78,7 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
   const [creditAmount, setCreditAmount] = useState(0);
   const [activePanel, setActivePanel] = useState<"create" | "issue" | "payment" | "credit" | null>(null);
   const [pendingInvoice, setPendingInvoice] = useState<Invoice | null>(null);
+  const [confirmEstimateInvoice, setConfirmEstimateInvoice] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
     method: "bank_transfer",
@@ -152,6 +153,11 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (form.estimateId && !confirmEstimateInvoice) {
+      setConfirmEstimateInvoice(true);
+      setMessage(null);
+      return;
+    }
     setSaving(true);
     setMessage(null);
     try {
@@ -171,6 +177,7 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
       });
       setForm(initialInvoice);
       setActivePanel(null);
+      setConfirmEstimateInvoice(false);
       setMessage("Factura creada en borrador.");
       dispatchDataChanged("invoicing");
       await refresh({ preserveMessage: true });
@@ -423,7 +430,7 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
 
           {selectedApprovedEstimate ? (
             <p className="login-notice">
-              Cotizacion {selectedApprovedEstimate.estimateNumber} seleccionada para {selectedApprovedEstimate.clientName}. Al pulsar Crear factura desde cotizacion se generara una factura en borrador por {formatMoney(selectedApprovedEstimate.totalAmount, selectedApprovedEstimate.currency)}.
+              Cotizacion {selectedApprovedEstimate.estimateNumber} seleccionada para {selectedApprovedEstimate.clientName}. Revisa el importe y pulsa Crear factura desde cotizacion; antes de generarla se pedira confirmacion.
             </p>
           ) : null}
 
@@ -512,6 +519,29 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
             {selectedApprovedEstimate ? "Crear factura desde cotizacion" : "Crear factura"}
           </Button>
         </form>
+      </BasicModal>
+
+      <BasicModal title="Confirmar factura desde cotizacion" open={confirmEstimateInvoice} onClose={() => setConfirmEstimateInvoice(false)} footer={null}>
+        {selectedApprovedEstimate ? (
+          <form className="auth-form" onSubmit={handleCreate}>
+            <div className="card-title-row">
+              <StatusBadge label={selectedApprovedEstimate.estimateNumber} tone="success" />
+              <StatusBadge label={formatMoney(selectedApprovedEstimate.totalAmount, selectedApprovedEstimate.currency)} tone="info" />
+            </div>
+            <strong>Esta seguro de generar una factura desde esta cotizacion?</strong>
+            <p className="login-security-note">
+              Se creara una factura en borrador ligada a la cotizacion aprobada. Luego podras emitirla, cobrarla o dejarla pendiente desde el modulo Facturas.
+            </p>
+            <div className="segmented-actions">
+              <Button variant="secondary" type="button" onClick={() => setConfirmEstimateInvoice(false)} disabled={saving}>
+                Volver
+              </Button>
+              <Button variant="primary" type="submit" icon={<FileCheck2 size={16} />} disabled={saving}>
+                Si, crear factura
+              </Button>
+            </div>
+          </form>
+        ) : null}
       </BasicModal>
 
       <section className="grid crm-real-grid">
