@@ -106,7 +106,7 @@ export function LoginPage({
     <main className="login-page theme-dark">
       <section className="login-hero">
         <div className="brand-lockup">
-          <span className="brand-mark">{brand.mark}</span>
+          <img className="brand-logo-image brand-logo-official" src={brand.logoUrl} alt="" />
           <div>
             <p className="brand-name">{brand.name}</p>
             <p className="brand-subtitle">{brand.tagline}</p>

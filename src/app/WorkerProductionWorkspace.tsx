@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AuthenticatedSession } from "./auth/authClient";
+import { brand } from "../branding/brand";
 import { Button } from "../shared/components/Button";
 import { BasicModal } from "../shared/components/BasicModal";
 import { EmptyState } from "../shared/components/EmptyState";
@@ -316,7 +317,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
           {brandLogoUrl ? <img className="brand-logo-image" src={brandLogoUrl} alt="" /> : <span className="brand-mark">{brandInitials(brandName)}</span>}
           <div>
             <p className="brand-name">{brandName}</p>
-            <p className="brand-subtitle">Software Constriqo</p>
+            <p className="brand-subtitle">Espacio operativo Constriqo</p>
           </div>
         </div>
         <nav className="worker-module-tabs" aria-label="Menu trabajador">
@@ -470,7 +471,10 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
       </BasicModal>
 
       <ToastViewport />
-      <footer className="powered-footer">Software impulsado por Constriqo</footer>
+      <footer className="powered-footer">
+        <img className="powered-logo" src={brand.logoUrl} alt="" />
+        <span>{brand.footerText}</span>
+      </footer>
     </main>
   );
 }

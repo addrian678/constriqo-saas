@@ -8,6 +8,7 @@ import { EmptyState } from "../../../shared/components/EmptyState";
 import { PageHeader } from "../../../shared/components/PageHeader";
 import { StatCard } from "../../../shared/components/StatCard";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
+import { brand } from "../../../branding/brand";
 import {
   listSuperAdminTenants,
   createTenantFromSuperAdmin,
@@ -280,7 +281,7 @@ export function SuperAdminWorkspace({ session, busy, onLogout }: SuperAdminWorks
     <main className="production-shell super-admin-shell theme-dark">
       <header className="production-topbar">
         <div className="brand-lockup">
-          <span className="brand-mark">CF</span>
+          <img className="brand-logo-image brand-logo-official" src={brand.logoUrl} alt="" />
           <div>
             <p className="brand-name">Constriqo Provider</p>
             <p className="brand-subtitle">Consola Super Admin</p>
@@ -643,7 +644,10 @@ export function SuperAdminWorkspace({ session, busy, onLogout }: SuperAdminWorks
           </article>
         </section>
 
-        <footer className="provider-footer">Constriqo SaaS Provider Console. Acceso privado del proveedor.</footer>
+        <footer className="provider-footer">
+          <img className="powered-logo" src={brand.logoUrl} alt="" />
+          <span>{brand.providerFooterText}</span>
+        </footer>
       </section>
     </main>
   );

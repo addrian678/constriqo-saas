@@ -2,6 +2,7 @@ import { Building2, Clock, LogOut, Pencil, Plus, RefreshCw, Save, Trash2, Users 
 import type { FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import type { AuthenticatedSession } from "../../../app/auth/authClient";
+import { brand } from "../../../branding/brand";
 import { Button } from "../../../shared/components/Button";
 import { BasicModal } from "../../../shared/components/BasicModal";
 import { EmptyState } from "../../../shared/components/EmptyState";
@@ -497,7 +498,7 @@ export function CrmRealPage({ session, onLogout, busy, embedded }: CrmRealPagePr
     <main className="app-shell production-shell">
       <div className="production-topbar">
         <div className="brand-lockup">
-          <span className="brand-mark">CF</span>
+          <img className="brand-logo-image brand-logo-official" src={brand.logoUrl} alt="" />
           <div>
             <p className="brand-name">Constriqo</p>
             <p className="brand-subtitle">{session.tenant.companyName}</p>

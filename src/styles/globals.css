@@ -105,6 +105,12 @@ button {
   object-fit: contain;
 }
 
+.brand-logo-official {
+  padding: 3px;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.96);
+}
+
 .brand-name {
   margin: 0;
   font-size: 18px;
@@ -790,7 +796,7 @@ button {
   grid-template-columns: minmax(0, 0.95fr) minmax(380px, 0.8fr);
   background:
     linear-gradient(120deg, rgba(18, 35, 58, 0.94), rgba(28, 54, 86, 0.92)),
-    url("/icon.svg");
+    url("/icon-512.png");
 }
 
 .login-hero {
@@ -977,11 +983,24 @@ button {
 }
 
 .powered-footer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
   padding: 8px 24px 18px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
   text-align: center;
+}
+
+.powered-logo {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  object-fit: contain;
 }
 
 .production-topbar {
@@ -1858,6 +1877,11 @@ button {
 }
 
 .provider-footer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
@@ -3577,7 +3601,7 @@ button {
   overflow: hidden;
   background:
     linear-gradient(135deg, rgba(8, 13, 24, 0.98), rgba(12, 18, 32, 0.94)),
-    url("/icon.svg");
+    url("/icon-512.png");
   background-size: auto, 320px;
   background-position: center, left 8% top 12%;
 }

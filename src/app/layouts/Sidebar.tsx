@@ -12,7 +12,7 @@ export function Sidebar({ items, sectionLabel, onNavigate }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="brand-lockup">
-        <span className="brand-mark">{brand.mark}</span>
+        <img className="brand-logo-image brand-logo-official" src={brand.logoUrl} alt="" />
         <div>
           <p className="brand-name">{brand.name}</p>
           <p className="brand-subtitle">{brand.tagline}</p>

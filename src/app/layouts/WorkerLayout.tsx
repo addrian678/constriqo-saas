@@ -20,7 +20,7 @@ export function WorkerLayout({ children, onRoleChange }: WorkerLayoutProps) {
       <div className="worker-shell">
         <header className="worker-top">
           <div className="brand-lockup" style={{ marginBottom: 0 }}>
-            <span className="brand-mark">{brand.mark}</span>
+            <img className="brand-logo-image brand-logo-official" src={brand.logoUrl} alt="" />
             <div>
               <p className="brand-name">{brand.name}</p>
               <p className="brand-subtitle">{profile.roleName}</p>
