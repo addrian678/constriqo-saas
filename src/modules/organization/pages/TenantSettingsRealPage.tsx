@@ -529,9 +529,14 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
                 ))}
               </div>
             </div>
-            <Button variant="primary" type="submit" icon={<Save size={16} />} disabled={saving}>
-              Guardar ajustes
-            </Button>
+            <div className="form-actions settings-form-actions">
+              <Button variant="secondary" type="button" onClick={() => setSettingsFormOpen(false)} disabled={saving}>
+                Cancelar
+              </Button>
+              <Button variant="primary" type="submit" icon={<Save size={16} />} disabled={saving}>
+                Guardar ajustes
+              </Button>
+            </div>
           </form>
           </BasicModal>
 
