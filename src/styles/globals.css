@@ -668,6 +668,34 @@ button {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), #ffffff);
 }
 
+.modal-form-actions {
+  position: sticky;
+  right: 0;
+  bottom: -18px;
+  z-index: 4;
+  margin: 8px -18px -18px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), #ffffff 34%);
+}
+
+.modal-form-actions .button {
+  min-width: min(240px, 100%);
+}
+
+.modal-body .auth-form > .button:last-child,
+.modal-body .auth-form > .segmented-actions:last-child:not(.modal-form-actions),
+.modal-body .auth-form > .form-actions:last-child:not(.modal-form-actions):not(.settings-form-actions) {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+}
+
+.modal-body .auth-form > .button:last-child {
+  justify-self: end;
+  box-shadow: 0 10px 30px rgba(18, 35, 58, 0.18);
+}
+
 .surface-panel {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -2263,7 +2291,9 @@ button {
 
 .modal {
   width: min(520px, 100%);
-  max-height: min(86vh, 820px);
+  max-height: min(92dvh, 860px);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border-radius: 8px;
   background: #ffffff;
@@ -2281,7 +2311,9 @@ button {
 }
 
 .modal-body {
-  max-height: calc(86vh - 126px);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -2298,6 +2330,21 @@ button {
 .modal-footer {
   border-top: 1px solid var(--line);
   border-bottom: 0;
+}
+
+.theme-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--graphite);
+  font-weight: 800;
 }
 
 @media (max-width: 1180px) {
@@ -2397,6 +2444,8 @@ button {
   }
 
   .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
     max-height: calc(100dvh - 112px);
   }
 
@@ -2404,6 +2453,19 @@ button {
   .modal-body,
   .modal-footer {
     padding: 14px;
+  }
+
+  .modal-form-actions,
+  .settings-form-actions {
+    bottom: -14px;
+    margin: 8px -14px -14px;
+    padding: 12px 14px;
+  }
+
+  .modal-form-actions .button,
+  .settings-form-actions .button,
+  .modal-body .auth-form > .button:last-child {
+    width: 100%;
   }
 
   .content {
@@ -3427,6 +3489,18 @@ button {
   border-color: rgba(148, 163, 184, 0.18);
   background: linear-gradient(180deg, rgba(12, 18, 32, 0.7), rgba(12, 18, 32, 0.96));
   backdrop-filter: blur(12px);
+}
+
+.theme-dark .modal-form-actions {
+  border-color: rgba(148, 163, 184, 0.18);
+  background: linear-gradient(180deg, rgba(12, 18, 32, 0.7), rgba(12, 18, 32, 0.96) 34%);
+  backdrop-filter: blur(12px);
+}
+
+.theme-dark .theme-toggle-button {
+  border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.64);
+  color: #e5edf8;
 }
 
 .theme-dark .segmented-actions {

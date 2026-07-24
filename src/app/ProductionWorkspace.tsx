@@ -1,4 +1,4 @@
-import { Banknote, BarChart3, Bell, BriefcaseBusiness, Building2, Clock3, FileArchive, FileText, Home, Landmark, LockKeyhole, Megaphone, Menu, Receipt, Settings, Tags, UserCheck, Users, X, type LucideIcon } from "lucide-react";
+import { Banknote, BarChart3, Bell, BriefcaseBusiness, Building2, Clock3, FileArchive, FileText, Home, Landmark, LockKeyhole, Megaphone, Menu, Moon, Receipt, Settings, Sun, Tags, UserCheck, Users, X, type LucideIcon } from "lucide-react";
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import type { AuthenticatedSession } from "./auth/authClient";
 import { refreshTenantWorkspaceCache, warmTenantWorkspaceCache } from "./cache/workspaceCache";
@@ -30,6 +30,7 @@ type ProductionWorkspaceProps = {
 };
 
 type WorkspaceModule = "home" | "crm" | "marketing" | "services" | "estimates" | "invoicing" | "jobs" | "workforce" | "attendance" | "finance" | "payroll" | "assets" | "documents" | "reports" | "notifications" | "settings";
+type ThemeMode = "dark" | "light";
 
 const modules: Array<{ id: WorkspaceModule; label: string; icon: LucideIcon; capabilities?: string[] }> = [
   { id: "home", label: "Inicio", icon: Home, capabilities: ["reports.read", "finance.read", "clients.read"] },
@@ -57,6 +58,7 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
 
   const [activeModule, setActiveModule] = useState<WorkspaceModule>("home");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
   const [tenantSettings, setTenantSettings] = useState<TenantSettings | null>(null);
   const [tenantUsage, setTenantUsage] = useState<TenantUsage | null>(null);
   const [cleanupStatus, setCleanupStatus] = useState<DocumentCleanupStatus | null>(null);
@@ -68,6 +70,7 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
       const nextSettings = (event as CustomEvent<TenantSettings>).detail;
       if (nextSettings?.tenantId === session.tenant.tenantId) {
         setTenantSettings(nextSettings);
+        window.dispatchEvent(new CustomEvent("constriqo:toast", { detail: { tone: "success", message: "Ajustes guardados correctamente." } }));
       }
     }
     function handleUsageUpdated(event: Event) {
@@ -112,6 +115,7 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
   useEffect(() => {
     function handleDataChanged() {
       refreshTenantWorkspaceCache(session);
+      window.dispatchEvent(new CustomEvent("constriqo:toast", { detail: { tone: "success", message: "Cambios guardados correctamente." } }));
     }
 
     window.addEventListener("constriqo:data-changed", handleDataChanged);
@@ -170,6 +174,18 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
     </div>
   );
   const visibleModules = useMemo(() => modules.filter((module) => canAccessModule(session, module)), [session]);
+  const themeClass = themeMode === "dark" ? "theme-dark" : "theme-light";
+  const renderThemeToggle = () => (
+    <button
+      className="theme-toggle-button"
+      type="button"
+      onClick={() => setThemeMode((current) => (current === "dark" ? "light" : "dark"))}
+      aria-label={themeMode === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+    >
+      {themeMode === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+      <span>{themeMode === "dark" ? "Modo claro" : "Modo oscuro"}</span>
+    </button>
+  );
 
   useEffect(() => {
     if (!visibleModules.some((module) => module.id === activeModule)) {
@@ -209,7 +225,7 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
   );
 
   return (
-    <main className="app-shell production-shell theme-dark">
+    <main className={`app-shell production-shell ${themeClass}`}>
       <div className="production-layout">
         <aside className="production-sidebar" aria-label="Menu principal">
           {brandLockup}
@@ -217,6 +233,7 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
             <span>Buscar</span>
             <small>⌘ K</small>
           </div>
+          {renderThemeToggle()}
           <p className="nav-section-label">Principal</p>
           {navigation}
           <div className="production-sidebar-footer">
@@ -241,6 +258,7 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
                 <X size={18} />
               </button>
             </div>
+            {renderThemeToggle()}
             {navigation}
           </aside>
 

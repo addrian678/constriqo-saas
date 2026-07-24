@@ -831,9 +831,11 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
               </div>
             </div>
 
-            <Button variant="primary" type="submit" icon={<Save size={16} />} disabled={saving || clients.length === 0}>
-              Crear cotizacion
-            </Button>
+            <div className="form-actions modal-form-actions">
+              <Button variant="primary" type="submit" icon={<Save size={16} />} disabled={saving || clients.length === 0}>
+                Crear cotizacion
+              </Button>
+            </div>
           </form>
       </BasicModal>
 
@@ -951,7 +953,7 @@ export function EstimatesRealPage({ session }: EstimatesRealPageProps) {
         {pendingAction ? (
           <form className="auth-form" onSubmit={executeEstimateAction}>
             <p className="activity-meta">{estimateActionCopy[pendingAction].description}</p>
-            <div className="segmented-actions">
+            <div className="segmented-actions modal-form-actions">
               <Button variant="secondary" type="button" onClick={() => setPendingAction(null)} disabled={saving}>
                 Volver
               </Button>

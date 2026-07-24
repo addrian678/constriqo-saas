@@ -515,9 +515,11 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
             </div>
           ) : null}
 
-          <Button variant="primary" type="submit" icon={<Save size={16} />} disabled={saving}>
-            {selectedApprovedEstimate ? "Crear factura desde cotizacion" : "Crear factura"}
-          </Button>
+          <div className="form-actions modal-form-actions">
+            <Button variant="primary" type="submit" icon={<Save size={16} />} disabled={saving}>
+              {selectedApprovedEstimate ? "Crear factura desde cotizacion" : "Crear factura"}
+            </Button>
+          </div>
         </form>
       </BasicModal>
 
@@ -532,7 +534,7 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
             <p className="login-security-note">
               Se creara una factura en borrador ligada a la cotizacion aprobada. Luego podras emitirla, cobrarla o dejarla pendiente desde el modulo Facturas.
             </p>
-            <div className="segmented-actions">
+            <div className="segmented-actions modal-form-actions">
               <Button variant="secondary" type="button" onClick={() => setConfirmEstimateInvoice(false)} disabled={saving}>
                 Volver
               </Button>
@@ -652,9 +654,11 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
               <p className="activity-meta">
                 Al emitir la factura se registra en cuentas por cobrar y queda trazada en finanzas. Esta accion no borra historial.
               </p>
-              <Button variant="primary" type="submit" icon={<FileCheck2 size={16} />} disabled={saving}>
-                Si, emitir factura
-              </Button>
+              <div className="form-actions modal-form-actions">
+                <Button variant="primary" type="submit" icon={<FileCheck2 size={16} />} disabled={saving}>
+                  Si, emitir factura
+                </Button>
+              </div>
             </form>
           </BasicModal>
 
@@ -702,7 +706,7 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
                 <span>Notas</span>
                 <textarea className="input crm-textarea" value={paymentForm.notes} onChange={(event) => setPaymentForm({ ...paymentForm, notes: event.target.value })} />
               </label>
-              <div className="segmented-actions">
+              <div className="segmented-actions modal-form-actions">
                 <Button variant="secondary" type="button" onClick={() => setPaymentForm({ ...paymentForm, amount: pendingInvoice?.balanceAmount || 0 })} disabled={!pendingInvoice}>
                   Cobro completo
                 </Button>
@@ -791,9 +795,11 @@ export function InvoicingRealPage({ session }: InvoicingRealPageProps) {
                 <span>Motivo</span>
                 <textarea className="input crm-textarea" value={creditReason} onChange={(event) => setCreditReason(event.target.value)} required />
               </label>
-              <Button variant="secondary" type="submit" icon={<RotateCcw size={16} />} disabled={saving || selectedInvoice.balanceAmount <= 0}>
-                Crear rectificativa
-              </Button>
+              <div className="form-actions modal-form-actions">
+                <Button variant="secondary" type="submit" icon={<RotateCcw size={16} />} disabled={saving || selectedInvoice.balanceAmount <= 0}>
+                  Crear rectificativa
+                </Button>
+              </div>
             </form>
           </BasicModal>
         </div>

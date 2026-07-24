@@ -10,9 +10,11 @@ import {
   LogIn,
   LogOut,
   MessageCircle,
+  Moon,
   Phone,
   RefreshCw,
   ShieldCheck,
+  Sun,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AuthenticatedSession } from "./auth/authClient";
@@ -45,6 +47,7 @@ type WorkerProductionWorkspaceProps = {
 };
 
 type WorkerSection = "dashboard" | "attendance" | "checklist" | "alerts";
+type ThemeMode = "dark" | "light";
 type AttendanceIntent =
   | { type: "clock-in"; location: AttendanceLocation; jobId: string }
   | { type: "cancel-entry"; reason: string }
@@ -77,6 +80,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
   useMemo(() => warmTenantWorkspaceCache(session), [session]);
 
   const [activeSection, setActiveSection] = useState<WorkerSection>("dashboard");
+  const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
   const [tasks, setTasks] = useState<WorkerTask[]>([]);
   const [notifications, setNotifications] = useState<RuntimeNotification[]>([]);
   const [attendance, setAttendance] = useState<MyAttendance | null>(null);
@@ -133,6 +137,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
   useEffect(() => {
     function handleDataChanged() {
       refreshTenantWorkspaceCache(session);
+      window.dispatchEvent(new CustomEvent("constriqo:toast", { detail: { tone: "success", message: "Cambios guardados correctamente." } }));
     }
 
     window.addEventListener("constriqo:data-changed", handleDataChanged);
@@ -305,7 +310,7 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
   }
 
   return (
-    <main className="app-shell production-shell worker-shell theme-dark">
+    <main className={`app-shell production-shell worker-shell ${themeMode === "dark" ? "theme-dark" : "theme-light"}`}>
       <div className="production-topbar">
         <div className="brand-lockup">
           {brandLogoUrl ? <img className="brand-logo-image" src={brandLogoUrl} alt="" /> : <span className="brand-mark">{brandInitials(brandName)}</span>}
@@ -328,6 +333,15 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
           ))}
         </nav>
         <div className="production-session">
+          <button
+            className="theme-toggle-button"
+            type="button"
+            onClick={() => setThemeMode((current) => (current === "dark" ? "light" : "dark"))}
+            aria-label={themeMode === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          >
+            {themeMode === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            <span>{themeMode === "dark" ? "Modo claro" : "Modo oscuro"}</span>
+          </button>
           <span>{workerName}</span>
           <Button variant="secondary" type="button" icon={<LogOut size={16} />} onClick={onLogout} disabled={busy}>
             Cerrar sesion
