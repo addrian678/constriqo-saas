@@ -22,7 +22,7 @@ export function PayrollRealPage({ session }: PayrollRealPageProps) {
   const [selectedWorker, setSelectedWorker] = useState<PayrollWorker | null>(null);
   const [periodStart, setPeriodStart] = useState(defaultPeriodStart());
   const [periodEnd, setPeriodEnd] = useState(today());
-  const [settingsForm, setSettingsForm] = useState({ payType: "hourly", hourlyRate: "0", dailyRate: "0", paymentFrequency: "weekly", currency: "USD" });
+  const [settingsForm, setSettingsForm] = useState({ payType: "hourly", hourlyRate: "0", dailyRate: "0", paymentFrequency: "weekly", currency: "USD", maxDailyPreset: "8", maxDailyHours: "8" });
   const [paymentNotes, setPaymentNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -57,6 +57,8 @@ export function PayrollRealPage({ session }: PayrollRealPageProps) {
       dailyRate: String(worker.dailyRate || 0),
       paymentFrequency: worker.paymentFrequency,
       currency: worker.currency,
+      maxDailyPreset: ["8", "10", "12"].includes(String(worker.maxDailyHours || 8)) ? String(worker.maxDailyHours || 8) : "custom",
+      maxDailyHours: String(worker.maxDailyHours || 8),
     });
     setActivePanel("settings");
   }
@@ -80,6 +82,7 @@ export function PayrollRealPage({ session }: PayrollRealPageProps) {
         dailyRate: Number(settingsForm.dailyRate || 0),
         paymentFrequency: settingsForm.paymentFrequency as PayrollWorker["paymentFrequency"],
         currency: settingsForm.currency as PayrollWorker["currency"],
+        maxDailySeconds: Math.round(Number(settingsForm.maxDailyHours || 8) * 3600),
       });
       setMessage("Configuracion de nomina guardada.");
       setActivePanel(null);
@@ -196,6 +199,11 @@ export function PayrollRealPage({ session }: PayrollRealPageProps) {
                 <strong>{worker.payType === "daily" ? `${formatMoney(worker.dailyRate, worker.currency)} / dia` : `${formatMoney(worker.hourlyRate, worker.currency)} / hora`}</strong>
                 <span className="activity-meta">{worker.payType === "daily" ? "Pago por dia" : "Pago por hora"}</span>
               </div>
+              <div className="record-field">
+                <span>Maximo diario</span>
+                <strong>{formatDailyLimit(worker.maxDailySeconds)}</strong>
+                <span className="activity-meta">Tope automatico para jornadas olvidadas</span>
+              </div>
               <div className="segmented-actions record-actions">
                 <Button variant="secondary" type="button" icon={<Save size={16} />} onClick={() => openSettings(worker)}>
                   Tarifa
@@ -281,7 +289,32 @@ export function PayrollRealPage({ session }: PayrollRealPageProps) {
               <option value="EUR">EUR</option>
             </select>
           </label>
+          <label className="form-control">
+            <span>Maximo de horas por dia</span>
+            <select
+              className="select"
+              value={settingsForm.maxDailyPreset}
+              onChange={(event) => {
+                const value = event.target.value;
+                setSettingsForm({ ...settingsForm, maxDailyPreset: value, maxDailyHours: value === "custom" ? settingsForm.maxDailyHours : value });
+              }}
+            >
+              <option value="8">8 horas</option>
+              <option value="10">10 horas</option>
+              <option value="12">12 horas</option>
+              <option value="custom">Personalizado</option>
+            </select>
+          </label>
+          {settingsForm.maxDailyPreset === "custom" ? (
+            <label className="form-control">
+              <span>Horas maximas personalizadas</span>
+              <input className="input" inputMode="decimal" value={settingsForm.maxDailyHours} onChange={(event) => setSettingsForm({ ...settingsForm, maxDailyHours: event.target.value })} placeholder="Ejemplo: 9.5" />
+            </label>
+          ) : null}
         </div>
+        <p className="login-security-note">
+          Si una jornada queda abierta por olvido, el sistema detiene el tiempo pagable en este limite y deja alerta para revision del administrador.
+        </p>
         <div className="segmented-actions modal-form-actions">
           <Button variant="primary" type="button" icon={<Save size={16} />} onClick={() => void saveSettings()} disabled={saving}>
             Guardar tarifa
@@ -348,6 +381,11 @@ function today() {
 
 function formatHours(seconds: number) {
   return (Math.max(0, seconds) / 3600).toFixed(2);
+}
+
+function formatDailyLimit(seconds: number) {
+  const hours = Math.max(0, Number(seconds || 0) / 3600);
+  return `${hours.toFixed(hours % 1 === 0 ? 0 : 2)} h`;
 }
 
 function formatMoney(amount: number, currency: string) {

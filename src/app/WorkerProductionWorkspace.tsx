@@ -595,6 +595,7 @@ function WorkerAttendance({
   const now = useClockTicker(Boolean(attendance?.openEntry));
   const attendanceStats = calculateWorkerAttendanceStats(attendance, now, attendanceLoadedAt);
   const isOnBreak = openStatus === "on_break";
+  const dailyLimitExceeded = Boolean(attendance?.openEntry?.requiresAdminReview || attendance?.openEntry?.exceededMaxDaily);
 
   return (
     <section className="card">
@@ -608,12 +609,14 @@ function WorkerAttendance({
       {currentJobLabel ? <p className="login-security-note">Jornada activa en {currentJobLabel}.</p> : null}
       {attendance?.openEntry?.activeBreak ? <BreakCountdown activeBreak={attendance.openEntry.activeBreak} /> : null}
       {attendance?.openEntry ? (
-        <div className={`global-retention-banner ${isOnBreak ? "warning" : "info"}`} role="status">
+        <div className={`global-retention-banner ${dailyLimitExceeded ? "danger" : isOnBreak ? "warning" : "info"}`} role="status">
           <Clock3 size={18} />
           <span>
-            <strong>{isOnBreak ? "Jornada pausada por descanso" : "Jornada en vivo"}</strong>
+            <strong>{dailyLimitExceeded ? "Maximo diario alcanzado" : isOnBreak ? "Jornada pausada por descanso" : "Jornada en vivo"}</strong>
             <small>
-              Trabajado hoy: {formatClockDuration(attendanceStats.workedTodaySeconds)} · Descanso hoy: {formatWorkDuration(attendanceStats.breakTodaySeconds)}
+              {dailyLimitExceeded
+                ? "El tiempo pagable quedo detenido en el limite configurado. Registra salida y contacta al administrador si trabajaste horas adicionales."
+                : `Trabajado hoy: ${formatClockDuration(attendanceStats.workedTodaySeconds)} · Descanso hoy: ${formatWorkDuration(attendanceStats.breakTodaySeconds)}`}
             </small>
           </span>
         </div>
@@ -877,15 +880,18 @@ function calculateEntryLiveSeconds(entry: NonNullable<MyAttendance["openEntry"]>
   }
 
   if (entry.clockOut) {
+    const workedSeconds = Math.max(0, Number(entry.payableSeconds ?? entry.totalSeconds ?? 0));
     return {
-      workedSeconds: Math.max(0, Number(entry.totalSeconds || 0)),
+      workedSeconds,
       breakSeconds,
     };
   }
 
   const grossSeconds = Math.max(0, Math.floor((safeClockOutMs - clockInMs) / 1000));
+  const rawWorkedSeconds = Math.max(0, grossSeconds - breakSeconds);
+  const maxDailySeconds = Number(entry.maxDailySeconds || rawWorkedSeconds);
   return {
-    workedSeconds: Math.max(0, grossSeconds - breakSeconds),
+    workedSeconds: Math.min(rawWorkedSeconds, maxDailySeconds),
     breakSeconds,
   };
 }

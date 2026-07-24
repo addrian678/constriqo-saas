@@ -21,6 +21,11 @@ export type TimeEntry = {
   submittedAt: string;
   breakSeconds: number;
   totalSeconds: number;
+  payableSeconds?: number;
+  maxDailySeconds?: number;
+  exceededMaxDaily?: boolean;
+  exceededMaxDailyAt?: string;
+  requiresAdminReview?: boolean;
   activeBreak?: {
     breakEntryId: string;
     startedAt: string;

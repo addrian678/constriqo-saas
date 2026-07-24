@@ -133,6 +133,7 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
         <SummaryCard label="Pendientes" value={loading && entries.length === 0 ? "Cargando" : summary.submitted || 0} icon={<RefreshCw size={20} />} />
         <SummaryCard label="Aprobadas" value={loading && entries.length === 0 ? "Cargando" : summary.approved || 0} icon={<CheckCircle2 size={20} />} />
         <SummaryCard label="Canceladas" value={loading && entries.length === 0 ? "Cargando" : summary.cancelled || 0} icon={<XCircle size={20} />} />
+        <SummaryCard label="Requieren revision" value={loading && entries.length === 0 ? "Cargando" : summary.requires_review || 0} icon={<AlertIcon />} />
         <SummaryCard label="Fuera de radio" value={loading && entries.length === 0 ? "Cargando" : summary.outside_radius || 0} icon={<XCircle size={20} />} />
         <SummaryCard label="Alertas GPS" value={loading && entries.length === 0 ? "Cargando" : summary.location_warnings || 0} icon={<RefreshCw size={20} />} />
         <SummaryCard label="Entradas bloqueadas" value={loading && entries.length === 0 ? "Cargando" : summary.blocked_attempts || 0} icon={<AlertIcon />} />
@@ -266,6 +267,7 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
           {entries.map((entry) => {
             const live = calculateEntryLiveSeconds(entry, now, attendanceLoadedAt);
             const isLive = !entry.clockOut && (entry.status === "active" || entry.status === "on_break");
+            const exceeded = Boolean(entry.requiresAdminReview || entry.exceededMaxDaily || live.workedSeconds > Number(entry.maxDailySeconds || 0));
             const canReview = Boolean(entry.clockOut) && !["active", "on_break", "approved", "rejected", "cancelled"].includes(entry.status);
             return (
               <article className="table-row record-card attendance-record-card" key={entry.timeEntryId}>
@@ -278,6 +280,7 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
                   <div className="record-badges">
                     <StatusBadge label={statusLabels[entry.status]} tone={statusTone[entry.status]} />
                     <StatusBadge label={locationLabel(entry)} tone={entry.locationStatus === "outside_radius" ? "danger" : entry.locationStatus === "inside_radius" ? "success" : "warning"} />
+                    {exceeded ? <StatusBadge label="Requiere revision" tone="warning" /> : null}
                   </div>
                 </div>
 
@@ -293,6 +296,11 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
                   <span>{isLive ? "Contador trabajado hoy" : "Horas trabajadas"}</span>
                   <strong>{isLive ? formatClockDuration(live.workedSeconds) : `${formatHours(live.workedSeconds)} h`}</strong>
                   {isLive ? <span className="activity-meta">Estimado en vivo desde datos oficiales · sincroniza cada 60 s</span> : null}
+                </div>
+                <div className="record-field">
+                  <span>Tiempo pagable automatico</span>
+                  <strong>{formatWorkDuration(live.payableSeconds)}</strong>
+                  <span className="activity-meta">Maximo diario: {formatWorkDuration(entry.maxDailySeconds || 0)}</span>
                 </div>
                 <div className="record-field">
                   <span>Descanso</span>
@@ -348,8 +356,8 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
                 {formatDateTime(reviewIntent.entry.clockIn)}
               </span>
               <span>
-                <strong>Horas</strong>
-                {formatHours(calculateEntryLiveSeconds(reviewIntent.entry, now, attendanceLoadedAt).workedSeconds)} h
+                <strong>Horas / pagable</strong>
+                {formatHours(calculateEntryLiveSeconds(reviewIntent.entry, now, attendanceLoadedAt).workedSeconds)} h / {formatHours(calculateEntryLiveSeconds(reviewIntent.entry, now, attendanceLoadedAt).payableSeconds)} h
               </span>
             </div>
           ) : null}
@@ -549,15 +557,20 @@ function calculateEntryLiveSeconds(entry: TimeEntry, nowMs: number, attendanceLo
   }
 
   if (entry.clockOut) {
+    const workedSeconds = Math.max(0, Number(entry.totalSeconds || 0));
     return {
-      workedSeconds: Math.max(0, Number(entry.totalSeconds || 0)),
+      workedSeconds,
+      payableSeconds: Math.max(0, Number(entry.payableSeconds ?? Math.min(workedSeconds, Number(entry.maxDailySeconds || workedSeconds)))),
       breakSeconds,
     };
   }
 
   const grossSeconds = Math.max(0, Math.floor((safeClockOutMs - clockInMs) / 1000));
+  const workedSeconds = Math.max(0, grossSeconds - breakSeconds);
+  const maxDailySeconds = Number(entry.maxDailySeconds || workedSeconds);
   return {
-    workedSeconds: Math.max(0, grossSeconds - breakSeconds),
+    workedSeconds,
+    payableSeconds: Math.min(workedSeconds, maxDailySeconds),
     breakSeconds,
   };
 }

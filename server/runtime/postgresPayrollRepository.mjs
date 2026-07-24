@@ -3,6 +3,7 @@ import { createPostgresPoolFromEnv } from "./postgresAuthRepository.mjs";
 const PAY_TYPES = new Set(["hourly", "daily"]);
 const PAYMENT_FREQUENCIES = new Set(["daily", "weekly", "biweekly", "monthly"]);
 const CURRENCIES = new Set(["USD", "COP", "EUR"]);
+const DEFAULT_MAX_DAILY_SECONDS = 8 * 60 * 60;
 
 export function createPostgresPayrollRepositoryFromEnv(env = process.env) {
   const pool = createPostgresPoolFromEnv(env);
@@ -46,7 +47,8 @@ export function createPostgresPayrollRepository(pool) {
                  COALESCE(pws.hourly_rate, 0)::numeric AS hourly_rate,
                  COALESCE(pws.daily_rate, 0)::numeric AS daily_rate,
                  COALESCE(pws.payment_frequency, 'weekly') AS payment_frequency,
-                 COALESCE(pws.currency, $2) AS currency
+                 COALESCE(pws.currency, $2) AS currency,
+                 COALESCE(pws.max_daily_seconds, ${DEFAULT_MAX_DAILY_SECONDS})::integer AS max_daily_seconds
           FROM workers w
           LEFT JOIN users u ON u.tenant_id = w.tenant_id AND u.user_id = w.user_id
           LEFT JOIN payroll_worker_settings pws ON pws.tenant_id = w.tenant_id AND pws.worker_id = w.worker_id
@@ -88,20 +90,21 @@ export function createPostgresPayrollRepository(pool) {
       const result = await client.query(
         `
           INSERT INTO payroll_worker_settings (
-            tenant_id, worker_id, pay_type, hourly_rate, daily_rate, payment_frequency, currency, status
+            tenant_id, worker_id, pay_type, hourly_rate, daily_rate, payment_frequency, currency, max_daily_seconds, status
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, 'active')
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')
           ON CONFLICT (tenant_id, worker_id) DO UPDATE
           SET pay_type = EXCLUDED.pay_type,
               hourly_rate = EXCLUDED.hourly_rate,
               daily_rate = EXCLUDED.daily_rate,
               payment_frequency = EXCLUDED.payment_frequency,
               currency = EXCLUDED.currency,
+              max_daily_seconds = EXCLUDED.max_daily_seconds,
               status = 'active',
               updated_at = now()
           RETURNING *
         `,
-        [context.tenant.tenantId, workerId, clean.payType, clean.hourlyRate, clean.dailyRate, clean.paymentFrequency, clean.currency],
+        [context.tenant.tenantId, workerId, clean.payType, clean.hourlyRate, clean.dailyRate, clean.paymentFrequency, clean.currency, clean.maxDailySeconds],
       );
       await writeAudit(client, context, "payroll.worker_settings.updated", "worker", workerId, clean);
       return mapWorkerSettings(result.rows[0]);
@@ -233,12 +236,12 @@ async function getOrCreateWorkerSettings(client, tenantId, workerId) {
   const tenant = await getTenantSettings(client, tenantId);
   const result = await client.query(
     `
-      INSERT INTO payroll_worker_settings (tenant_id, worker_id, currency)
-      VALUES ($1, $2, $3)
+      INSERT INTO payroll_worker_settings (tenant_id, worker_id, currency, max_daily_seconds)
+      VALUES ($1, $2, $3, $4)
       ON CONFLICT (tenant_id, worker_id) DO NOTHING
       RETURNING *
     `,
-    [tenantId, workerId, tenant.currency],
+    [tenantId, workerId, tenant.currency, DEFAULT_MAX_DAILY_SECONDS],
   );
   if (result.rows[0]) {
     return result.rows[0];
@@ -255,6 +258,7 @@ async function calculatePendingForWorker(client, tenantId, workerId, filters = {
     "te.clock_out IS NOT NULL",
     "te.status IN ('submitted', 'approved')",
     "te.payroll_status = 'unpaid'",
+    "(te.requires_admin_review = false OR te.status = 'approved')",
   ];
   if (filters.periodStart) {
     params.push(filters.periodStart);
@@ -267,28 +271,34 @@ async function calculatePendingForWorker(client, tenantId, workerId, filters = {
 
   const result = await client.query(
     `
-      SELECT te.time_entry_id, te.clock_in, te.clock_out,
+      SELECT te.time_entry_id, te.clock_in, te.clock_out, te.payable_seconds_capped,
+             COALESCE(te.max_daily_seconds, pws.max_daily_seconds, $${params.length + 1})::integer AS max_daily_seconds,
              GREATEST(0, EXTRACT(EPOCH FROM (te.clock_out - te.clock_in)))::integer AS gross_seconds,
              COALESCE(sum(EXTRACT(EPOCH FROM (COALESCE(be.ended_at, te.clock_out) - be.started_at))) FILTER (WHERE be.status IN ('closed', 'open')), 0)::integer AS break_seconds
       FROM time_entries te
+      LEFT JOIN payroll_worker_settings pws ON pws.tenant_id = te.tenant_id AND pws.worker_id = te.worker_id
       LEFT JOIN break_entries be ON be.tenant_id = te.tenant_id AND be.time_entry_id = te.time_entry_id
       WHERE ${where.join(" AND ")}
-      GROUP BY te.time_entry_id
+      GROUP BY te.time_entry_id, pws.max_daily_seconds
       ORDER BY te.clock_in ASC
       LIMIT 500
     `,
-    params,
+    [...params, DEFAULT_MAX_DAILY_SECONDS],
   );
   const entries = result.rows.map((row) => {
     const grossSeconds = Number(row.gross_seconds || 0);
     const breakSeconds = Number(row.break_seconds || 0);
+    const maxDailySeconds = clampMaxDailySeconds(row.max_daily_seconds);
+    const rawPayableSeconds = Math.max(0, grossSeconds - breakSeconds);
+    const cappedSeconds = row.payable_seconds_capped === null || row.payable_seconds_capped === undefined ? Math.min(rawPayableSeconds, maxDailySeconds) : Math.min(Number(row.payable_seconds_capped || 0), maxDailySeconds);
     return {
       timeEntryId: row.time_entry_id,
       clockIn: row.clock_in,
       clockOut: row.clock_out,
       grossSeconds,
       breakSeconds,
-      payableSeconds: Math.max(0, grossSeconds - breakSeconds),
+      maxDailySeconds,
+      payableSeconds: cappedSeconds,
     };
   });
   const dayKeys = new Set(entries.map((entry) => new Date(entry.clockIn).toISOString().slice(0, 10)));
@@ -309,6 +319,7 @@ async function lockPendingTimeEntriesForPayment(client, tenantId, workerId, filt
     "clock_out IS NOT NULL",
     "status IN ('submitted', 'approved')",
     "payroll_status = 'unpaid'",
+    "(requires_admin_review = false OR status = 'approved')",
   ];
   if (filters.periodStart) {
     params.push(filters.periodStart);
@@ -453,7 +464,17 @@ function validateWorkerSettings(input = {}) {
     dailyRate: money(input.dailyRate),
     paymentFrequency,
     currency,
+    maxDailySeconds: validateMaxDailySeconds(input.maxDailySeconds ?? input.maxDailyHours),
   };
+}
+
+function validateMaxDailySeconds(value) {
+  const numeric = Number(value || DEFAULT_MAX_DAILY_SECONDS);
+  const seconds = numeric <= 24 ? Math.round(numeric * 3600) : Math.round(numeric);
+  if (!Number.isFinite(seconds) || seconds < 3600 || seconds > 86400) {
+    validationError("El maximo diario debe estar entre 1 y 24 horas.");
+  }
+  return seconds;
 }
 
 function validatePaymentInput(input = {}) {
@@ -506,6 +527,8 @@ function mapWorkerSettings(row) {
     dailyRate: Number(row.daily_rate || 0),
     paymentFrequency: row.payment_frequency,
     currency: row.currency || "USD",
+    maxDailySeconds: clampMaxDailySeconds(row.max_daily_seconds),
+    maxDailyHours: round2(clampMaxDailySeconds(row.max_daily_seconds) / 3600),
   };
 }
 
@@ -532,6 +555,14 @@ function mapPayment(row) {
 
 function round2(value) {
   return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+}
+
+function clampMaxDailySeconds(value) {
+  const numeric = Number(value || DEFAULT_MAX_DAILY_SECONDS);
+  if (!Number.isFinite(numeric)) {
+    return DEFAULT_MAX_DAILY_SECONDS;
+  }
+  return Math.min(86400, Math.max(3600, Math.round(numeric)));
 }
 
 function nullableText(value, maxLength) {

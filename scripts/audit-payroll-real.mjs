@@ -16,6 +16,7 @@ function readProjectFile(path) {
 
 const migration = readProjectFile("database/migrations/0057_attendance_payroll_runtime.sql");
 const hardeningMigration = readProjectFile("database/migrations/0062_payroll_integrity_hardening.sql");
+const dailyLimitMigration = readProjectFile("database/migrations/0064_attendance_daily_limit_payroll.sql");
 const repository = readProjectFile("server/runtime/postgresPayrollRepository.mjs");
 const server = readProjectFile("server/runtime/server.mjs");
 const routes = readProjectFile("server/runtime/runtimeRoutes.mjs");
@@ -29,10 +30,13 @@ check("Migration crea tablas de nomina", migration.includes("CREATE TABLE IF NOT
 check("Migration agrega estado pagado a asistencia", migration.includes("payroll_status") && migration.includes("payroll_payment_id"), "attendance payroll columns");
 check("Migration blinda tenant con RLS", migration.includes("ENABLE ROW LEVEL SECURITY") && migration.includes("policy_name := table_name || '_tenant_isolation'"), "rls");
 check("Migration evita doble pago de jornada", hardeningMigration.includes("uq_payroll_payment_entries_tenant_time_entry") && hardeningMigration.includes("idx_time_entries_tenant_worker_unpaid_closed"), "payment uniqueness");
+check("Migration agrega maximo diario para nomina", dailyLimitMigration.includes("payroll_worker_settings") && dailyLimitMigration.includes("max_daily_seconds"), "daily limit settings");
 check("Migration otorga permisos por rol", migration.includes("payroll.read") && migration.includes("payroll.manage") && migration.includes("r.code = 'admin'"), "capabilities");
 check("Repository usa tenant context", repository.includes("set_config('app.tenant_id'") && !repository.includes("input.tenantId"), "tenant context");
 check("Repository bloquea jornadas pendientes antes de pagar", repository.includes("lockPendingTimeEntriesForPayment") && repository.includes("FOR UPDATE"), "payment lock");
 check("Repository calcula horas netas", repository.includes("payableSeconds") && repository.includes("breakSeconds") && repository.includes("clock_out - te.clock_in"), "hours");
+check("Repository limita horas pagables por jornada", repository.includes("payable_seconds_capped") && repository.includes("Math.min(rawPayableSeconds, maxDailySeconds)"), "daily cap");
+check("Repository exige aprobacion si la jornada excedio el maximo", repository.includes("(te.requires_admin_review = false OR te.status = 'approved')"), "review required");
 check("Repository marca jornadas pagadas", repository.includes("payroll_status = 'paid'") && repository.includes("payroll_payment_time_entries"), "paid state");
 check("Repository publica egreso financiero", repository.includes("'cash_out'") && repository.includes("'payroll_payment'"), "finance link");
 check("Repository escribe auditoria", repository.includes("INSERT INTO audit_events") && repository.includes("payroll.payment.created"), "audit");
@@ -41,7 +45,9 @@ check("Runtime conecta handler payroll", server.includes("handlePayrollRoute") &
 check("Rutas payroll declaradas", routes.includes("/api/payroll/workers") && routes.includes("/api/payroll/workers/:workerId/payments"), "routes");
 check("Manifest incluye payroll", manifest.includes('"payroll"') && manifest.includes("/api/payroll/workers"), "manifest");
 check("Frontend API real", apiClient.includes("listPayrollWorkers") && apiClient.includes("createPayrollPayment"), "api client");
+check("Frontend API expone maximo diario", apiClient.includes("maxDailySeconds") && apiClient.includes("maxDailyHours"), "api daily limit");
 check("Pagina usa modales y no mock", page.includes("BasicModal") && !page.includes("mock-data") && page.includes("Nomina pagada"), "page");
+check("Pagina permite configurar maximo diario", page.includes("Maximo de horas por dia") && page.includes("Personalizado") && page.includes("maxDailySeconds"), "daily limit form");
 check("Pagina usa tarjetas legibles con etiquetas", page.includes("payroll-record-card") && page.includes("Horas por pagar") && page.includes("Total por pagar"), "record cards");
 check("Workspace incluye modulo nomina", workspace.includes("<PayrollRealPage") && workspace.includes('label: "Nomina"'), "workspace");
 check("Package script audit:payroll-real", Boolean(packageJson.scripts?.["audit:payroll-real"]), "audit script");

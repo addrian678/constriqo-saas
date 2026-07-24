@@ -2,6 +2,7 @@ import { createPostgresPoolFromEnv } from "./postgresAuthRepository.mjs";
 
 const ENTRY_STATUSES = new Set(["active", "on_break", "submitted", "approved", "rejected", "cancelled"]);
 const REVIEW_STATUSES = new Set(["approved", "rejected"]);
+const DEFAULT_MAX_DAILY_SECONDS = 8 * 60 * 60;
 
 export function createPostgresAttendanceRepositoryFromEnv(env = process.env) {
   const pool = createPostgresPoolFromEnv(env);
@@ -42,6 +43,7 @@ export function createPostgresAttendanceRepository(pool) {
 
   async function listTimeEntries(context, filters = {}) {
     return queryForTenant(context, async (client) => {
+      await flagExceededOpenEntries(client, context);
       const startDate = validateDateOnly(filters.startDate);
       const endDate = validateDateOnly(filters.endDate);
       const limit = validateLimit(filters.limit, 150, 500);
@@ -72,12 +74,15 @@ export function createPostgresAttendanceRepository(pool) {
                  te.clock_out_lat, te.clock_out_lng, te.clock_out_accuracy_m,
                  te.clock_in_note, te.clock_out_note, te.job_distance_meters, te.location_status, te.created_at,
                  te.cancelled_at, te.cancelled_by_user_id, te.cancel_reason, te.payroll_status,
+                 COALESCE(te.max_daily_seconds, pws.max_daily_seconds, ${DEFAULT_MAX_DAILY_SECONDS})::integer AS max_daily_seconds,
+                 te.payable_seconds_capped, te.exceeded_max_daily_at, te.requires_admin_review,
                  COALESCE(sum(EXTRACT(EPOCH FROM (COALESCE(be.ended_at, now()) - be.started_at))) FILTER (WHERE be.status IN ('closed', 'open')), 0)::integer AS break_seconds,
                  open_break.break_entry_id AS active_break_id,
                  open_break.started_at AS active_break_started_at,
                  open_break.planned_minutes AS active_break_planned_minutes
           FROM time_entries te
           JOIN workers w ON w.tenant_id = te.tenant_id AND w.worker_id = te.worker_id
+          LEFT JOIN payroll_worker_settings pws ON pws.tenant_id = te.tenant_id AND pws.worker_id = te.worker_id
           LEFT JOIN jobs j ON j.tenant_id = te.tenant_id AND j.job_id = te.job_id
           LEFT JOIN break_entries be ON be.tenant_id = te.tenant_id AND be.time_entry_id = te.time_entry_id
           LEFT JOIN LATERAL (
@@ -88,7 +93,7 @@ export function createPostgresAttendanceRepository(pool) {
             LIMIT 1
           ) open_break ON true
           WHERE ${where.join(" AND ")}
-          GROUP BY te.time_entry_id, w.name, j.job_number, j.title, open_break.break_entry_id, open_break.started_at, open_break.planned_minutes
+          GROUP BY te.time_entry_id, w.name, j.job_number, j.title, pws.max_daily_seconds, open_break.break_entry_id, open_break.started_at, open_break.planned_minutes
           ORDER BY te.clock_in DESC
           LIMIT $${params.length}
         `,
@@ -101,6 +106,7 @@ export function createPostgresAttendanceRepository(pool) {
             count(*) FILTER (WHERE status IN ('active', 'on_break'))::integer AS open,
             count(*) FILTER (WHERE status = 'submitted')::integer AS submitted,
             count(*) FILTER (WHERE status = 'approved')::integer AS approved,
+            count(*) FILTER (WHERE requires_admin_review = true)::integer AS requires_review,
             count(*) FILTER (WHERE location_status = 'outside_radius')::integer AS outside_radius,
             count(*) FILTER (WHERE location_status IN ('missing_worker_location', 'job_without_location'))::integer AS location_warnings,
             count(*) FILTER (WHERE status = 'cancelled')::integer AS cancelled
@@ -117,6 +123,7 @@ export function createPostgresAttendanceRepository(pool) {
   async function getMyAttendance(context) {
     return queryForTenant(context, async (client) => {
       const worker = await resolveWorkerForActor(client, context);
+      await flagExceededOpenEntries(client, context, worker.worker_id);
       const entries = await listWorkerEntries(client, context.tenant.tenantId, worker.worker_id);
       const openEntry = entries.find((entry) => entry.status === "active" || entry.status === "on_break") || null;
       return {
@@ -161,9 +168,9 @@ export function createPostgresAttendanceRepository(pool) {
           INSERT INTO time_entries (
             tenant_id, worker_id, job_id, clock_in, status,
             clock_in_lat, clock_in_lng, clock_in_accuracy_m, clock_in_note,
-            job_distance_meters, location_status
+            job_distance_meters, location_status, max_daily_seconds
           )
-          VALUES ($1, $2, $3, now(), 'active', $4, $5, $6, $7, $8, $9)
+          VALUES ($1, $2, $3, now(), 'active', $4, $5, $6, $7, $8, $9, $10)
           RETURNING time_entry_id
         `,
         [
@@ -176,6 +183,7 @@ export function createPostgresAttendanceRepository(pool) {
           clean.note,
           locationCheck.distanceMeters,
           locationCheck.status,
+          await getWorkerMaxDailySeconds(client, context.tenant.tenantId, worker.worker_id),
         ],
       );
       const entry = await getTimeEntryById(client, context.tenant.tenantId, result.rows[0].time_entry_id);
@@ -309,6 +317,7 @@ export function createPostgresAttendanceRepository(pool) {
         `,
         [context.tenant.tenantId, open.time_entry_id, clean.location?.lat || null, clean.location?.lng || null, clean.location?.accuracyM || null, clean.note],
       );
+      await applyDailyLimitToClosedEntry(client, context, open.time_entry_id);
       const entry = await getTimeEntryById(client, context.tenant.tenantId, open.time_entry_id);
       await writeAudit(client, context, "attendance.clock_out", "time_entry", entry.timeEntryId, {
         workerId: worker.worker_id,
@@ -362,12 +371,15 @@ async function listWorkerEntries(client, tenantId, workerId) {
              te.clock_out_lat, te.clock_out_lng, te.clock_out_accuracy_m,
              te.clock_in_note, te.clock_out_note, te.job_distance_meters, te.location_status, te.created_at,
              te.cancelled_at, te.cancelled_by_user_id, te.cancel_reason, te.payroll_status,
+             COALESCE(te.max_daily_seconds, pws.max_daily_seconds, 28800)::integer AS max_daily_seconds,
+             te.payable_seconds_capped, te.exceeded_max_daily_at, te.requires_admin_review,
              COALESCE(sum(EXTRACT(EPOCH FROM (COALESCE(be.ended_at, now()) - be.started_at))) FILTER (WHERE be.status IN ('closed', 'open')), 0)::integer AS break_seconds,
              open_break.break_entry_id AS active_break_id,
              open_break.started_at AS active_break_started_at,
              open_break.planned_minutes AS active_break_planned_minutes
       FROM time_entries te
       JOIN workers w ON w.tenant_id = te.tenant_id AND w.worker_id = te.worker_id
+      LEFT JOIN payroll_worker_settings pws ON pws.tenant_id = te.tenant_id AND pws.worker_id = te.worker_id
       LEFT JOIN jobs j ON j.tenant_id = te.tenant_id AND j.job_id = te.job_id
       LEFT JOIN break_entries be ON be.tenant_id = te.tenant_id AND be.time_entry_id = te.time_entry_id
       LEFT JOIN LATERAL (
@@ -378,7 +390,7 @@ async function listWorkerEntries(client, tenantId, workerId) {
         LIMIT 1
       ) open_break ON true
       WHERE te.tenant_id = $1 AND te.worker_id = $2
-      GROUP BY te.time_entry_id, w.name, j.job_number, j.title, open_break.break_entry_id, open_break.started_at, open_break.planned_minutes
+      GROUP BY te.time_entry_id, w.name, j.job_number, j.title, pws.max_daily_seconds, open_break.break_entry_id, open_break.started_at, open_break.planned_minutes
       ORDER BY te.clock_in DESC
       LIMIT 30
     `,
@@ -432,12 +444,15 @@ async function getTimeEntryById(client, tenantId, timeEntryId) {
              te.clock_out_lat, te.clock_out_lng, te.clock_out_accuracy_m,
              te.clock_in_note, te.clock_out_note, te.job_distance_meters, te.location_status, te.created_at,
              te.cancelled_at, te.cancelled_by_user_id, te.cancel_reason, te.payroll_status,
+             COALESCE(te.max_daily_seconds, pws.max_daily_seconds, 28800)::integer AS max_daily_seconds,
+             te.payable_seconds_capped, te.exceeded_max_daily_at, te.requires_admin_review,
              COALESCE(sum(EXTRACT(EPOCH FROM (COALESCE(be.ended_at, now()) - be.started_at))) FILTER (WHERE be.status IN ('closed', 'open')), 0)::integer AS break_seconds,
              open_break.break_entry_id AS active_break_id,
              open_break.started_at AS active_break_started_at,
              open_break.planned_minutes AS active_break_planned_minutes
       FROM time_entries te
       JOIN workers w ON w.tenant_id = te.tenant_id AND w.worker_id = te.worker_id
+      LEFT JOIN payroll_worker_settings pws ON pws.tenant_id = te.tenant_id AND pws.worker_id = te.worker_id
       LEFT JOIN jobs j ON j.tenant_id = te.tenant_id AND j.job_id = te.job_id
       LEFT JOIN break_entries be ON be.tenant_id = te.tenant_id AND be.time_entry_id = te.time_entry_id
       LEFT JOIN LATERAL (
@@ -448,7 +463,7 @@ async function getTimeEntryById(client, tenantId, timeEntryId) {
         LIMIT 1
       ) open_break ON true
       WHERE te.tenant_id = $1 AND te.time_entry_id = $2
-      GROUP BY te.time_entry_id, w.name, j.job_number, j.title, open_break.break_entry_id, open_break.started_at, open_break.planned_minutes
+      GROUP BY te.time_entry_id, w.name, j.job_number, j.title, pws.max_daily_seconds, open_break.break_entry_id, open_break.started_at, open_break.planned_minutes
     `,
     [tenantId, timeEntryId],
   );
@@ -515,6 +530,140 @@ async function requireAssignedJobForWorker(client, tenantId, jobId, workerId) {
   };
 }
 
+async function getWorkerMaxDailySeconds(client, tenantId, workerId) {
+  const result = await client.query(
+    "SELECT COALESCE(max_daily_seconds, $3)::integer AS max_daily_seconds FROM payroll_worker_settings WHERE tenant_id = $1 AND worker_id = $2",
+    [tenantId, workerId, DEFAULT_MAX_DAILY_SECONDS],
+  );
+  return clampMaxDailySeconds(result.rows[0]?.max_daily_seconds || DEFAULT_MAX_DAILY_SECONDS);
+}
+
+async function flagExceededOpenEntries(client, context, workerId = null) {
+  const params = [context.tenant.tenantId];
+  const where = [
+    "te.tenant_id = $1",
+    "te.clock_out IS NULL",
+    "te.status IN ('active', 'on_break')",
+    "te.requires_admin_review = false",
+  ];
+  if (workerId) {
+    params.push(workerId);
+    where.push(`te.worker_id = $${params.length}`);
+  }
+  const result = await client.query(
+    `
+      SELECT te.time_entry_id, te.worker_id, w.name AS worker_name, te.job_id,
+             COALESCE(te.max_daily_seconds, pws.max_daily_seconds, $${params.length + 1})::integer AS max_daily_seconds,
+             GREATEST(0, EXTRACT(EPOCH FROM (now() - te.clock_in)))::integer AS gross_seconds,
+             COALESCE(sum(EXTRACT(EPOCH FROM (COALESCE(be.ended_at, now()) - be.started_at))) FILTER (WHERE be.status IN ('closed', 'open')), 0)::integer AS break_seconds
+      FROM time_entries te
+      JOIN workers w ON w.tenant_id = te.tenant_id AND w.worker_id = te.worker_id
+      LEFT JOIN payroll_worker_settings pws ON pws.tenant_id = te.tenant_id AND pws.worker_id = te.worker_id
+      LEFT JOIN break_entries be ON be.tenant_id = te.tenant_id AND be.time_entry_id = te.time_entry_id
+      WHERE ${where.join(" AND ")}
+      GROUP BY te.time_entry_id, w.name, pws.max_daily_seconds
+      HAVING GREATEST(0, EXTRACT(EPOCH FROM (now() - te.clock_in)))::integer
+        - COALESCE(sum(EXTRACT(EPOCH FROM (COALESCE(be.ended_at, now()) - be.started_at))) FILTER (WHERE be.status IN ('closed', 'open')), 0)::integer
+        > COALESCE(te.max_daily_seconds, pws.max_daily_seconds, $${params.length + 1})::integer
+      LIMIT 50
+    `,
+    [...params, DEFAULT_MAX_DAILY_SECONDS],
+  );
+
+  for (const row of result.rows) {
+    const maxDailySeconds = clampMaxDailySeconds(row.max_daily_seconds);
+    const payableSeconds = Math.min(Math.max(0, Number(row.gross_seconds || 0) - Number(row.break_seconds || 0)), maxDailySeconds);
+    await client.query(
+      `
+        UPDATE time_entries
+        SET requires_admin_review = true,
+            exceeded_max_daily_at = COALESCE(exceeded_max_daily_at, now()),
+            payable_seconds_capped = $3,
+            max_daily_seconds = COALESCE(max_daily_seconds, $4)
+        WHERE tenant_id = $1 AND time_entry_id = $2 AND requires_admin_review = false
+      `,
+      [context.tenant.tenantId, row.time_entry_id, payableSeconds, maxDailySeconds],
+    );
+    await recordDailyLimitException(client, context, row, payableSeconds, maxDailySeconds);
+  }
+}
+
+async function applyDailyLimitToClosedEntry(client, context, timeEntryId) {
+  const result = await client.query(
+    `
+      SELECT te.time_entry_id, te.worker_id, w.name AS worker_name, te.job_id,
+             COALESCE(te.max_daily_seconds, pws.max_daily_seconds, $3)::integer AS max_daily_seconds,
+             GREATEST(0, EXTRACT(EPOCH FROM (te.clock_out - te.clock_in)))::integer AS gross_seconds,
+             COALESCE(sum(EXTRACT(EPOCH FROM (COALESCE(be.ended_at, te.clock_out) - be.started_at))) FILTER (WHERE be.status IN ('closed', 'open')), 0)::integer AS break_seconds
+      FROM time_entries te
+      JOIN workers w ON w.tenant_id = te.tenant_id AND w.worker_id = te.worker_id
+      LEFT JOIN payroll_worker_settings pws ON pws.tenant_id = te.tenant_id AND pws.worker_id = te.worker_id
+      LEFT JOIN break_entries be ON be.tenant_id = te.tenant_id AND be.time_entry_id = te.time_entry_id
+      WHERE te.tenant_id = $1 AND te.time_entry_id = $2 AND te.clock_out IS NOT NULL
+      GROUP BY te.time_entry_id, w.name, pws.max_daily_seconds
+    `,
+    [context.tenant.tenantId, timeEntryId, DEFAULT_MAX_DAILY_SECONDS],
+  );
+  const row = result.rows[0];
+  if (!row) {
+    return null;
+  }
+  const maxDailySeconds = clampMaxDailySeconds(row.max_daily_seconds);
+  const netSeconds = Math.max(0, Number(row.gross_seconds || 0) - Number(row.break_seconds || 0));
+  const payableSeconds = Math.min(netSeconds, maxDailySeconds);
+  const exceeded = netSeconds > maxDailySeconds;
+  await client.query(
+    `
+      UPDATE time_entries
+      SET max_daily_seconds = COALESCE(max_daily_seconds, $3),
+          payable_seconds_capped = $4,
+          requires_admin_review = requires_admin_review OR $5,
+          exceeded_max_daily_at = CASE WHEN $5 THEN COALESCE(exceeded_max_daily_at, now()) ELSE exceeded_max_daily_at END
+      WHERE tenant_id = $1 AND time_entry_id = $2
+    `,
+    [context.tenant.tenantId, timeEntryId, maxDailySeconds, payableSeconds, exceeded],
+  );
+  if (exceeded) {
+    await recordDailyLimitException(client, context, row, payableSeconds, maxDailySeconds);
+  }
+  return { payableSeconds, maxDailySeconds, exceeded };
+}
+
+async function recordDailyLimitException(client, context, row, payableSeconds, maxDailySeconds) {
+  const exceededHours = (Math.max(0, Number(row.gross_seconds || 0) - Number(row.break_seconds || 0)) / 3600).toFixed(2);
+  const maxHours = (maxDailySeconds / 3600).toFixed(2);
+  const message = `${row.worker_name || "Trabajador"} supero el maximo diario configurado (${maxHours} h). Tiempo detectado: ${exceededHours} h; tiempo pagable automatico limitado a ${(payableSeconds / 3600).toFixed(2)} h.`;
+  const exception = await client.query(
+    `
+      INSERT INTO attendance_exceptions (
+        tenant_id, time_entry_id, worker_id, job_id, exception_type, status, description, attempted_at
+      )
+      VALUES ($1, $2, $3, $4, 'daily_limit_exceeded', 'open', $5, now())
+      ON CONFLICT (tenant_id, time_entry_id, exception_type)
+      WHERE exception_type = 'daily_limit_exceeded' AND time_entry_id IS NOT NULL
+      DO UPDATE SET description = EXCLUDED.description, attempted_at = now()
+      RETURNING attendance_exception_id
+    `,
+    [context.tenant.tenantId, row.time_entry_id, row.worker_id, row.job_id || null, message],
+  );
+  const exceptionId = exception.rows[0]?.attendance_exception_id;
+  await writeAudit(client, context, "attendance.daily_limit_exceeded", "time_entry", row.time_entry_id, {
+    workerId: row.worker_id,
+    maxDailySeconds,
+    payableSeconds,
+  });
+  await enqueueNotificationForRoles(
+    client,
+    context.tenant.tenantId,
+    ["admin", "manager"],
+    "Jornada excede limite diario",
+    message,
+    "warning",
+    exceptionId || row.time_entry_id,
+    "attendance.daily_limit_exceeded",
+  );
+}
+
 async function writeAudit(client, context, action, entityType, entityId, metadata) {
   await client.query(
     `
@@ -526,7 +675,7 @@ async function writeAudit(client, context, action, entityType, entityId, metadat
 }
 
 async function enqueueNotification(client, tenantId, audienceRole, title, message, severity, relatedId, eventKey) {
-  const relatedEntityType = eventKey === "attendance.clock_in_blocked" ? "attendance_exception" : "time_entry";
+  const relatedEntityType = eventKey === "attendance.clock_in_blocked" || eventKey === "attendance.daily_limit_exceeded" ? "attendance_exception" : "time_entry";
   await client.query(
     `
       INSERT INTO notification_queue (tenant_id, audience_role, channel, event_key, title, message, severity, related_entity_type, related_entity_id)
@@ -601,9 +750,20 @@ function validateLimit(value, fallback, max) {
   return Math.min(numeric, max);
 }
 
+function clampMaxDailySeconds(value) {
+  const numeric = Number(value || DEFAULT_MAX_DAILY_SECONDS);
+  if (!Number.isFinite(numeric)) {
+    return DEFAULT_MAX_DAILY_SECONDS;
+  }
+  return Math.min(86400, Math.max(3600, Math.round(numeric)));
+}
+
 function mapTimeEntry(row) {
   const breakSeconds = Number(row.break_seconds || 0);
   const grossSeconds = row.clock_out ? Math.max(0, (new Date(row.clock_out).getTime() - new Date(row.clock_in).getTime()) / 1000) : 0;
+  const actualSeconds = row.clock_out ? Math.max(0, Math.round(grossSeconds - breakSeconds)) : 0;
+  const maxDailySeconds = clampMaxDailySeconds(row.max_daily_seconds);
+  const payableSeconds = row.payable_seconds_capped === null || row.payable_seconds_capped === undefined ? Math.min(actualSeconds, maxDailySeconds) : Number(row.payable_seconds_capped || 0);
   return {
     timeEntryId: row.time_entry_id,
     workerId: row.worker_id,
@@ -617,7 +777,12 @@ function mapTimeEntry(row) {
     submittedAt: row.submitted_at?.toISOString?.() || row.submitted_at || "",
     serverRecorded: Boolean(row.server_recorded),
     breakSeconds,
-    totalSeconds: row.clock_out ? Math.max(0, Math.round(grossSeconds - breakSeconds)) : 0,
+    totalSeconds: actualSeconds,
+    payableSeconds,
+    maxDailySeconds,
+    exceededMaxDaily: Boolean(row.exceeded_max_daily_at) || actualSeconds > maxDailySeconds,
+    exceededMaxDailyAt: row.exceeded_max_daily_at?.toISOString?.() || row.exceeded_max_daily_at || "",
+    requiresAdminReview: Boolean(row.requires_admin_review),
     activeBreak: row.active_break_id
       ? {
           breakEntryId: row.active_break_id,

@@ -12,6 +12,8 @@ export type PayrollWorker = {
   dailyRate: number;
   paymentFrequency: "daily" | "weekly" | "biweekly" | "monthly";
   currency: "USD" | "COP" | "EUR";
+  maxDailySeconds: number;
+  maxDailyHours: number;
   pendingEntries: number;
   pendingGrossSeconds: number;
   pendingBreakSeconds: number;
@@ -67,9 +69,9 @@ export async function listPayrollWorkers(token: string, filters: { periodStart?:
 export async function updatePayrollWorkerSettings(
   token: string,
   workerId: string,
-  input: Pick<PayrollWorker, "payType" | "hourlyRate" | "dailyRate" | "paymentFrequency" | "currency">,
+  input: Pick<PayrollWorker, "payType" | "hourlyRate" | "dailyRate" | "paymentFrequency" | "currency" | "maxDailySeconds">,
 ) {
-  const response = await requestJson<{ settings: Pick<PayrollWorker, "payType" | "hourlyRate" | "dailyRate" | "paymentFrequency" | "currency"> }>(
+  const response = await requestJson<{ settings: Pick<PayrollWorker, "payType" | "hourlyRate" | "dailyRate" | "paymentFrequency" | "currency" | "maxDailySeconds" | "maxDailyHours"> }>(
     `/api/payroll/workers/${workerId}/settings`,
     {
       method: "PATCH",

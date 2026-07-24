@@ -16,6 +16,7 @@ function readProjectFile(path) {
 
 const migration = readProjectFile("database/migrations/0025_attendance_runtime_and_user_roles.sql");
 const geofenceMigration = readProjectFile("database/migrations/0063_job_geofence_attendance_hardening.sql");
+const dailyLimitMigration = readProjectFile("database/migrations/0064_attendance_daily_limit_payroll.sql");
 const repository = readProjectFile("server/runtime/postgresAttendanceRepository.mjs");
 const server = readProjectFile("server/runtime/server.mjs");
 const routes = readProjectFile("server/runtime/runtimeRoutes.mjs");
@@ -29,6 +30,8 @@ const packageJson = JSON.parse(readProjectFile("package.json") || "{}");
 
 check("Migration agrega ubicacion puntual", migration.includes("clock_in_lat") && migration.includes("clock_out_lat"), "location columns");
 check("Migration agrega intentos bloqueados GPS", geofenceMigration.includes("job_distance_meters") && geofenceMigration.includes("location_status"), "blocked geofence columns");
+check("Migration agrega limite diario de jornada", dailyLimitMigration.includes("max_daily_seconds") && dailyLimitMigration.includes("requires_admin_review") && dailyLimitMigration.includes("payable_seconds_capped"), "daily limit columns");
+check("Migration evita duplicar excepciones de limite diario", dailyLimitMigration.includes("uq_attendance_exception_daily_limit_open"), "daily limit exception uniqueness");
 check("Migration blinda intentos bloqueados por tenant", geofenceMigration.includes("fk_attendance_exceptions_tenant_job") && geofenceMigration.includes("fk_attendance_exceptions_tenant_worker"), "blocked geofence tenant FKs");
 check("Migration agrega capacidades asistencia", migration.includes("attendance.self.visual") && migration.includes("attendance.review.visual"), "capabilities");
 check("Migration define matriz manager/worker", migration.includes("r.code = 'manager'") && migration.includes("r.code = 'worker'"), "role grants");
@@ -41,6 +44,9 @@ check("Attendance repository bloquea jornada doble", repository.includes("Ya tie
 check("Attendance repository exige obra asignada al trabajador", repository.includes("requireAssignedJobForWorker") && repository.includes("a.worker_id = $3"), "assigned job");
 check("Attendance repository bloquea fuera de radio antes de crear jornada", repository.includes("ATTENDANCE_LOCATION_BLOCKED") && repository.indexOf("attendanceBlockedError") < repository.indexOf("INSERT INTO time_entries"), "strict geofence");
 check("Attendance repository registra intentos bloqueados", repository.includes("recordBlockedClockInAttempt") && repository.includes("attendance.clock_in_blocked"), "blocked attempts");
+check("Attendance repository congela limite diario al registrar entrada", repository.includes("getWorkerMaxDailySeconds") && repository.includes("max_daily_seconds"), "daily limit snapshot");
+check("Attendance repository marca jornadas abiertas excedidas", repository.includes("flagExceededOpenEntries") && repository.includes("daily_limit_exceeded"), "open daily limit flag");
+check("Attendance repository calcula tiempo pagable limitado", repository.includes("payable_seconds_capped") && repository.includes("Math.min(actualSeconds, maxDailySeconds)"), "capped payable seconds");
 check("Attendance repository maneja descanso", repository.includes("startBreak") && repository.includes("endBreak"), "breaks");
 check("Attendance repository maneja descanso planificado", repository.includes("planned_minutes") && repository.includes("validateBreakStartInput"), "planned break");
 check("Attendance repository permite cancelar entrada auditada", repository.includes("cancelEntry") && repository.includes("attendance.clock_in_cancelled"), "cancel entry");
@@ -63,6 +69,7 @@ check("Attendance API permite filtros seguros de historial", apiClient.includes(
 check("Attendance API cubre acciones", apiClient.includes("clockIn") && apiClient.includes("clockOut") && apiClient.includes("startBreak"), "api actions");
 check("Attendance API cubre cancelar entrada y descanso planificado", apiClient.includes("cancelEntry") && apiClient.includes("plannedMinutes"), "api cancel planned");
 check("Attendance API expone intentos bloqueados", apiClient.includes("AttendanceBlockedAttempt") && apiClient.includes("blockedAttempts"), "blocked attempts api");
+check("Attendance API expone limite diario y revision", apiClient.includes("maxDailySeconds") && apiClient.includes("requiresAdminReview") && apiClient.includes("payableSeconds"), "daily limit api");
 
 check("Admin attendance page no usa mock data", !adminPage.includes("mock-data") && adminPage.includes("listTimeEntries"), "admin real");
 check("Admin attendance page muestra intentos bloqueados GPS", adminPage.includes("Intentos bloqueados por ubicacion") && adminPage.includes("blockedAttempts"), "blocked attempts ui");
@@ -71,12 +78,14 @@ check("Admin attendance page sincroniza jornadas abiertas de forma moderada", ad
 check("Admin attendance page usa tarjetas legibles con etiquetas", adminPage.includes("attendance-record-card") && adminPage.includes("Inicio de jornada") && adminPage.includes("Horas trabajadas"), "admin record cards");
 check("Admin attendance page muestra historial por periodo", adminPage.includes("Historial de asistencia") && adminPage.includes("historyGroup") && adminPage.includes("attendance-history-card"), "history ui");
 check("Admin attendance page muestra estado aprobado/rechazado en acciones", adminPage.includes("review-state-button success") && adminPage.includes("review-state-button danger"), "review state buttons");
+check("Admin attendance page muestra tiempo pagable limitado", adminPage.includes("Tiempo pagable automatico") && adminPage.includes("Maximo diario"), "capped payable ui");
 check("Admin attendance page confirma aprobacion o rechazo", adminPage.includes("reviewIntent") && adminPage.includes("Confirmar aprobacion") && adminPage.includes("Si, rechazar jornada"), "admin review confirmation");
 check("Production workspace incluye asistencia", productionWorkspace.includes("<AttendanceRealPage") && productionWorkspace.includes('label: "Asistencia"'), "workspace");
 check("Worker workspace usa asistencia real", workerWorkspace.includes("getMyAttendance") && workerWorkspace.includes("Registrar entrada"), "worker real");
 check("Worker workspace usa confirmaciones antes de guardar", workerWorkspace.includes("Confirmar entrada") && workerWorkspace.includes("confirmAttendanceIntent"), "confirmations");
 check("Worker workspace usa puente nativo de ubicacion", workerWorkspace.includes("capturePointInTimeLocation"), "native bridge");
 check("Worker workspace muestra horas trabajadas y descansadas", workerWorkspace.includes("Trabajado hoy") && workerWorkspace.includes("Descanso semana"), "worker hour summary");
+check("Worker workspace detiene contador en limite diario", workerWorkspace.includes("Maximo diario alcanzado") && workerWorkspace.includes("Math.min(rawWorkedSeconds, maxDailySeconds)"), "worker daily cap");
 check("Worker workspace calcula jornada en cliente sin llamadas por segundo", workerWorkspace.includes("calculateWorkerAttendanceStats") && workerWorkspace.includes("useClockTicker") && workerWorkspace.includes("attendanceLoadedAt"), "worker local timer");
 check("Puente nativo captura geolocalizacion puntual", nativeCapabilities.includes("navigator.geolocation") && nativeCapabilities.includes("enableHighAccuracy"), "location");
 
