@@ -53,6 +53,7 @@ check("Perfiles fiscales cubren US CO ES", fiscalProfiles.includes("countryProfi
 
 check("Organization repository usa tenant context", orgRepo.includes("set_config('app.tenant_id'"), "app.tenant_id");
 check("Organization repository valida pais/moneda/unidades", orgRepo.includes("COUNTRIES") && orgRepo.includes("CURRENCIES") && orgRepo.includes("UNIT_SYSTEMS"), "validation");
+check("Organization repository permite logo local validado", orgRepo.includes("validateLogoUrl") && orgRepo.includes("data:image") && orgRepo.includes("1_100_000"), "logo validator");
 check("Organization repository guarda aceptacion con evidencia", orgRepo.includes("tenant_policy_acceptances") && orgRepo.includes("evidence_hash"), "policy evidence");
 check("Organization repository audita cambios", orgRepo.includes("organization.settings.updated") && orgRepo.includes("compliance.policies.accepted"), "audit");
 check("Organization repository gestiona preferencias privacidad", orgRepo.includes("getPrivacyPreferences") && orgRepo.includes("updatePrivacyPreferences"), "privacy repo");
@@ -94,6 +95,7 @@ check("Workspace avisa limite almacenamiento", workspace.includes("Limite de alm
 check("API client expone privacidad", apiClient.includes("getPrivacyPreferences") && apiClient.includes("updatePrivacyPreferences"), "privacy client");
 check("API client expone lectura de cuotas tenant", apiClient.includes("getTenantUsage") && !apiClient.includes("updateTenantUsageLimits"), "usage client");
 check("Settings page no usa mock data", !settingsPage.includes("mock-data"), "no mock");
+check("Settings page muestra preview de logo tenant", settingsPage.includes("tenant-logo-preview") && settingsPage.includes("Logo local listo para guardar"), "logo preview");
 check("Settings page permite aceptar politicas", settingsPage.includes("acceptRequiredPolicies") && settingsPage.includes("Registrar aceptacion"), "policies");
 check("Settings page permite preferencias privacidad", settingsPage.includes("Cookies y comunicaciones") && settingsPage.includes("PreferenceToggle") && settingsPage.includes("updatePrivacyPreferences"), "privacy ui");
 check("Settings page indica no esenciales apagadas", settingsPage.includes("No esenciales apagadas") && settingsPage.includes("No se activan rastreos"), "privacy copy");

@@ -403,6 +403,16 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
               <div className="grid proof-grid">
                 <label className="form-control">
                   <span>Logo desde archivo</span>
+                  {settings.logoUrl ? (
+                    <div className="tenant-logo-preview">
+                      <img src={settings.logoUrl} alt="Logo actual de la empresa" />
+                      <span>{settings.logoUrl.startsWith("data:") ? "Logo local listo para guardar" : "Logo desde URL"}</span>
+                    </div>
+                  ) : (
+                    <div className="tenant-logo-preview empty">
+                      <span>Sin logo personalizado</span>
+                    </div>
+                  )}
                   <input className="input" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoFile} />
                   <small className="activity-meta">Tambien puedes pegar una URL si ya tienes el logo alojado.</small>
                   <input

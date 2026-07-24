@@ -111,6 +111,34 @@ button {
   background: rgba(255, 255, 255, 0.96);
 }
 
+.tenant-logo-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.96);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tenant-logo-preview img {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.tenant-logo-preview.empty {
+  justify-content: center;
+  border-style: dashed;
+}
+
 .brand-name {
   margin: 0;
   font-size: 18px;
@@ -3473,6 +3501,16 @@ button {
 .theme-dark .form-control > span,
 .theme-dark .form-grid label > span {
   color: #b8c2d4;
+}
+
+.theme-dark .tenant-logo-preview {
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.78);
+  color: #b8c2d4;
+}
+
+.theme-dark .tenant-logo-preview img {
+  background: rgba(255, 255, 255, 0.94);
 }
 
 .theme-dark .input,

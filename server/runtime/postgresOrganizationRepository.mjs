@@ -609,7 +609,7 @@ function validateSettings(input) {
     workerSupportWhatsappUrl: nullableText(input.workerSupportWhatsappUrl || input.worker_support_whatsapp_url, 500),
     companyEmail: nullableText(input.companyEmail || input.company_email, 180),
     companyWebsite: nullableText(input.companyWebsite || input.company_website, 180),
-    logoUrl: nullableText(input.logoUrl || input.logo_url, 500),
+    logoUrl: validateLogoUrl(input.logoUrl || input.logo_url),
     estimateTemplateId: validateEnum(input.estimateTemplateId || input.estimate_template_id || "estimate_classic_blue", ESTIMATE_TEMPLATES, "Plantilla de cotizacion no soportada."),
     invoiceTemplateId: validateEnum(input.invoiceTemplateId || input.invoice_template_id || "invoice_clean_red", INVOICE_TEMPLATES, "Plantilla de factura no soportada."),
     documentCompanyVisibility: normalizeVisibility(input.documentCompanyVisibility || input.document_company_visibility),
@@ -955,6 +955,26 @@ function nullableText(value, maxLength) {
     validationError(`El campo excede ${maxLength} caracteres.`);
   }
   return text;
+}
+
+function validateLogoUrl(value) {
+  const text = String(value || "").trim();
+  if (!text) {
+    return null;
+  }
+
+  if (/^data:image\/(?:png|jpe?g|webp|svg\+xml);base64,[a-z0-9+/=\s]+$/iu.test(text)) {
+    if (text.length > 1_100_000) {
+      validationError("El logo es demasiado pesado. Usa una imagen menor a 750 KB.");
+    }
+    return text.replace(/\s+/g, "");
+  }
+
+  if (!/^https:\/\/[^\s]+$/iu.test(text) && !text.startsWith("/")) {
+    validationError("El logo debe ser una URL HTTPS, una ruta interna o una imagen local valida.");
+  }
+
+  return nullableText(text, 1_000);
 }
 
 function generateTemporaryPassword() {

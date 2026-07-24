@@ -28,7 +28,7 @@ import { createPostgresWorkforceRepository } from "./postgresWorkforceRepository
 import { storeGeneratedDocumentBuffer } from "./storageRuntime.mjs";
 
 const DEFAULT_PORT = 8789;
-const MAX_REQUEST_BYTES = 1024 * 1024;
+const MAX_REQUEST_BYTES = 2 * 1024 * 1024;
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000;
 const DEFAULT_RATE_LIMIT_MAX_REQUESTS = 120;
 const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60_000;
