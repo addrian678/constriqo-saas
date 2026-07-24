@@ -6,6 +6,7 @@ import { Button } from "../../../shared/components/Button";
 import { BasicModal } from "../../../shared/components/BasicModal";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { PageHeader } from "../../../shared/components/PageHeader";
+import { StatCard } from "../../../shared/components/StatCard";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
 import { listJobs, type JobSummary } from "../../jobs/api/jobClient";
 import {
@@ -100,6 +101,9 @@ export function FinanceRealPage({ session }: FinanceRealPageProps) {
   const visiblePeriod = selectedMonth
     ? dashboard?.monthlyHistory?.find((item) => item.month === selectedMonth) || null
     : dashboard ? dashboard.periods[selectedPeriod] : null;
+  const charts = buildFinanceCharts(dashboard);
+  const netProfitTone = (dashboard?.summary.netProfit || 0) >= 0 ? "positive" : "danger";
+  const equityTone = (dashboard?.summary.equity || 0) >= 0 ? "positive" : "warning";
   const sortedExpenses = useMemo(() => expenses.slice(0, 12), [expenses]);
 
   useEffect(() => {
@@ -298,10 +302,10 @@ export function FinanceRealPage({ session }: FinanceRealPageProps) {
       {message ? <p className="login-notice">{message}</p> : null}
 
       <section className="grid stats-grid crm-real-stats">
-        <SummaryCard label="Ingresos mes" value={dashboard ? formatMoney(dashboard.summary.income, currency) : "Cargando"} icon={<BadgeDollarSign size={20} />} note="Mes calendario actual" />
-        <SummaryCard label="Egresos mes" value={dashboard ? formatMoney(dashboard.summary.expenses, currency) : "Cargando"} icon={<WalletCards size={20} />} note="Mes calendario actual" />
-        <SummaryCard label="Utilidad mes" value={dashboard ? formatMoney(dashboard.summary.netProfit, currency) : "Cargando"} icon={<TrendingUp size={20} />} note="Mes calendario actual" />
-        <SummaryCard label="Patrimonio" value={dashboard ? formatMoney(dashboard.summary.equity, currency) : "Cargando"} icon={<Landmark size={20} />} />
+        <StatCard label="Ingresos mes" value={dashboard ? formatMoney(dashboard.summary.income, currency) : "Cargando"} icon={BadgeDollarSign} tone="positive" note="Mes calendario actual" chart={charts.income} />
+        <StatCard label="Egresos mes" value={dashboard ? formatMoney(dashboard.summary.expenses, currency) : "Cargando"} icon={WalletCards} tone="warning" note="Mes calendario actual" chart={charts.expenses} />
+        <StatCard label="Utilidad mes" value={dashboard ? formatMoney(dashboard.summary.netProfit, currency) : "Cargando"} icon={TrendingUp} tone={netProfitTone} note="Mes calendario actual" chart={charts.netProfit} />
+        <StatCard label="Patrimonio" value={dashboard ? formatMoney(dashboard.summary.equity, currency) : "Cargando"} icon={Landmark} tone={equityTone} note="Activos menos pasivos" chart={charts.equity} />
       </section>
 
       <BasicModal title="Proveedor" open={activePanel === "vendor"} onClose={() => setActivePanel(null)} size="wide" footer={null}>
@@ -408,10 +412,10 @@ export function FinanceRealPage({ session }: FinanceRealPageProps) {
             <StatusBadge label="Historico" tone="info" />
           </div>
           <div className="grid proof-grid">
-            <SummaryCard label="Ingresos acumulados" value={dashboard ? formatMoney(dashboard.summary.accumulatedIncome || 0, currency) : "Cargando"} icon={<BadgeDollarSign size={18} />} />
-            <SummaryCard label="Egresos acumulados" value={dashboard ? formatMoney(dashboard.summary.accumulatedExpenses || 0, currency) : "Cargando"} icon={<WalletCards size={18} />} />
-            <SummaryCard label="Utilidad acumulada" value={dashboard ? formatMoney(dashboard.summary.accumulatedNetProfit || 0, currency) : "Cargando"} icon={<TrendingUp size={18} />} />
-            <SummaryCard label="Patrimonio actual" value={dashboard ? formatMoney(dashboard.summary.equity, currency) : "Cargando"} icon={<Landmark size={18} />} />
+            <MiniSummaryCard label="Ingresos acumulados" value={dashboard ? formatMoney(dashboard.summary.accumulatedIncome || 0, currency) : "Cargando"} icon={<BadgeDollarSign size={18} />} />
+            <MiniSummaryCard label="Egresos acumulados" value={dashboard ? formatMoney(dashboard.summary.accumulatedExpenses || 0, currency) : "Cargando"} icon={<WalletCards size={18} />} />
+            <MiniSummaryCard label="Utilidad acumulada" value={dashboard ? formatMoney(dashboard.summary.accumulatedNetProfit || 0, currency) : "Cargando"} icon={<TrendingUp size={18} />} />
+            <MiniSummaryCard label="Patrimonio actual" value={dashboard ? formatMoney(dashboard.summary.equity, currency) : "Cargando"} icon={<Landmark size={18} />} />
           </div>
         </div>
       </section>
@@ -574,7 +578,7 @@ export function FinanceRealPage({ session }: FinanceRealPageProps) {
   );
 }
 
-function SummaryCard({ icon, label, value, note = "Calculado desde datos reales del tenant" }: { icon: ReactNode; label: string; value: string; note?: string }) {
+function MiniSummaryCard({ icon, label, value, note = "Calculado desde datos reales del tenant" }: { icon: ReactNode; label: string; value: string; note?: string }) {
   return (
     <article className="stat-card">
       <div className="stat-top">
@@ -672,4 +676,20 @@ function toLocalDateTime(value?: string) {
 
 function dispatchDataChanged(module: string) {
   window.dispatchEvent(new CustomEvent("constriqo:data-changed", { detail: { module } }));
+}
+
+function buildFinanceCharts(dashboard: FinanceDashboard | null) {
+  const history = dashboard?.monthlyHistory?.slice(-8) || [];
+  return {
+    income: normalizeSeries(history.map((item) => item.income)),
+    expenses: normalizeSeries(history.map((item) => item.expenses)),
+    netProfit: normalizeSeries(history.map((item) => Math.abs(item.netProfit))),
+    equity: normalizeSeries([dashboard?.summary.equity || 0]),
+  };
+}
+
+function normalizeSeries(values: number[]) {
+  const source = values.length > 1 ? values : [0, ...values, ...values, 0];
+  const max = Math.max(...source.map((value) => Math.abs(value)), 1);
+  return source.map((value) => 18 + (Math.abs(value) / max) * 74);
 }

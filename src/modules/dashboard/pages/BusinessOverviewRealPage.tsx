@@ -5,6 +5,7 @@ import type { AuthenticatedSession } from "../../../app/auth/authClient";
 import { Button } from "../../../shared/components/Button";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { PageHeader } from "../../../shared/components/PageHeader";
+import { StatCard } from "../../../shared/components/StatCard";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
 import { listCrmClients } from "../../crm/api/crmClient";
 import { getCachedFinanceDashboard, getFinanceDashboard, type FinanceDashboard } from "../../finance/api/financeClient";
@@ -38,6 +39,9 @@ export function BusinessOverviewRealPage({ session }: BusinessOverviewRealPagePr
   const visiblePeriod = selectedMonth
     ? dashboard?.monthlyHistory?.find((item) => item.month === selectedMonth) || null
     : dashboard?.periods[selectedPeriod] || null;
+  const charts = buildFinanceCharts(dashboard);
+  const netProfitTone = (dashboard?.summary.netProfit || 0) >= 0 ? "positive" : "danger";
+  const equityTone = (dashboard?.summary.equity || 0) >= 0 ? "positive" : "warning";
 
   useEffect(() => {
     void refresh();
@@ -145,14 +149,14 @@ export function BusinessOverviewRealPage({ session }: BusinessOverviewRealPagePr
       {message ? <p className="login-notice">{message}</p> : null}
 
       <section className="grid stats-grid crm-real-stats">
-        <SummaryCard label="Ingresos mes" value={dashboard ? formatMoney(dashboard.summary.income, currency) : "Cargando"} icon={<BadgeDollarSign size={20} />} tone="success" note="Mes calendario actual" />
-        <SummaryCard label="Egresos mes" value={dashboard ? formatMoney(dashboard.summary.expenses, currency) : "Cargando"} icon={<WalletCards size={20} />} tone="warning" note="Mes calendario actual" />
-        <SummaryCard label="Activos" value={dashboard ? formatMoney(dashboard.summary.assets, currency) : "Cargando"} icon={<Building2 size={20} />} tone="info" />
-        <SummaryCard label="Pasivos" value={dashboard ? formatMoney(dashboard.summary.liabilities, currency) : "Cargando"} icon={<Landmark size={20} />} tone="danger" />
-        <SummaryCard label="Utilidad mes" value={dashboard ? formatMoney(dashboard.summary.netProfit, currency) : "Cargando"} icon={<TrendingUp size={20} />} tone={(dashboard?.summary.netProfit || 0) >= 0 ? "success" : "danger"} note="Mes calendario actual" />
-        <SummaryCard label="Balance empresa" value={dashboard ? formatMoney(dashboard.summary.equity, currency) : "Cargando"} icon={<Landmark size={20} />} tone={(dashboard?.summary.equity || 0) >= 0 ? "success" : "warning"} />
-        <SummaryCard label="Por cobrar" value={dashboard ? formatMoney(dashboard.summary.receivables, currency) : "Cargando"} icon={<BadgeDollarSign size={20} />} tone="info" />
-        <SummaryCard label="Por pagar" value={dashboard ? formatMoney(dashboard.summary.payables, currency) : "Cargando"} icon={<WalletCards size={20} />} tone="warning" />
+        <StatCard label="Ingresos mes" value={dashboard ? formatMoney(dashboard.summary.income, currency) : "Cargando"} icon={BadgeDollarSign} tone="positive" note="Mes calendario actual" chart={charts.income} />
+        <StatCard label="Egresos mes" value={dashboard ? formatMoney(dashboard.summary.expenses, currency) : "Cargando"} icon={WalletCards} tone="warning" note="Mes calendario actual" chart={charts.expenses} />
+        <StatCard label="Activos" value={dashboard ? formatMoney(dashboard.summary.assets, currency) : "Cargando"} icon={Building2} tone="info" note="Valor actual registrado" chart={charts.assets} />
+        <StatCard label="Pasivos" value={dashboard ? formatMoney(dashboard.summary.liabilities, currency) : "Cargando"} icon={Landmark} tone="danger" note="Obligaciones abiertas" chart={charts.liabilities} />
+        <StatCard label="Utilidad mes" value={dashboard ? formatMoney(dashboard.summary.netProfit, currency) : "Cargando"} icon={TrendingUp} tone={netProfitTone} note="Mes calendario actual" chart={charts.netProfit} />
+        <StatCard label="Balance empresa" value={dashboard ? formatMoney(dashboard.summary.equity, currency) : "Cargando"} icon={Landmark} tone={equityTone} note="Activos menos pasivos" chart={charts.equity} />
+        <StatCard label="Por cobrar" value={dashboard ? formatMoney(dashboard.summary.receivables, currency) : "Cargando"} icon={BadgeDollarSign} tone="info" note="Facturas pendientes" chart={charts.receivables} />
+        <StatCard label="Por pagar" value={dashboard ? formatMoney(dashboard.summary.payables, currency) : "Cargando"} icon={WalletCards} tone="warning" note="Gastos y pasivos" chart={charts.payables} />
       </section>
 
       <section className="grid two-column crm-real-grid" style={{ marginTop: 16 }}>
@@ -195,21 +199,6 @@ export function BusinessOverviewRealPage({ session }: BusinessOverviewRealPagePr
         </div>
       </section>
     </section>
-  );
-}
-
-function SummaryCard({ icon, label, value, tone, note = "Calculado desde datos reales del tenant" }: { icon: ReactNode; label: string; value: string; tone: "info" | "success" | "warning" | "danger"; note?: string }) {
-  return (
-    <article className="stat-card">
-      <div className="stat-top">
-        <div>
-          <p className="stat-label">{label}</p>
-          <p className="stat-value">{value}</p>
-        </div>
-        <span className={`stat-icon ${tone}`}>{icon}</span>
-      </div>
-      <span className="stat-note">{note}</span>
-    </article>
   );
 }
 
@@ -295,4 +284,27 @@ function periodLabel(period: string) {
 function monthLabel(value: string) {
   const date = new Date(`${value}-01T00:00:00`);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric" }).format(date);
+}
+
+function buildFinanceCharts(dashboard: FinanceDashboard | null) {
+  const history = dashboard?.monthlyHistory?.slice(-8) || [];
+  const income = normalizeSeries(history.map((item) => item.income));
+  const expenses = normalizeSeries(history.map((item) => item.expenses));
+  const netProfit = normalizeSeries(history.map((item) => Math.abs(item.netProfit)));
+  return {
+    income,
+    expenses,
+    netProfit,
+    assets: normalizeSeries([dashboard?.summary.assets || 0]),
+    liabilities: normalizeSeries([dashboard?.summary.liabilities || 0]),
+    equity: normalizeSeries([dashboard?.summary.equity || 0]),
+    receivables: normalizeSeries([dashboard?.summary.receivables || 0]),
+    payables: normalizeSeries([dashboard?.summary.payables || 0]),
+  };
+}
+
+function normalizeSeries(values: number[]) {
+  const source = values.length > 1 ? values : [0, ...values, ...values, 0];
+  const max = Math.max(...source.map((value) => Math.abs(value)), 1);
+  return source.map((value) => 18 + (Math.abs(value) / max) * 74);
 }

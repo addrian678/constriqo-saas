@@ -4855,3 +4855,282 @@ button {
     margin-top: 6px;
   }
 }
+
+/* Fine responsive pass by module: denser cards, readable mobile rows and safer form modals. */
+.theme-dark .production-module-content,
+.theme-light .production-module-content {
+  gap: 18px;
+}
+
+.theme-dark .stat-card,
+.theme-light .stat-card {
+  container-type: inline-size;
+}
+
+.theme-dark .stat-card-visual,
+.theme-light .stat-card-visual {
+  max-width: 76%;
+}
+
+.theme-dark .responsive-table,
+.theme-light .responsive-table {
+  display: grid;
+}
+
+.theme-dark .table-row,
+.theme-light .table-row {
+  min-width: 0;
+}
+
+.theme-dark .table-row > *,
+.theme-light .table-row > * {
+  min-width: 0;
+}
+
+.theme-dark .table-row strong,
+.theme-dark .table-row span,
+.theme-dark .table-row p,
+.theme-light .table-row strong,
+.theme-light .table-row span,
+.theme-light .table-row p {
+  min-width: 0;
+}
+
+.theme-dark .modal-body .auth-form,
+.theme-light .modal-body .auth-form {
+  padding-bottom: 2px;
+}
+
+.theme-dark .modal-body .auth-form > .button:last-child,
+.theme-light .modal-body .auth-form > .button:last-child {
+  margin-top: 4px;
+}
+
+.theme-dark .form-control,
+.theme-light .form-control {
+  gap: 6px;
+}
+
+.theme-dark .input,
+.theme-dark .select,
+.theme-dark .textarea,
+.theme-light .input,
+.theme-light .select,
+.theme-light .textarea {
+  width: 100%;
+}
+
+.theme-dark .filters-row,
+.theme-light .filters-row {
+  align-items: end;
+}
+
+.theme-dark .proof-grid .stat-card,
+.theme-light .proof-grid .stat-card {
+  min-height: 112px;
+}
+
+@media (max-width: 760px) {
+  .theme-dark .production-module-content,
+  .theme-light .production-module-content {
+    gap: 14px;
+  }
+
+  .theme-dark .page-header,
+  .theme-light .page-header {
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+  }
+
+  .theme-dark .page-title,
+  .theme-light .page-title {
+    font-size: clamp(24px, 1.95rem, 32px);
+  }
+
+  .theme-dark .page-description,
+  .theme-light .page-description {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .theme-dark .crm-real-stats,
+  .theme-dark .stats-grid,
+  .theme-light .crm-real-stats,
+  .theme-light .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .theme-dark .crm-real-stats .stat-card,
+  .theme-dark .stats-grid .stat-card,
+  .theme-light .crm-real-stats .stat-card,
+  .theme-light .stats-grid .stat-card {
+    min-height: 126px;
+    padding: 12px;
+    gap: 7px;
+  }
+
+  .theme-dark .stat-card::before,
+  .theme-light .stat-card::before {
+    inset-inline: 10px;
+    bottom: 34px;
+  }
+
+  .theme-dark .stat-card::after,
+  .theme-light .stat-card::after {
+    inset-inline: 12px;
+    bottom: 30px;
+    height: 28px;
+  }
+
+  .theme-dark .stat-card-visual,
+  .theme-light .stat-card-visual {
+    height: 28px;
+    margin-top: 4px;
+    padding-right: 36px;
+  }
+
+  .theme-dark .stat-card-visual span,
+  .theme-light .stat-card-visual span {
+    min-width: 3px;
+    max-width: 9px;
+  }
+
+  .theme-dark .stat-label,
+  .theme-light .stat-label {
+    font-size: 11px;
+  }
+
+  .theme-dark .stat-value,
+  .theme-light .stat-value {
+    font-size: clamp(18px, 1.45rem, 24px);
+    overflow-wrap: anywhere;
+  }
+
+  .theme-dark .stat-note,
+  .theme-light .stat-note {
+    margin-top: 3px;
+    font-size: 10.5px;
+    line-height: 1.25;
+  }
+
+  .theme-dark .stat-icon,
+  .theme-light .stat-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .theme-dark .card,
+  .theme-dark .surface-panel,
+  .theme-dark .surface-subpanel,
+  .theme-light .card,
+  .theme-light .surface-panel,
+  .theme-light .surface-subpanel {
+    padding: 14px;
+  }
+
+  .theme-dark .table-row,
+  .theme-light .table-row {
+    gap: 9px;
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .theme-dark .table-row .segmented-actions,
+  .theme-light .table-row .segmented-actions {
+    justify-content: stretch;
+  }
+
+  .theme-dark .table-row .segmented-actions .button,
+  .theme-light .table-row .segmented-actions .button {
+    flex: 1 1 130px;
+  }
+
+  .theme-dark .modal,
+  .theme-light .modal {
+    width: min(100%, 620px);
+  }
+
+  .theme-dark .modal-header,
+  .theme-dark .modal-body,
+  .theme-dark .modal-footer,
+  .theme-light .modal-header,
+  .theme-light .modal-body,
+  .theme-light .modal-footer {
+    padding: 14px;
+  }
+
+  .theme-dark .auth-form,
+  .theme-light .auth-form {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 520px) {
+  .theme-dark .stats-grid,
+  .theme-dark .crm-real-stats,
+  .theme-dark.super-admin-shell .super-admin-stats-grid,
+  .theme-light .stats-grid,
+  .theme-light .crm-real-stats,
+  .theme-light.super-admin-shell .super-admin-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .theme-dark .stats-grid .stat-card,
+  .theme-dark .crm-real-stats .stat-card,
+  .theme-light .stats-grid .stat-card,
+  .theme-light .crm-real-stats .stat-card {
+    min-height: 112px;
+  }
+
+  .theme-dark .stats-grid .stat-card-visual,
+  .theme-dark .crm-real-stats .stat-card-visual,
+  .theme-dark .stats-grid .stat-card::after,
+  .theme-dark .crm-real-stats .stat-card::after,
+  .theme-light .stats-grid .stat-card-visual,
+  .theme-light .crm-real-stats .stat-card-visual,
+  .theme-light .stats-grid .stat-card::after,
+  .theme-light .crm-real-stats .stat-card::after {
+    display: none;
+  }
+
+  .theme-dark .stats-grid .stat-card::before,
+  .theme-dark .crm-real-stats .stat-card::before,
+  .theme-light .stats-grid .stat-card::before,
+  .theme-light .crm-real-stats .stat-card::before {
+    display: block;
+    bottom: 34px;
+  }
+
+  .theme-dark .filters-row,
+  .theme-light .filters-row {
+    gap: 10px;
+  }
+
+  .theme-dark .modal-backdrop,
+  .theme-light .modal-backdrop {
+    padding: 8px;
+  }
+
+  .theme-dark .modal,
+  .theme-light .modal {
+    max-height: calc(100dvh - 16px);
+  }
+
+  .theme-dark .modal-body,
+  .theme-light .modal-body {
+    max-height: calc(100dvh - 104px);
+  }
+}
+
+@media (max-width: 380px) {
+  .theme-dark .stats-grid,
+  .theme-dark .crm-real-stats,
+  .theme-dark.super-admin-shell .super-admin-stats-grid,
+  .theme-light .stats-grid,
+  .theme-light .crm-real-stats,
+  .theme-light.super-admin-shell .super-admin-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
