@@ -149,15 +149,17 @@ export function BusinessOverviewRealPage({ session }: BusinessOverviewRealPagePr
       {message ? <p className="login-notice">{message}</p> : null}
 
       <section className="grid stats-grid crm-real-stats">
-        <StatCard label="Ingresos mes" value={dashboard ? formatMoney(dashboard.summary.income, currency) : "Cargando"} icon={BadgeDollarSign} tone="positive" note="Mes calendario actual" chart={charts.income} />
-        <StatCard label="Egresos mes" value={dashboard ? formatMoney(dashboard.summary.expenses, currency) : "Cargando"} icon={WalletCards} tone="warning" note="Mes calendario actual" chart={charts.expenses} />
-        <StatCard label="Activos" value={dashboard ? formatMoney(dashboard.summary.assets, currency) : "Cargando"} icon={Building2} tone="info" note="Valor actual registrado" chart={charts.assets} />
-        <StatCard label="Pasivos" value={dashboard ? formatMoney(dashboard.summary.liabilities, currency) : "Cargando"} icon={Landmark} tone="danger" note="Obligaciones abiertas" chart={charts.liabilities} />
-        <StatCard label="Utilidad mes" value={dashboard ? formatMoney(dashboard.summary.netProfit, currency) : "Cargando"} icon={TrendingUp} tone={netProfitTone} note="Mes calendario actual" chart={charts.netProfit} />
-        <StatCard label="Balance empresa" value={dashboard ? formatMoney(dashboard.summary.equity, currency) : "Cargando"} icon={Landmark} tone={equityTone} note="Activos menos pasivos" chart={charts.equity} />
-        <StatCard label="Por cobrar" value={dashboard ? formatMoney(dashboard.summary.receivables, currency) : "Cargando"} icon={BadgeDollarSign} tone="info" note="Facturas pendientes" chart={charts.receivables} />
-        <StatCard label="Por pagar" value={dashboard ? formatMoney(dashboard.summary.payables, currency) : "Cargando"} icon={WalletCards} tone="warning" note="Gastos y pasivos" chart={charts.payables} />
+        <StatCard label="Ingresos mes" value={dashboard ? formatMoney(dashboard.summary.income, currency) : "Cargando"} icon={BadgeDollarSign} tone="positive" note="Mes calendario actual" chart={charts.income} chartLabel="Evolucion mensual de ingresos" />
+        <StatCard label="Egresos mes" value={dashboard ? formatMoney(dashboard.summary.expenses, currency) : "Cargando"} icon={WalletCards} tone="warning" note="Mes calendario actual" chart={charts.expenses} chartLabel="Evolucion mensual de egresos" />
+        <StatCard label="Activos" value={dashboard ? formatMoney(dashboard.summary.assets, currency) : "Cargando"} icon={Building2} tone="info" note="Comparado con pasivos" chart={charts.assets} chartMode="bars" chartLabel="Activos vs pasivos" />
+        <StatCard label="Pasivos" value={dashboard ? formatMoney(dashboard.summary.liabilities, currency) : "Cargando"} icon={Landmark} tone="danger" note="Comparado con activos" chart={charts.liabilities} chartMode="bars" chartLabel="Pasivos vs activos" />
+        <StatCard label="Utilidad mes" value={dashboard ? formatMoney(dashboard.summary.netProfit, currency) : "Cargando"} icon={TrendingUp} tone={netProfitTone} note="Ingresos menos egresos" chart={charts.netProfit} chartLabel="Utilidad mensual historica" />
+        <StatCard label="Balance empresa" value={dashboard ? formatMoney(dashboard.summary.equity, currency) : "Cargando"} icon={Landmark} tone={equityTone} note="Activos menos pasivos" chart={charts.equity} chartMode="bars" chartLabel="Activos, pasivos y balance" />
+        <StatCard label="Por cobrar" value={dashboard ? formatMoney(dashboard.summary.receivables, currency) : "Cargando"} icon={BadgeDollarSign} tone="info" note="Comparado con por pagar" chart={charts.receivables} chartMode="bars" chartLabel="Cobros pendientes vs pagos" />
+        <StatCard label="Por pagar" value={dashboard ? formatMoney(dashboard.summary.payables, currency) : "Cargando"} icon={WalletCards} tone="warning" note="Comparado con por cobrar" chart={charts.payables} chartMode="bars" chartLabel="Pagos pendientes vs cobros" />
       </section>
+
+      <FinancialInsightPanel dashboard={dashboard} currency={currency} />
 
       <section className="grid two-column crm-real-grid" style={{ marginTop: 16 }}>
         <div className="card">
@@ -198,6 +200,46 @@ export function BusinessOverviewRealPage({ session }: BusinessOverviewRealPagePr
           ) : null}
         </div>
       </section>
+    </section>
+  );
+}
+
+function FinancialInsightPanel({ currency, dashboard }: { currency: string; dashboard: FinanceDashboard | null }) {
+  const summary = dashboard?.summary;
+  const bars = [
+    { label: "Ingresos", value: summary?.income || 0, tone: "positive" },
+    { label: "Egresos", value: summary?.expenses || 0, tone: "warning" },
+    { label: "Utilidad", value: summary?.netProfit || 0, tone: (summary?.netProfit || 0) >= 0 ? "positive" : "danger" },
+    { label: "Activos", value: summary?.assets || 0, tone: "info" },
+    { label: "Pasivos", value: summary?.liabilities || 0, tone: "danger" },
+    { label: "Por cobrar", value: summary?.receivables || 0, tone: "info" },
+    { label: "Por pagar", value: summary?.payables || 0, tone: "warning" },
+  ];
+  const max = Math.max(...bars.map((item) => Math.abs(item.value)), 1);
+
+  return (
+    <section className="card dashboard-finance-panel">
+      <div className="card-title-row">
+        <div>
+          <h2 className="card-title">Balance financiero visual</h2>
+          <p className="activity-meta">Mismo resumen que Reportes, calculado desde finanzas reales del tenant activo.</p>
+        </div>
+        <StatusBadge label={currency} tone="info" />
+      </div>
+      <div className="dashboard-balance-chart" role="img" aria-label="Comparativa financiera del mes actual">
+        {bars.map((item) => {
+          const size = Math.max(8, (Math.abs(item.value) / max) * 100);
+          return (
+            <div className={`dashboard-balance-row dashboard-balance-${item.tone}`} key={item.label}>
+              <span className="dashboard-balance-label">{item.label}</span>
+              <span className="dashboard-balance-track">
+                <span className="dashboard-balance-fill" style={{ width: `${size}%` }} />
+              </span>
+              <strong>{formatMoney(item.value, currency)}</strong>
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }
@@ -288,23 +330,21 @@ function monthLabel(value: string) {
 
 function buildFinanceCharts(dashboard: FinanceDashboard | null) {
   const history = dashboard?.monthlyHistory?.slice(-8) || [];
-  const income = normalizeSeries(history.map((item) => item.income));
-  const expenses = normalizeSeries(history.map((item) => item.expenses));
-  const netProfit = normalizeSeries(history.map((item) => Math.abs(item.netProfit)));
+  const income = history.length ? history.map((item) => item.income) : [dashboard?.summary.income || 0];
+  const expenses = history.length ? history.map((item) => item.expenses) : [dashboard?.summary.expenses || 0];
+  const netProfit = history.length ? history.map((item) => item.netProfit) : [dashboard?.summary.netProfit || 0];
+  const assets = dashboard?.summary.assets || 0;
+  const liabilities = dashboard?.summary.liabilities || 0;
+  const receivables = dashboard?.summary.receivables || 0;
+  const payables = dashboard?.summary.payables || 0;
   return {
     income,
     expenses,
     netProfit,
-    assets: normalizeSeries([dashboard?.summary.assets || 0]),
-    liabilities: normalizeSeries([dashboard?.summary.liabilities || 0]),
-    equity: normalizeSeries([dashboard?.summary.equity || 0]),
-    receivables: normalizeSeries([dashboard?.summary.receivables || 0]),
-    payables: normalizeSeries([dashboard?.summary.payables || 0]),
+    assets: [assets, liabilities],
+    liabilities: [liabilities, assets],
+    equity: [assets, liabilities, dashboard?.summary.equity || 0],
+    receivables: [receivables, payables],
+    payables: [payables, receivables],
   };
-}
-
-function normalizeSeries(values: number[]) {
-  const source = values.length > 1 ? values : [0, ...values, ...values, 0];
-  const max = Math.max(...source.map((value) => Math.abs(value)), 1);
-  return source.map((value) => 18 + (Math.abs(value) / max) * 74);
 }
