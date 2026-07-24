@@ -176,6 +176,37 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
   );
   const visibleModules = useMemo(() => modules.filter((module) => canAccessModule(session, module)), [session]);
   const themeClass = themeMode === "dark" ? "theme-dark" : "theme-light";
+
+  useEffect(() => {
+    if (!drawerOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setDrawerOpen(false);
+      }
+    }
+
+    function handleResize() {
+      if (window.innerWidth > 920) {
+        setDrawerOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [drawerOpen]);
+
   const renderThemeToggle = () => (
     <button
       className="theme-toggle-button"
@@ -251,17 +282,21 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
             {brandLockup}
           </div>
 
-          {drawerOpen ? <button className="mobile-sidebar-backdrop" type="button" onClick={() => setDrawerOpen(false)} aria-label="Cerrar menu" /> : null}
-          <aside className={`production-mobile-drawer ${drawerOpen ? "open" : ""}`} aria-label="Menu movil">
-            <div className="production-drawer-header">
-              {brandLockup}
-              <button className="icon-button" type="button" onClick={() => setDrawerOpen(false)} aria-label="Cerrar menu">
-                <X size={18} />
-              </button>
-            </div>
-            {renderThemeToggle()}
-            {navigation}
-          </aside>
+          {drawerOpen ? (
+            <>
+              <button className="mobile-sidebar-backdrop" type="button" onClick={() => setDrawerOpen(false)} aria-label="Cerrar menu" />
+              <aside className="production-mobile-drawer open" aria-label="Menu movil" aria-modal="true" role="dialog">
+                <div className="production-drawer-header">
+                  {brandLockup}
+                  <button className="icon-button" type="button" onClick={() => setDrawerOpen(false)} aria-label="Cerrar menu">
+                    <X size={18} />
+                  </button>
+                </div>
+                {renderThemeToggle()}
+                {navigation}
+              </aside>
+            </>
+          ) : null}
 
           <section className="content production-content">
         {!requiredPoliciesAccepted ? (
