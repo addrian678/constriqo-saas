@@ -5641,3 +5641,57 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* Mobile device layout hardening: Android/PWA can report a wide viewport when
+   desktop mode or standalone rendering is active. Touch devices must still use
+   the dismissible drawer instead of the desktop sidebar. */
+@media (max-width: 1180px), (hover: none) and (pointer: coarse) {
+  .theme-dark .production-layout,
+  .theme-light .production-layout {
+    display: block !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .theme-dark .production-sidebar,
+  .theme-light .production-sidebar {
+    display: none !important;
+  }
+
+  .theme-dark .production-main-area,
+  .theme-light .production-main-area {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .theme-dark .production-topbar,
+  .theme-light .production-topbar {
+    display: grid !important;
+    grid-template-columns: 42px minmax(0, 1fr) !important;
+    align-items: center !important;
+    min-height: 62px !important;
+  }
+
+  .theme-dark .production-drawer-button,
+  .theme-light .production-drawer-button {
+    display: grid !important;
+  }
+
+  .theme-dark .production-tabs-desktop,
+  .theme-light .production-tabs-desktop,
+  .theme-dark.worker-shell > .production-topbar > .worker-module-tabs,
+  .theme-light.worker-shell > .production-topbar > .worker-module-tabs,
+  .theme-dark.worker-shell > .production-topbar > .production-session,
+  .theme-light.worker-shell > .production-topbar > .production-session {
+    display: none !important;
+  }
+
+  .theme-dark .production-mobile-drawer,
+  .theme-light .production-mobile-drawer {
+    z-index: 1001 !important;
+  }
+
+  .theme-dark .production-mobile-backdrop,
+  .theme-light .production-mobile-backdrop {
+    z-index: 1000 !important;
+  }
+}
