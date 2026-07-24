@@ -420,12 +420,6 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
             aria-label="Menu movil trabajador"
             aria-modal="true"
             role="dialog"
-            onPointerDownCapture={(event) => {
-              const target = event.target as HTMLElement | null;
-              if (target?.closest("[data-worker-section]")) {
-                setDrawerOpen(false);
-              }
-            }}
           >
             <div className="production-drawer-header">
               <div className="brand-lockup">

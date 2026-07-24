@@ -27,6 +27,7 @@ check("Workspace admin usa drawer movil", workspace.includes("production-drawer-
 check("Workspace cierra drawer al seleccionar", workspace.includes("setDrawerOpen(false)") && workspace.includes("selectModule"), "drawer close");
 check("Workspace usa backdrop movil propio", workspace.includes("production-mobile-backdrop") && css.includes(".production-mobile-backdrop"), "production backdrop");
 check("Workspace muestra boton visible para cerrar menu", workspace.includes("production-drawer-close-button") && workspace.includes("Cerrar menu") && css.includes(".production-drawer-close-button"), "drawer close button");
+check("Workspace no cierra drawer en pointerdown interno", !workspace.includes("onPointerDownCapture") && !workerWorkspace.includes("onPointerDownCapture"), "no premature drawer close");
 check("Worker conserva acciones moviles principales", workerWorkspace.includes("production-topbar") && workerWorkspace.includes("worker-actions") && workerWorkspace.includes("Cerrar sesion"), "worker mobile actions");
 check("Worker usa drawer movil cerrable", workerWorkspace.includes("worker-mobile-drawer") && workerWorkspace.includes("setDrawerOpen(false)") && workerWorkspace.includes("data-worker-section"), "worker drawer");
 

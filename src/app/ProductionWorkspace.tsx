@@ -304,12 +304,6 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
                 aria-label="Menu movil"
                 aria-modal="true"
                 role="dialog"
-                onPointerDownCapture={(event) => {
-                  const target = event.target as HTMLElement | null;
-                  if (target?.closest("[data-workspace-module]")) {
-                    setDrawerOpen(false);
-                  }
-                }}
               >
                 <div className="production-drawer-header">
                   {brandLockup}
