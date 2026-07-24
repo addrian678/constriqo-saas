@@ -209,27 +209,42 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
   );
 
   return (
-    <main className="app-shell production-shell">
-      <div className="production-topbar">
-        <button className="icon-button production-drawer-button" type="button" onClick={() => setDrawerOpen(true)} aria-label="Abrir menu">
-          <Menu size={20} />
-        </button>
-        {brandLockup}
-        <div className="production-tabs-desktop">{navigation}</div>
-      </div>
-
-      {drawerOpen ? <button className="mobile-sidebar-backdrop" type="button" onClick={() => setDrawerOpen(false)} aria-label="Cerrar menu" /> : null}
-      <aside className={`production-mobile-drawer ${drawerOpen ? "open" : ""}`} aria-label="Menu movil">
-        <div className="production-drawer-header">
+    <main className="app-shell production-shell theme-dark">
+      <div className="production-layout">
+        <aside className="production-sidebar" aria-label="Menu principal">
           {brandLockup}
-          <button className="icon-button" type="button" onClick={() => setDrawerOpen(false)} aria-label="Cerrar menu">
-            <X size={18} />
-          </button>
-        </div>
-        {navigation}
-      </aside>
+          <div className="production-sidebar-search" aria-hidden="true">
+            <span>Buscar</span>
+            <small>⌘ K</small>
+          </div>
+          <p className="nav-section-label">Principal</p>
+          {navigation}
+          <div className="production-sidebar-footer">
+            <strong>{session.user.displayName}</strong>
+            <span>{session.user.roles.join(", ")}</span>
+          </div>
+        </aside>
 
-      <section className="content">
+        <div className="production-main-area">
+          <div className="production-topbar">
+            <button className="icon-button production-drawer-button" type="button" onClick={() => setDrawerOpen(true)} aria-label="Abrir menu">
+              <Menu size={20} />
+            </button>
+            {brandLockup}
+          </div>
+
+          {drawerOpen ? <button className="mobile-sidebar-backdrop" type="button" onClick={() => setDrawerOpen(false)} aria-label="Cerrar menu" /> : null}
+          <aside className={`production-mobile-drawer ${drawerOpen ? "open" : ""}`} aria-label="Menu movil">
+            <div className="production-drawer-header">
+              {brandLockup}
+              <button className="icon-button" type="button" onClick={() => setDrawerOpen(false)} aria-label="Cerrar menu">
+                <X size={18} />
+              </button>
+            </div>
+            {navigation}
+          </aside>
+
+          <section className="content production-content">
         {!requiredPoliciesAccepted ? (
           <div className="global-retention-banner warning" role="status">
             <FileText size={18} />
@@ -292,9 +307,11 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
           {activeModule === "notifications" ? <NotificationsAuditRealPage session={session} /> : null}
           {activeModule === "settings" ? <TenantSettingsRealPage session={session} onLogout={onLogout} busy={busy} /> : null}
         </Suspense>
-      </section>
-      <ToastViewport />
-      <footer className="powered-footer">Software impulsado por Constriqo</footer>
+          </section>
+          <ToastViewport />
+          <footer className="powered-footer">Software impulsado por Constriqo</footer>
+        </div>
+      </div>
     </main>
   );
 }

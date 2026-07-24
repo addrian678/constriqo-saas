@@ -277,7 +277,7 @@ export function SuperAdminWorkspace({ session, busy, onLogout }: SuperAdminWorks
   }
 
   return (
-    <main className="production-shell super-admin-shell">
+    <main className="production-shell super-admin-shell theme-dark">
       <header className="production-topbar">
         <div className="brand-lockup">
           <span className="brand-mark">CF</span>
