@@ -101,7 +101,6 @@ export function FinanceRealPage({ session }: FinanceRealPageProps) {
   const visiblePeriod = selectedMonth
     ? dashboard?.monthlyHistory?.find((item) => item.month === selectedMonth) || null
     : dashboard ? dashboard.periods[selectedPeriod] : null;
-  const charts = buildFinanceCharts(dashboard);
   const netProfitTone = (dashboard?.summary.netProfit || 0) >= 0 ? "positive" : "danger";
   const equityTone = (dashboard?.summary.equity || 0) >= 0 ? "positive" : "warning";
   const sortedExpenses = useMemo(() => expenses.slice(0, 12), [expenses]);
@@ -302,10 +301,10 @@ export function FinanceRealPage({ session }: FinanceRealPageProps) {
       {message ? <p className="login-notice">{message}</p> : null}
 
       <section className="grid stats-grid crm-real-stats">
-        <StatCard label="Ingresos mes" value={dashboard ? formatMoney(dashboard.summary.income, currency) : "Cargando"} icon={BadgeDollarSign} tone="positive" note="Mes calendario actual" chart={charts.income} chartLabel="Evolucion mensual de ingresos" />
-        <StatCard label="Egresos mes" value={dashboard ? formatMoney(dashboard.summary.expenses, currency) : "Cargando"} icon={WalletCards} tone="warning" note="Mes calendario actual" chart={charts.expenses} chartLabel="Evolucion mensual de egresos" />
-        <StatCard label="Utilidad mes" value={dashboard ? formatMoney(dashboard.summary.netProfit, currency) : "Cargando"} icon={TrendingUp} tone={netProfitTone} note="Ingresos menos egresos" chart={charts.netProfit} chartLabel="Utilidad mensual historica" />
-        <StatCard label="Patrimonio" value={dashboard ? formatMoney(dashboard.summary.equity, currency) : "Cargando"} icon={Landmark} tone={equityTone} note="Activos menos pasivos" chart={charts.equity} chartMode="bars" chartLabel="Activos, pasivos y patrimonio" />
+        <StatCard label="Ingresos mes" value={dashboard ? formatMoney(dashboard.summary.income, currency) : "Cargando"} icon={BadgeDollarSign} tone="positive" note="Mes calendario actual" />
+        <StatCard label="Egresos mes" value={dashboard ? formatMoney(dashboard.summary.expenses, currency) : "Cargando"} icon={WalletCards} tone="warning" note="Mes calendario actual" />
+        <StatCard label="Utilidad mes" value={dashboard ? formatMoney(dashboard.summary.netProfit, currency) : "Cargando"} icon={TrendingUp} tone={netProfitTone} note="Ingresos menos egresos" />
+        <StatCard label="Patrimonio" value={dashboard ? formatMoney(dashboard.summary.equity, currency) : "Cargando"} icon={Landmark} tone={equityTone} note="Activos menos pasivos" />
       </section>
 
       <BasicModal title="Proveedor" open={activePanel === "vendor"} onClose={() => setActivePanel(null)} size="wide" footer={null}>
@@ -676,16 +675,4 @@ function toLocalDateTime(value?: string) {
 
 function dispatchDataChanged(module: string) {
   window.dispatchEvent(new CustomEvent("constriqo:data-changed", { detail: { module } }));
-}
-
-function buildFinanceCharts(dashboard: FinanceDashboard | null) {
-  const history = dashboard?.monthlyHistory?.slice(-8) || [];
-  const assets = dashboard?.summary.assets || 0;
-  const liabilities = dashboard?.summary.liabilities || 0;
-  return {
-    income: history.length ? history.map((item) => item.income) : [dashboard?.summary.income || 0],
-    expenses: history.length ? history.map((item) => item.expenses) : [dashboard?.summary.expenses || 0],
-    netProfit: history.length ? history.map((item) => item.netProfit) : [dashboard?.summary.netProfit || 0],
-    equity: [assets, liabilities, dashboard?.summary.equity || 0],
-  };
 }

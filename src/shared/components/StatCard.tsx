@@ -10,6 +10,7 @@ type StatCardProps = {
   chart?: number[];
   chartLabel?: string;
   chartMode?: "line" | "bars";
+  showChart?: boolean;
 };
 
 const defaultCharts: Record<NonNullable<StatCardProps["tone"]>, number[]> = {
@@ -19,12 +20,12 @@ const defaultCharts: Record<NonNullable<StatCardProps["tone"]>, number[]> = {
   info: [38, 46, 44, 54, 60, 58, 66, 74],
 };
 
-export function StatCard({ label, value, note, tone = "info", icon: Icon, trend, chart, chartLabel, chartMode = "line" }: StatCardProps) {
+export function StatCard({ label, value, note, tone = "info", icon: Icon, trend, chart, chartLabel, chartMode = "line", showChart = false }: StatCardProps) {
   const series = chart && chart.length > 0 ? chart : defaultCharts[tone];
   const hasMovement = series.some((item) => Math.abs(item) > 0);
 
   return (
-    <article className={`stat-card stat-card-${tone}`}>
+    <article className={`stat-card stat-card-${tone}${showChart ? "" : " stat-card-no-chart"}`}>
       <div className="stat-top">
         <div>
           <p className="stat-label">{label}</p>
@@ -34,10 +35,12 @@ export function StatCard({ label, value, note, tone = "info", icon: Icon, trend,
           <Icon size={21} />
         </span>
       </div>
-      <div className={`stat-card-visual stat-card-visual-${chartMode}`} aria-label={chartLabel || `Grafico de ${label}`}>
-        {chartMode === "bars" ? <BarChart series={series} label={label} /> : <LineChart series={series} label={label} />}
-        <span className="stat-chart-caption">{chartLabel || (hasMovement ? "Datos reales" : "Sin movimiento")}</span>
-      </div>
+      {showChart ? (
+        <div className={`stat-card-visual stat-card-visual-${chartMode}`} aria-label={chartLabel || `Grafico de ${label}`}>
+          {chartMode === "bars" ? <BarChart series={series} label={label} /> : <LineChart series={series} label={label} />}
+          <span className="stat-chart-caption">{chartLabel || (hasMovement ? "Datos reales" : "Sin movimiento")}</span>
+        </div>
+      ) : null}
       {trend ? <span className={`stat-trend ${tone}`}>{trend}</span> : null}
       <span className="stat-note">{note}</span>
     </article>

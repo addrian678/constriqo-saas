@@ -39,7 +39,6 @@ export function BusinessOverviewRealPage({ session }: BusinessOverviewRealPagePr
   const visiblePeriod = selectedMonth
     ? dashboard?.monthlyHistory?.find((item) => item.month === selectedMonth) || null
     : dashboard?.periods[selectedPeriod] || null;
-  const charts = buildFinanceCharts(dashboard);
   const netProfitTone = (dashboard?.summary.netProfit || 0) >= 0 ? "positive" : "danger";
   const equityTone = (dashboard?.summary.equity || 0) >= 0 ? "positive" : "warning";
 
@@ -149,14 +148,14 @@ export function BusinessOverviewRealPage({ session }: BusinessOverviewRealPagePr
       {message ? <p className="login-notice">{message}</p> : null}
 
       <section className="grid stats-grid crm-real-stats">
-        <StatCard label="Ingresos mes" value={dashboard ? formatMoney(dashboard.summary.income, currency) : "Cargando"} icon={BadgeDollarSign} tone="positive" note="Mes calendario actual" chart={charts.income} chartLabel="Evolucion mensual de ingresos" />
-        <StatCard label="Egresos mes" value={dashboard ? formatMoney(dashboard.summary.expenses, currency) : "Cargando"} icon={WalletCards} tone="warning" note="Mes calendario actual" chart={charts.expenses} chartLabel="Evolucion mensual de egresos" />
-        <StatCard label="Activos" value={dashboard ? formatMoney(dashboard.summary.assets, currency) : "Cargando"} icon={Building2} tone="info" note="Comparado con pasivos" chart={charts.assets} chartMode="bars" chartLabel="Activos vs pasivos" />
-        <StatCard label="Pasivos" value={dashboard ? formatMoney(dashboard.summary.liabilities, currency) : "Cargando"} icon={Landmark} tone="danger" note="Comparado con activos" chart={charts.liabilities} chartMode="bars" chartLabel="Pasivos vs activos" />
-        <StatCard label="Utilidad mes" value={dashboard ? formatMoney(dashboard.summary.netProfit, currency) : "Cargando"} icon={TrendingUp} tone={netProfitTone} note="Ingresos menos egresos" chart={charts.netProfit} chartLabel="Utilidad mensual historica" />
-        <StatCard label="Balance empresa" value={dashboard ? formatMoney(dashboard.summary.equity, currency) : "Cargando"} icon={Landmark} tone={equityTone} note="Activos menos pasivos" chart={charts.equity} chartMode="bars" chartLabel="Activos, pasivos y balance" />
-        <StatCard label="Por cobrar" value={dashboard ? formatMoney(dashboard.summary.receivables, currency) : "Cargando"} icon={BadgeDollarSign} tone="info" note="Comparado con por pagar" chart={charts.receivables} chartMode="bars" chartLabel="Cobros pendientes vs pagos" />
-        <StatCard label="Por pagar" value={dashboard ? formatMoney(dashboard.summary.payables, currency) : "Cargando"} icon={WalletCards} tone="warning" note="Comparado con por cobrar" chart={charts.payables} chartMode="bars" chartLabel="Pagos pendientes vs cobros" />
+        <StatCard label="Ingresos mes" value={dashboard ? formatMoney(dashboard.summary.income, currency) : "Cargando"} icon={BadgeDollarSign} tone="positive" note="Mes calendario actual" />
+        <StatCard label="Egresos mes" value={dashboard ? formatMoney(dashboard.summary.expenses, currency) : "Cargando"} icon={WalletCards} tone="warning" note="Mes calendario actual" />
+        <StatCard label="Activos" value={dashboard ? formatMoney(dashboard.summary.assets, currency) : "Cargando"} icon={Building2} tone="info" note="Valor actual registrado" />
+        <StatCard label="Pasivos" value={dashboard ? formatMoney(dashboard.summary.liabilities, currency) : "Cargando"} icon={Landmark} tone="danger" note="Obligaciones abiertas" />
+        <StatCard label="Utilidad mes" value={dashboard ? formatMoney(dashboard.summary.netProfit, currency) : "Cargando"} icon={TrendingUp} tone={netProfitTone} note="Ingresos menos egresos" />
+        <StatCard label="Balance empresa" value={dashboard ? formatMoney(dashboard.summary.equity, currency) : "Cargando"} icon={Landmark} tone={equityTone} note="Activos menos pasivos" />
+        <StatCard label="Por cobrar" value={dashboard ? formatMoney(dashboard.summary.receivables, currency) : "Cargando"} icon={BadgeDollarSign} tone="info" note="Facturas pendientes" />
+        <StatCard label="Por pagar" value={dashboard ? formatMoney(dashboard.summary.payables, currency) : "Cargando"} icon={WalletCards} tone="warning" note="Gastos y pasivos" />
       </section>
 
       <FinancialInsightPanel dashboard={dashboard} currency={currency} />
@@ -205,41 +204,49 @@ export function BusinessOverviewRealPage({ session }: BusinessOverviewRealPagePr
 }
 
 function FinancialInsightPanel({ currency, dashboard }: { currency: string; dashboard: FinanceDashboard | null }) {
-  const summary = dashboard?.summary;
-  const bars = [
-    { label: "Ingresos", value: summary?.income || 0, tone: "positive" },
-    { label: "Egresos", value: summary?.expenses || 0, tone: "warning" },
-    { label: "Utilidad", value: summary?.netProfit || 0, tone: (summary?.netProfit || 0) >= 0 ? "positive" : "danger" },
-    { label: "Activos", value: summary?.assets || 0, tone: "info" },
-    { label: "Pasivos", value: summary?.liabilities || 0, tone: "danger" },
-    { label: "Por cobrar", value: summary?.receivables || 0, tone: "info" },
-    { label: "Por pagar", value: summary?.payables || 0, tone: "warning" },
-  ];
+  const [chartMode, setChartMode] = useState<"summary" | "income" | "expenses" | "netProfit">("summary");
+  const bars = buildFinancialInsightBars(dashboard, chartMode);
   const max = Math.max(...bars.map((item) => Math.abs(item.value)), 1);
+  const hasData = bars.some((item) => Math.abs(item.value) > 0);
+  const titleByMode = {
+    summary: "Balance financiero del mes",
+    income: "Ingresos por mes",
+    expenses: "Egresos por mes",
+    netProfit: "Utilidad por mes",
+  };
 
   return (
     <section className="card dashboard-finance-panel">
       <div className="card-title-row">
         <div>
           <h2 className="card-title">Balance financiero visual</h2>
-          <p className="activity-meta">Mismo resumen que Reportes, calculado desde finanzas reales del tenant activo.</p>
+          <p className="activity-meta">{titleByMode[chartMode]} calculado desde datos reales del tenant activo.</p>
         </div>
-        <StatusBadge label={currency} tone="info" />
+        <label className="form-control dashboard-chart-selector">
+          <span>Grafico</span>
+          <select className="select" value={chartMode} onChange={(event) => setChartMode(event.target.value as "summary" | "income" | "expenses" | "netProfit")}>
+            <option value="summary">Balance actual</option>
+            <option value="income">Ingresos por mes</option>
+            <option value="expenses">Egresos por mes</option>
+            <option value="netProfit">Utilidad por mes</option>
+          </select>
+        </label>
       </div>
-      <div className="dashboard-balance-chart" role="img" aria-label="Comparativa financiera del mes actual">
+      <div className="dashboard-column-chart" role="img" aria-label={titleByMode[chartMode]}>
         {bars.map((item) => {
-          const size = Math.max(8, (Math.abs(item.value) / max) * 100);
+          const size = Math.abs(item.value) === 0 ? 0 : Math.max(4, (Math.abs(item.value) / max) * 100);
           return (
-            <div className={`dashboard-balance-row dashboard-balance-${item.tone}`} key={item.label}>
-              <span className="dashboard-balance-label">{item.label}</span>
-              <span className="dashboard-balance-track">
-                <span className="dashboard-balance-fill" style={{ width: `${size}%` }} />
-              </span>
+            <div className={`dashboard-column-item dashboard-balance-${item.tone}`} key={item.label}>
               <strong>{formatMoney(item.value, currency)}</strong>
+              <span className="dashboard-column-track">
+                <span className="dashboard-column-fill" style={{ height: `${size}%` }} />
+              </span>
+              <span className="dashboard-balance-label">{item.label}</span>
             </div>
           );
         })}
       </div>
+      {!hasData ? <p className="activity-meta">Sin movimientos para graficar en este periodo.</p> : null}
     </section>
   );
 }
@@ -328,23 +335,31 @@ function monthLabel(value: string) {
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric" }).format(date);
 }
 
-function buildFinanceCharts(dashboard: FinanceDashboard | null) {
+function buildFinancialInsightBars(dashboard: FinanceDashboard | null, mode: "summary" | "income" | "expenses" | "netProfit") {
+  if (mode === "summary") {
+    const summary = dashboard?.summary;
+    return [
+      { label: "Ingresos", value: summary?.income || 0, tone: "positive" },
+      { label: "Egresos", value: summary?.expenses || 0, tone: "warning" },
+      { label: "Utilidad", value: summary?.netProfit || 0, tone: (summary?.netProfit || 0) >= 0 ? "positive" : "danger" },
+      { label: "Activos", value: summary?.assets || 0, tone: "info" },
+      { label: "Pasivos", value: summary?.liabilities || 0, tone: "danger" },
+      { label: "Por cobrar", value: summary?.receivables || 0, tone: "info" },
+      { label: "Por pagar", value: summary?.payables || 0, tone: "warning" },
+    ];
+  }
+
   const history = dashboard?.monthlyHistory?.slice(-8) || [];
-  const income = history.length ? history.map((item) => item.income) : [dashboard?.summary.income || 0];
-  const expenses = history.length ? history.map((item) => item.expenses) : [dashboard?.summary.expenses || 0];
-  const netProfit = history.length ? history.map((item) => item.netProfit) : [dashboard?.summary.netProfit || 0];
-  const assets = dashboard?.summary.assets || 0;
-  const liabilities = dashboard?.summary.liabilities || 0;
-  const receivables = dashboard?.summary.receivables || 0;
-  const payables = dashboard?.summary.payables || 0;
-  return {
-    income,
-    expenses,
-    netProfit,
-    assets: [assets, liabilities],
-    liabilities: [liabilities, assets],
-    equity: [assets, liabilities, dashboard?.summary.equity || 0],
-    receivables: [receivables, payables],
-    payables: [payables, receivables],
-  };
+  const field = mode;
+  const tone = mode === "income" ? "positive" : mode === "expenses" ? "warning" : "info";
+  return history.map((item) => ({
+    label: monthShortLabel(item.month),
+    value: item[field],
+    tone: mode === "netProfit" && item.netProfit < 0 ? "danger" : tone,
+  }));
+}
+
+function monthShortLabel(value: string) {
+  const date = new Date(`${value}-01T00:00:00`);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("es-ES", { month: "short" }).format(date);
 }
