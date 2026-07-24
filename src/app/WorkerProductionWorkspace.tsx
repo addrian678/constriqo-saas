@@ -433,9 +433,6 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
                 <X size={18} />
               </button>
             </div>
-            <button className="production-drawer-close-button" type="button" onClick={() => setDrawerOpen(false)}>
-              Cerrar menu
-            </button>
             <button
               className="theme-toggle-button"
               type="button"

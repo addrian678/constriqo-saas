@@ -8,6 +8,15 @@ import { ToastViewport } from "../shared/components/ToastViewport";
 import { getDocumentCleanupStatus, type DocumentCleanupStatus } from "../modules/documents/api/documentsClient";
 import { acceptRequiredPolicies, getTenantSettings, getTenantUsage, listPolicyAcceptances, type TenantSettings, type TenantUsage } from "../modules/organization/api/organizationClient";
 
+type ProductionWorkspaceProps = {
+  session: AuthenticatedSession;
+  busy?: boolean;
+  onLogout: () => void;
+};
+
+type WorkspaceModule = "home" | "crm" | "marketing" | "services" | "estimates" | "invoicing" | "jobs" | "workforce" | "attendance" | "finance" | "payroll" | "assets" | "documents" | "reports" | "notifications" | "settings";
+type ThemeMode = "dark" | "light";
+
 const AssetsLiabilitiesRealPage = lazy(() => import("../modules/assets/pages/AssetsLiabilitiesRealPage").then((module) => ({ default: module.AssetsLiabilitiesRealPage })));
 const AttendanceRealPage = lazy(() => import("../modules/attendance/pages/AttendanceRealPage").then((module) => ({ default: module.AttendanceRealPage })));
 const CrmRealPage = lazy(() => import("../modules/crm/pages/CrmRealPage").then((module) => ({ default: module.CrmRealPage })));
@@ -24,14 +33,23 @@ const ReportsRealPage = lazy(() => import("../modules/reports/pages/ReportsRealP
 const ServiceCatalogRealPage = lazy(() => import("../modules/services/pages/ServiceCatalogRealPage").then((module) => ({ default: module.ServiceCatalogRealPage })));
 const WorkforceRealPage = lazy(() => import("../modules/workforce/pages/WorkforceRealPage").then((module) => ({ default: module.WorkforceRealPage })));
 
-type ProductionWorkspaceProps = {
-  session: AuthenticatedSession;
-  busy?: boolean;
-  onLogout: () => void;
+const preloadModuleChunks: Partial<Record<WorkspaceModule, () => Promise<unknown>>> = {
+  home: () => import("../modules/dashboard/pages/BusinessOverviewRealPage"),
+  crm: () => import("../modules/crm/pages/CrmRealPage"),
+  services: () => import("../modules/services/pages/ServiceCatalogRealPage"),
+  estimates: () => import("../modules/estimates/pages/EstimatesRealPage"),
+  invoicing: () => import("../modules/invoicing/pages/InvoicingRealPage"),
+  jobs: () => import("../modules/jobs/pages/JobsRealPage"),
+  workforce: () => import("../modules/workforce/pages/WorkforceRealPage"),
+  attendance: () => import("../modules/attendance/pages/AttendanceRealPage"),
+  finance: () => import("../modules/finance/pages/FinanceRealPage"),
+  payroll: () => import("../modules/payroll/pages/PayrollRealPage"),
+  assets: () => import("../modules/assets/pages/AssetsLiabilitiesRealPage"),
+  documents: () => import("../modules/documents/pages/DocumentsRealPage"),
+  reports: () => import("../modules/reports/pages/ReportsRealPage"),
+  notifications: () => import("../modules/notifications/pages/NotificationsAuditRealPage"),
+  settings: () => import("../modules/organization/pages/TenantSettingsRealPage"),
 };
-
-type WorkspaceModule = "home" | "crm" | "marketing" | "services" | "estimates" | "invoicing" | "jobs" | "workforce" | "attendance" | "finance" | "payroll" | "assets" | "documents" | "reports" | "notifications" | "settings";
-type ThemeMode = "dark" | "light";
 
 const modules: Array<{ id: WorkspaceModule; label: string; icon: LucideIcon; capabilities?: string[] }> = [
   { id: "home", label: "Inicio", icon: Home, capabilities: ["reports.read", "finance.read", "clients.read"] },
@@ -178,6 +196,22 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
   const themeClass = themeMode === "dark" ? "theme-dark" : "theme-light";
 
   useEffect(() => {
+    const preloadVisibleModules = () => {
+      for (const module of visibleModules) {
+        preloadModuleChunks[module.id]?.().catch(() => null);
+      }
+    };
+
+    if ("requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(preloadVisibleModules, { timeout: 1800 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timerId = setTimeout(preloadVisibleModules, 450);
+    return () => clearTimeout(timerId);
+  }, [visibleModules]);
+
+  useEffect(() => {
     if (!drawerOpen) {
       return;
     }
@@ -311,9 +345,6 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
                     <X size={18} />
                   </button>
                 </div>
-                <button className="production-drawer-close-button" type="button" onClick={() => setDrawerOpen(false)}>
-                  Cerrar menu
-                </button>
                 {renderThemeToggle()}
                 {navigation}
                 <button className="production-drawer-close-button secondary" type="button" onClick={() => setDrawerOpen(false)}>
