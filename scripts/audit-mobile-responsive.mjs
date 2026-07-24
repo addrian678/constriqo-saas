@@ -15,6 +15,7 @@ function check(name, passed, details) {
 }
 
 const css = readProjectFile("src/styles/globals.css");
+const main = readProjectFile("src/main.tsx");
 const workspace = readProjectFile("src/app/ProductionWorkspace.tsx");
 const workerWorkspace = readProjectFile("src/app/WorkerProductionWorkspace.tsx");
 const estimatesPage = readProjectFile("src/modules/estimates/pages/EstimatesRealPage.tsx");
@@ -32,6 +33,7 @@ check("Worker usa drawer movil cerrable", workerWorkspace.includes("worker-mobil
 check("CSS oculta overflow horizontal global", css.includes("overflow-x: hidden") && css.includes(".app-shell") && css.includes("overflow-x: hidden;"), "overflow shell");
 check("CSS tiene breakpoint tablet amplio", css.includes("@media (max-width: 1180px)") && css.includes(".production-sidebar") && css.includes(".production-drawer-button"), "tablet drawer");
 check("CSS fuerza drawer en dispositivos tactiles", css.includes("Mobile device layout hardening") && css.includes("(hover: none) and (pointer: coarse)") && css.includes("display: none !important") && css.includes(".production-drawer-button"), "touch drawer");
+check("App marca dispositivos tactiles por JS", main.includes("navigator.maxTouchPoints") && main.includes("constriqo-touch-device") && css.includes(".constriqo-touch-device .theme-dark .production-sidebar"), "touch class");
 check("CSS tiene breakpoint movil 640", css.includes("@media (max-width: 640px)") && css.includes(".production-topbar") && css.includes("grid-template-columns: 42px minmax(0, 1fr)"), "mobile topbar");
 check("Drawer movil scrollea", css.includes("height: 100dvh") && css.includes("overflow-y: auto") && css.includes("overscroll-behavior: contain"), "drawer scroll");
 check("Drawer movil no corta botones", css.includes(".production-mobile-drawer .production-tabs button") && css.includes("white-space: normal"), "drawer labels");

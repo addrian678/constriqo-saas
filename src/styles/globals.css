@@ -5695,3 +5695,42 @@ button {
     z-index: 1000 !important;
   }
 }
+
+.constriqo-touch-device .theme-dark .production-layout,
+.constriqo-touch-device .theme-light .production-layout {
+  display: block !important;
+  grid-template-columns: 1fr !important;
+}
+
+.constriqo-touch-device .theme-dark .production-sidebar,
+.constriqo-touch-device .theme-light .production-sidebar {
+  display: none !important;
+}
+
+.constriqo-touch-device .theme-dark .production-main-area,
+.constriqo-touch-device .theme-light .production-main-area {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.constriqo-touch-device .theme-dark .production-topbar,
+.constriqo-touch-device .theme-light .production-topbar {
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) !important;
+  align-items: center !important;
+  min-height: 62px !important;
+}
+
+.constriqo-touch-device .theme-dark .production-drawer-button,
+.constriqo-touch-device .theme-light .production-drawer-button {
+  display: grid !important;
+}
+
+.constriqo-touch-device .theme-dark .production-tabs-desktop,
+.constriqo-touch-device .theme-light .production-tabs-desktop,
+.constriqo-touch-device .theme-dark.worker-shell > .production-topbar > .worker-module-tabs,
+.constriqo-touch-device .theme-light.worker-shell > .production-topbar > .worker-module-tabs,
+.constriqo-touch-device .theme-dark.worker-shell > .production-topbar > .production-session,
+.constriqo-touch-device .theme-light.worker-shell > .production-topbar > .production-session {
+  display: none !important;
+}
