@@ -153,7 +153,7 @@ try {
   const tooLarge = await fetch(`http://127.0.0.1:${address.port}/api/crm/clients`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: "x".repeat(1024 * 1024 + 1),
+    body: "x".repeat(2 * 1024 * 1024 + 1),
   });
   const tooLargeBody = await tooLarge.json();
   check(

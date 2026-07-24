@@ -222,7 +222,7 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
     });
   }
 
-  function handleLogoFile(event: ChangeEvent<HTMLInputElement>) {
+  async function handleLogoFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file || !settings) {
       return;
@@ -231,17 +231,17 @@ export function TenantSettingsRealPage({ session, busy, onLogout }: TenantSettin
       setMessage("El logo debe ser una imagen.");
       return;
     }
-    if (file.size > 750_000) {
-      setMessage("El logo es demasiado pesado. Usa una imagen menor a 750 KB para mantener la app ligera.");
-      return;
+    setSaving(true);
+    setMessage(null);
+    try {
+      const logoUrl = await prepareLogoDataUrl(file);
+      setSettings({ ...settings, logoUrl });
+      setMessage("Logo cargado localmente. Guarda ajustes para aplicarlo en la app y documentos.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo leer el logo seleccionado.");
+    } finally {
+      setSaving(false);
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setSettings({ ...settings, logoUrl: String(reader.result || "") });
-      setMessage("Logo cargado localmente. Guarda ajustes para aplicarlo en documentos.");
-    };
-    reader.onerror = () => setMessage("No se pudo leer el logo seleccionado.");
-    reader.readAsDataURL(file);
   }
 
   async function handleNotificationConsent() {
@@ -963,4 +963,58 @@ function enabledAddonsLabel(usage: TenantUsage) {
 function formatMb(bytes: number) {
   const value = bytes / 1024 / 1024;
   return value >= 10 ? value.toFixed(1) : value.toFixed(2);
+}
+
+async function prepareLogoDataUrl(file: File) {
+  if (file.type === "image/svg+xml") {
+    if (file.size > 750_000) {
+      throw new Error("El logo SVG es demasiado pesado. Usa una imagen menor a 750 KB.");
+    }
+    return readFileAsDataUrl(file);
+  }
+
+  const originalDataUrl = await readFileAsDataUrl(file);
+  if (originalDataUrl.length <= 1_000_000) {
+    return originalDataUrl;
+  }
+
+  const image = await loadImage(originalDataUrl);
+  const canvas = document.createElement("canvas");
+  const maxSide = 512;
+  const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+  canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("No se pudo preparar el logo en este dispositivo.");
+  }
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  for (const quality of [0.82, 0.72, 0.62]) {
+    const compressed = canvas.toDataURL("image/webp", quality);
+    if (compressed.length <= 1_000_000) {
+      return compressed;
+    }
+  }
+
+  throw new Error("El logo es demasiado pesado. Usa una imagen mas simple o menor a 750 KB.");
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("No se pudo leer el logo seleccionado."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("No se pudo procesar el logo seleccionado."));
+    image.src = src;
+  });
 }
