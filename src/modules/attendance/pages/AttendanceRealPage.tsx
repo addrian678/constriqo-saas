@@ -127,7 +127,7 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
 
       {message ? <p className="login-notice">{message}</p> : null}
 
-      <section className="grid stats-grid crm-real-stats">
+      <section className="grid stats-grid crm-real-stats attendance-mobile-summary">
         <SummaryCard label="Registros" value={loading && entries.length === 0 ? "Cargando" : summary.total || 0} icon={<Clock3 size={20} />} />
         <SummaryCard label="Abiertas" value={loading && entries.length === 0 ? "Cargando" : summary.open || 0} icon={<ShieldCheck size={20} />} />
         <SummaryCard label="Pendientes" value={loading && entries.length === 0 ? "Cargando" : summary.submitted || 0} icon={<RefreshCw size={20} />} />
@@ -139,7 +139,7 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
         <SummaryCard label="Entradas bloqueadas" value={loading && entries.length === 0 ? "Cargando" : summary.blocked_attempts || 0} icon={<AlertIcon />} />
       </section>
 
-      <section className="card">
+      <section className="card attendance-mobile-history">
         <div className="card-title-row">
           <div>
             <h2 className="card-title">Historial de asistencia</h2>
@@ -147,7 +147,7 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
           </div>
           <StatusBadge label={`${formatWorkDuration(historyTotals.workedSeconds)} trabajadas`} tone="info" />
         </div>
-        <div className="form-grid">
+        <div className="form-grid attendance-history-filters">
           <label>
             <span>Desde</span>
             <input className="input" type="date" value={periodStart} onChange={(event) => setPeriodStart(event.target.value)} />
@@ -231,7 +231,7 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
       </section>
 
       {blockedAttempts.length > 0 ? (
-        <section className="card">
+        <section className="card attendance-mobile-blocked">
           <div className="card-title-row">
             <h2 className="card-title">Intentos bloqueados por ubicacion</h2>
             <StatusBadge label={`${blockedAttempts.length} recientes`} tone="warning" />
@@ -257,13 +257,16 @@ export function AttendanceRealPage({ session }: AttendanceRealPageProps) {
         </section>
       ) : null}
 
-      <section className="card">
+      <section className="card attendance-mobile-jornadas">
         <div className="card-title-row">
-          <h2 className="card-title">Jornadas</h2>
+          <div>
+            <h2 className="card-title">Jornadas</h2>
+            <p className="section-subtitle attendance-mobile-helper">Primero revisa aqui trabajadores activos, en descanso o registrados en el periodo.</p>
+          </div>
           <StatusBadge label={loading ? "Cargando" : `${entries.length} registros`} tone="info" />
         </div>
         {!loading && entries.length === 0 ? <EmptyState title="Sin registros" description="Cuando un trabajador registre entrada apareceran aqui." /> : null}
-        <div className="responsive-table">
+        <div className="responsive-table attendance-current-list">
           {entries.map((entry) => {
             const live = calculateEntryLiveSeconds(entry, now, attendanceLoadedAt);
             const isLive = !entry.clockOut && (entry.status === "active" || entry.status === "on_break");

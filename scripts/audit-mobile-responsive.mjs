@@ -20,6 +20,7 @@ const workspace = readProjectFile("src/app/ProductionWorkspace.tsx");
 const workerWorkspace = readProjectFile("src/app/WorkerProductionWorkspace.tsx");
 const estimatesPage = readProjectFile("src/modules/estimates/pages/EstimatesRealPage.tsx");
 const invoicingPage = readProjectFile("src/modules/invoicing/pages/InvoicingRealPage.tsx");
+const attendancePage = readProjectFile("src/modules/attendance/pages/AttendanceRealPage.tsx");
 const runbook = readProjectFile("docs/runbooks/pwa-android-readiness.md");
 const packageJson = JSON.parse(readProjectFile("package.json") || "{}");
 
@@ -47,6 +48,9 @@ check("Botones no desbordan", css.includes(".button") && css.includes("max-width
 check("Formularios no fuerzan ancho", css.includes(".input") && css.includes("min-width: 0") && css.includes(".form-control"), "forms");
 check("Partidas moviles conservan contexto visible", css.includes(".line-item-mobile-heading") && estimatesPage.includes("Partida {index + 1}") && invoicingPage.includes("Partida {index + 1}"), "mobile line item labels");
 check("Campos numericos moviles tienen aria-label", estimatesPage.includes("aria-label={`Cantidad de partida") && invoicingPage.includes("aria-label={`Precio unitario de partida"), "mobile numeric labels");
+check("Asistencia movil prioriza jornadas antes de resumen", attendancePage.includes("attendance-mobile-jornadas") && css.includes(".attendance-mobile-jornadas") && css.includes("order: 1") && css.includes(".attendance-mobile-summary") && css.includes("order: 3"), "attendance mobile order");
+check("Asistencia movil compacta historial", attendancePage.includes("attendance-history-filters") && css.includes(".attendance-history-filters") && css.includes(".attendance-history-totals"), "attendance mobile history");
+check("Asistencia movil lista trabajadores legible", attendancePage.includes("attendance-current-list") && css.includes(".attendance-current-list") && css.includes(".attendance-record-card .record-field"), "attendance mobile workers");
 check("Modales moviles usan ventana superior con scroll", css.includes(".modal-backdrop") && css.includes("place-items: start center") && css.includes("100dvh"), "mobile modal placement");
 check("Partidas moviles tienen boton inferior", css.includes(".line-item-bottom-actions") && css.includes("position: sticky") && estimatesPage.includes("Agregar otra partida") && invoicingPage.includes("Agregar otra partida"), "sticky add item");
 check("Acciones segmentadas envuelven", css.includes(".segmented-actions") && css.includes("flex-wrap: wrap") && css.includes("flex: 1 1 180px"), "actions wrap");

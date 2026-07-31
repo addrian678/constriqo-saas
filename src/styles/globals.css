@@ -5572,6 +5572,10 @@ button {
   align-items: center;
 }
 
+.attendance-mobile-helper {
+  display: none;
+}
+
 @media (max-width: 920px) {
   .theme-dark.super-admin-shell .super-admin-stats-grid,
   .theme-light.super-admin-shell .super-admin-stats-grid {
@@ -5633,11 +5637,149 @@ button {
   .theme-light.worker-shell .worker-task-actions .button {
     width: 100%;
   }
+
+  .theme-dark .attendance-mobile-jornadas,
+  .theme-light .attendance-mobile-jornadas {
+    order: 1;
+    margin-top: 0;
+  }
+
+  .theme-dark .attendance-mobile-history,
+  .theme-light .attendance-mobile-history {
+    order: 2;
+  }
+
+  .theme-dark .attendance-mobile-summary,
+  .theme-light .attendance-mobile-summary {
+    order: 3;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+    margin-bottom: 0;
+  }
+
+  .theme-dark .attendance-mobile-blocked,
+  .theme-light .attendance-mobile-blocked {
+    order: 4;
+  }
+
+  .theme-dark .attendance-mobile-summary .stat-card,
+  .theme-light .attendance-mobile-summary .stat-card {
+    min-height: 92px;
+    padding: 12px;
+  }
+
+  .theme-dark .attendance-mobile-summary .stat-value,
+  .theme-light .attendance-mobile-summary .stat-value {
+    font-size: clamp(20px, 1.55rem, 30px);
+  }
+
+  .theme-dark .attendance-mobile-summary .stat-note,
+  .theme-light .attendance-mobile-summary .stat-note {
+    display: none;
+  }
+
+  .theme-dark .attendance-mobile-helper,
+  .theme-light .attendance-mobile-helper {
+    display: block;
+    margin-top: 4px;
+  }
+
+  .theme-dark .attendance-current-list,
+  .theme-light .attendance-current-list,
+  .theme-dark .attendance-history-list,
+  .theme-light .attendance-history-list {
+    gap: 10px;
+  }
+
+  .theme-dark .attendance-record-card,
+  .theme-light .attendance-record-card {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .theme-dark .attendance-record-card .record-main,
+  .theme-light .attendance-record-card .record-main {
+    gap: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  }
+
+  .theme-dark .attendance-record-card .record-badges,
+  .theme-light .attendance-record-card .record-badges {
+    gap: 6px;
+  }
+
+  .theme-dark .attendance-record-card .record-field,
+  .theme-light .attendance-record-card .record-field,
+  .theme-dark .attendance-history-card .record-field,
+  .theme-light .attendance-history-card .record-field {
+    padding: 10px;
+    border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--panel) 72%, transparent);
+  }
+
+  .theme-dark .attendance-record-card .record-field.highlight,
+  .theme-light .attendance-record-card .record-field.highlight,
+  .theme-dark .attendance-history-card .record-field.highlight,
+  .theme-light .attendance-history-card .record-field.highlight {
+    border-color: color-mix(in srgb, var(--accent) 44%, var(--line));
+    background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  }
+
+  .theme-dark .attendance-record-card .record-actions,
+  .theme-light .attendance-record-card .record-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .theme-dark .attendance-record-card .record-actions .button,
+  .theme-light .attendance-record-card .record-actions .button,
+  .theme-dark .attendance-record-card .review-state-button,
+  .theme-light .attendance-record-card .review-state-button {
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .theme-dark .attendance-history-filters,
+  .theme-light .attendance-history-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .theme-dark .attendance-history-filters label:nth-child(n + 3),
+  .theme-light .attendance-history-filters label:nth-child(n + 3) {
+    grid-column: 1 / -1;
+  }
+
+  .theme-dark .attendance-history-totals,
+  .theme-light .attendance-history-totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .theme-dark .attendance-history-card,
+  .theme-light .attendance-history-card {
+    padding: 12px;
+    gap: 10px;
+  }
 }
 
 @media (max-width: 420px) {
   .theme-dark.super-admin-shell .super-admin-stats-grid,
   .theme-light.super-admin-shell .super-admin-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .theme-dark .attendance-mobile-summary,
+  .theme-light .attendance-mobile-summary,
+  .theme-dark .attendance-history-filters,
+  .theme-light .attendance-history-filters,
+  .theme-dark .attendance-history-totals,
+  .theme-light .attendance-history-totals,
+  .theme-dark .attendance-record-card .record-actions,
+  .theme-light .attendance-record-card .record-actions {
     grid-template-columns: 1fr;
   }
 }
