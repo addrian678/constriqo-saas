@@ -77,7 +77,10 @@ try {
     });
     check(
       "Setup TOTP es idempotente ante doble click",
-      secondSetup.status === 200 && secondSetup.body.factorId === setup.body.factorId && secondSetup.body.secret,
+      secondSetup.status === 200 &&
+        secondSetup.body.factorId === setup.body.factorId &&
+        secondSetup.body.secret === setup.body.secret &&
+        secondSetup.body.otpauthUri === setup.body.otpauthUri,
       JSON.stringify(secondSetup.body),
     );
 

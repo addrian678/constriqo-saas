@@ -89,6 +89,10 @@ export function LoginPage({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (mfaState?.readyToVerify && onTotpVerify) {
+      if (totpCode.length !== 6) {
+        setLocalNotice("Ingresa los 6 digitos del autenticador.");
+        return;
+      }
       await onTotpVerify(totpCode);
       return;
     }
@@ -183,6 +187,11 @@ export function LoginPage({
                   <>
                     <p className="page-description">Agrega este secreto en tu app autenticadora y confirma el codigo.</p>
                     <code className="mfa-secret">{mfaState.secret}</code>
+                    {mfaState.otpauthUri ? (
+                      <a className="button button-secondary button-full" href={mfaState.otpauthUri}>
+                        Abrir en autenticador
+                      </a>
+                    ) : null}
                     <p className="login-security-note">{mfaState.otpauthUri}</p>
                   </>
                 ) : (

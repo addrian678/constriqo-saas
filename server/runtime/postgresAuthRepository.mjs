@@ -457,9 +457,44 @@ export function createPostgresAuthRepository(pool, options = {}) {
       return { status: 401, body: { code: "MFA_CHALLENGE_INVALID", message: "El reto de MFA no es valido o expiro." } };
     }
 
+    const normalizedLabel = String(label || "Authenticator app").slice(0, 80);
+    const pendingFactor = await queryForTenant(
+      challenge.tenantId,
+      `
+        SELECT factor_id, secret_ciphertext, secret_iv, secret_tag
+        FROM auth_mfa_factors
+        WHERE tenant_id = $1
+          AND user_id = $2
+          AND factor_type = 'totp'
+          AND label = $3
+          AND status = 'pending'
+        LIMIT 1
+      `,
+      [challenge.tenantId, challenge.userId, normalizedLabel],
+    );
+
+    if (pendingFactor.rows[0]) {
+      const secret = decryptSecret({
+        ciphertext: pendingFactor.rows[0].secret_ciphertext,
+        iv: pendingFactor.rows[0].secret_iv,
+        tag: pendingFactor.rows[0].secret_tag,
+      });
+      return {
+        status: 200,
+        body: {
+          factorId: pendingFactor.rows[0].factor_id,
+          secret,
+          otpauthUri: createTotpAuthUri({
+            issuer,
+            accountName: challenge.user.email,
+            secret,
+          }),
+        },
+      };
+    }
+
     const secret = generateTotpSecret();
     const encrypted = encryptSecret(secret);
-    const normalizedLabel = String(label || "Authenticator app").slice(0, 80);
     const result = await queryForTenant(
       challenge.tenantId,
       `

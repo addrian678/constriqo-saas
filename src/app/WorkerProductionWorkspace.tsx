@@ -446,9 +446,6 @@ export function WorkerProductionWorkspace({ session, busy, onLogout }: WorkerPro
             <Button variant="secondary" type="button" icon={<LogOut size={16} />} onClick={onLogout} disabled={busy}>
               Cerrar sesion
             </Button>
-            <button className="production-drawer-close-button secondary" type="button" onClick={() => setDrawerOpen(false)}>
-              Volver al modulo
-            </button>
           </aside>
         </>
       ) : null}

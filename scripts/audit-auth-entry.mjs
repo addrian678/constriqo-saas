@@ -61,6 +61,8 @@ if (existsSync(loginPath)) {
   check("Admin 2FA despues de credenciales", login.includes("despues de validar la contrasena"), "2FA after password");
   check("Login productivo no importa mock data", !login.includes("../../mock-data/company"), "no mock import");
   check("Login productivo no contiene demo panel", !login.includes("Demo desarrollo"), "no demo panel");
+  check("Login valida codigo MFA antes de enviar", login.includes("totpCode.length !== 6") && login.includes("Ingresa los 6 digitos"), "mfa length");
+  check("Login facilita abrir autenticador movil", login.includes("Abrir en autenticador") && login.includes('href={mfaState.otpauthUri}'), "otpauth link");
 }
 
 check("Archivo demo desarrollo eliminado", !existsSync(join(root, "src/app/DevelopmentDemoApp.tsx")), "no DevelopmentDemoApp");
@@ -98,6 +100,7 @@ if (existsSync(runtimeAuthRepositoryPath)) {
   check("Runtime auth bloquea licencias invalidas", repository.includes("ensureTenantLicenseAllowsAccess") && repository.includes("LICENSE_SUSPENDED") && repository.includes("LICENSE_EXPIRED"), "license gate");
   check("Runtime auth valida licencia en sesiones", repository.includes("resolveSession") && repository.includes("await ensureTenantLicenseAllowsAccess(resolved.user)"), "session license gate");
   check("Runtime auth devuelve setup MFA temporal", repository.includes("mfaSetupToken") && repository.includes("setup_totp"), "setup token");
+  check("Runtime auth conserva secreto MFA pendiente tras recarga", repository.includes("pendingFactor") && repository.includes("status = 'pending'") && repository.includes("decryptSecret"), "pending setup reuse");
   check("Runtime auth verifica TOTP antes de sesion admin", repository.includes("verifyTotp") && repository.includes("verifyTotpCode"), "verifyTotp");
   check("Runtime auth no filtra fallo crudo de descifrado MFA", repository.includes("MFA_SECRET_UNREADABLE") && repository.includes("Restablece MFA"), "MFA_SECRET_UNREADABLE");
   check("Runtime auth activa tenant context", repository.includes("set_config('app.tenant_id'"), "app.tenant_id");
@@ -121,6 +124,8 @@ if (existsSync(runtimeCryptoPath)) {
   check("Runtime crypto hashea tokens con sha256", cryptoAuth.includes('createHash("sha256")'), "sha256");
   check("Runtime crypto genera token aleatorio", cryptoAuth.includes("randomBytes"), "randomBytes");
   check("Runtime crypto implementa TOTP", cryptoAuth.includes("createHmac(\"sha1\"") && cryptoAuth.includes("verifyTotpCode"), "TOTP");
+  check("Runtime crypto normaliza MFA copiado desde movil", cryptoAuth.includes("normalizeTotpCode") && cryptoAuth.includes("replace(/\\D/gu"), "normalize TOTP");
+  check("Runtime crypto tolera pequeno desfase de reloj MFA", cryptoAuth.includes("TOTP_VERIFY_WINDOW_STEPS = 2") && cryptoAuth.includes("window = TOTP_VERIFY_WINDOW_STEPS"), "TOTP drift window");
   check("Runtime crypto cifra secreto MFA", cryptoAuth.includes("aes-256-gcm") && cryptoAuth.includes("decryptSecret"), "MFA encryption");
 }
 

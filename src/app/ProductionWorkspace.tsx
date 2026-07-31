@@ -347,9 +347,6 @@ export function ProductionWorkspace({ session, busy, onLogout }: ProductionWorks
                 </div>
                 {renderThemeToggle()}
                 {navigation}
-                <button className="production-drawer-close-button secondary" type="button" onClick={() => setDrawerOpen(false)}>
-                  Volver al modulo
-                </button>
               </aside>
             </>
           ) : null}

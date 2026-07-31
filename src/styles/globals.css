@@ -5734,3 +5734,334 @@ button {
 .constriqo-touch-device .theme-light.worker-shell > .production-topbar > .production-session {
   display: none !important;
 }
+
+/* Mobile fine polish: keep every module ergonomic without changing data flow. */
+.theme-dark .production-topbar .brand-lockup,
+.theme-light .production-topbar .brand-lockup,
+.theme-dark .production-drawer-header .brand-lockup,
+.theme-light .production-drawer-header .brand-lockup {
+  min-width: 0;
+}
+
+.theme-dark .production-topbar .brand-lockup > div,
+.theme-light .production-topbar .brand-lockup > div,
+.theme-dark .production-drawer-header .brand-lockup > div,
+.theme-light .production-drawer-header .brand-lockup > div {
+  min-width: 0;
+}
+
+.theme-dark .document-preview-inline,
+.theme-light .document-preview-inline {
+  min-height: 320px;
+}
+
+.theme-dark .modal .card,
+.theme-light .modal .card {
+  box-shadow: none;
+}
+
+.theme-dark .modal .crm-detail-panel,
+.theme-light .modal .crm-detail-panel {
+  gap: 12px;
+}
+
+.theme-dark .modal .session-summary,
+.theme-light .modal .session-summary {
+  width: 100%;
+  min-width: 0;
+}
+
+.theme-dark .modal .line-item-bottom-actions,
+.theme-light .modal .line-item-bottom-actions {
+  position: sticky;
+  bottom: 64px;
+  z-index: 2;
+  justify-content: flex-end;
+  padding: 8px 0;
+  background: linear-gradient(180deg, transparent, var(--surface) 35%);
+}
+
+.theme-dark .modal .estimate-real-item,
+.theme-light .modal .estimate-real-item,
+.theme-dark .modal .invoice-items-grid,
+.theme-light .modal .invoice-items-grid {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.06);
+  padding: 12px;
+}
+
+@media (max-width: 920px), (hover: none) and (pointer: coarse) {
+  .theme-dark .production-content,
+  .theme-light .production-content {
+    padding: 16px;
+  }
+
+  .theme-dark .production-mobile-drawer,
+  .theme-light .production-mobile-drawer {
+    max-width: min(90vw, 340px);
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+  }
+
+  .theme-dark .production-mobile-drawer .production-tabs,
+  .theme-light .production-mobile-drawer .production-tabs {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .theme-dark .production-mobile-drawer .production-tabs button,
+  .theme-light .production-mobile-drawer .production-tabs button {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+
+  .theme-dark .page-header,
+  .theme-light .page-header {
+    display: grid;
+    gap: 12px;
+  }
+
+  .theme-dark .page-header .segmented-actions,
+  .theme-light .page-header .segmented-actions {
+    width: 100%;
+  }
+
+  .theme-dark .page-header .segmented-actions .button,
+  .theme-light .page-header .segmented-actions .button {
+    flex: 1 1 150px;
+  }
+
+  .theme-dark .crm-real-grid,
+  .theme-light .crm-real-grid,
+  .theme-dark .two-column,
+  .theme-light .two-column,
+  .theme-dark .super-admin-grid,
+  .theme-light .super-admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+  .theme-dark .modal-backdrop,
+  .theme-light .modal-backdrop {
+    place-items: start center;
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+  }
+
+  .theme-dark .modal,
+  .theme-light .modal {
+    width: min(100%, 620px);
+    max-height: calc(100dvh - 16px);
+    border-radius: 8px;
+  }
+
+  .theme-dark .modal-header,
+  .theme-light .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    align-items: flex-start;
+  }
+
+  .theme-dark .modal-header .card-title,
+  .theme-light .modal-header .card-title {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 17px;
+    line-height: 1.25;
+  }
+
+  .theme-dark .modal-body,
+  .theme-light .modal-body {
+    max-height: calc(100dvh - 84px);
+    padding-bottom: 0;
+  }
+
+  .theme-dark .modal-body > .card-title-row:first-child,
+  .theme-light .modal-body > .card-title-row:first-child {
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .theme-dark .modal .auth-form,
+  .theme-light .modal .auth-form,
+  .theme-dark .modal .form-grid,
+  .theme-light .modal .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .theme-dark .modal .proof-grid,
+  .theme-light .modal .proof-grid,
+  .theme-dark .modal .document-template-preview-grid,
+  .theme-light .modal .document-template-preview-grid,
+  .theme-dark .modal .document-field-toggle-grid,
+  .theme-light .modal .document-field-toggle-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .theme-dark .modal .document-cost-row,
+  .theme-light .modal .document-cost-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(148, 163, 184, 0.06);
+  }
+
+  .theme-dark .modal .estimate-real-item,
+  .theme-light .modal .estimate-real-item,
+  .theme-dark .modal .invoice-items-grid,
+  .theme-light .modal .invoice-items-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .theme-dark .modal .line-item-mobile-heading,
+  .theme-light .modal .line-item-mobile-heading {
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .theme-dark .modal .line-item-bottom-actions,
+  .theme-light .modal .line-item-bottom-actions {
+    bottom: 72px;
+  }
+
+  .theme-dark .modal .line-item-bottom-actions .button,
+  .theme-light .modal .line-item-bottom-actions .button {
+    width: 100%;
+  }
+
+  .theme-dark .modal .modal-form-actions,
+  .theme-light .modal .modal-form-actions,
+  .theme-dark .modal .settings-form-actions,
+  .theme-light .modal .settings-form-actions {
+    bottom: 0;
+    margin: 10px -14px 0;
+    padding: 12px 14px max(12px, env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0), var(--surface) 26%);
+  }
+
+  .theme-dark .modal .modal-form-actions .button,
+  .theme-light .modal .modal-form-actions .button,
+  .theme-dark .modal .settings-form-actions .button,
+  .theme-light .modal .settings-form-actions .button {
+    min-height: 48px;
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .theme-dark .responsive-table,
+  .theme-light .responsive-table {
+    overflow: visible;
+  }
+
+  .theme-dark .table-row,
+  .theme-light .table-row {
+    grid-template-columns: 1fr !important;
+    align-items: stretch;
+  }
+
+  .theme-dark .table-row .segmented-actions,
+  .theme-light .table-row .segmented-actions,
+  .theme-dark .crm-client-actions,
+  .theme-light .crm-client-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .theme-dark .table-row .segmented-actions .button,
+  .theme-light .table-row .segmented-actions .button {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .theme-dark .crm-client-row,
+  .theme-light .crm-client-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .theme-dark .crm-client-row .crm-client-actions,
+  .theme-light .crm-client-row .crm-client-actions {
+    grid-column: 1 / -1;
+  }
+
+  .theme-dark .preview-paper,
+  .theme-light .preview-paper {
+    width: 100%;
+    min-height: 260px;
+    padding: 18px;
+  }
+
+  .theme-dark .document-preview,
+  .theme-light .document-preview {
+    min-height: 300px;
+    padding: 10px;
+  }
+
+  .theme-dark .worker-content,
+  .theme-light .worker-content {
+    padding-inline: 12px;
+  }
+
+  .theme-dark.worker-shell .stats-grid,
+  .theme-light.worker-shell .stats-grid,
+  .theme-dark.worker-shell .worker-actions,
+  .theme-light.worker-shell .worker-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .theme-dark.worker-shell .worker-task-card,
+  .theme-light.worker-shell .worker-task-card,
+  .theme-dark.worker-shell .worker-progress-item,
+  .theme-light.worker-shell .worker-progress-item {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 430px) {
+  .theme-dark .production-content,
+  .theme-light .production-content {
+    padding: 12px;
+  }
+
+  .theme-dark .stats-grid,
+  .theme-dark .crm-real-stats,
+  .theme-light .stats-grid,
+  .theme-light .crm-real-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .theme-dark .stat-card,
+  .theme-light .stat-card {
+    min-height: 108px;
+  }
+
+  .theme-dark .table-row .segmented-actions,
+  .theme-light .table-row .segmented-actions,
+  .theme-dark .crm-client-actions,
+  .theme-light .crm-client-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .theme-dark .modal-header,
+  .theme-dark .modal-body,
+  .theme-dark .modal-footer,
+  .theme-light .modal-header,
+  .theme-light .modal-body,
+  .theme-light .modal-footer {
+    padding: 12px;
+  }
+
+  .theme-dark .modal .modal-form-actions,
+  .theme-light .modal .modal-form-actions,
+  .theme-dark .modal .settings-form-actions,
+  .theme-light .modal .settings-form-actions {
+    margin-inline: -12px;
+    padding-inline: 12px;
+  }
+}

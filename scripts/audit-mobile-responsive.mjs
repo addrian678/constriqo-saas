@@ -26,11 +26,11 @@ const packageJson = JSON.parse(readProjectFile("package.json") || "{}");
 check("Workspace admin usa drawer movil", workspace.includes("production-drawer-button") && workspace.includes("production-mobile-drawer"), "admin drawer");
 check("Workspace cierra drawer al seleccionar", workspace.includes("setDrawerOpen(false)") && workspace.includes("selectModule"), "drawer close");
 check("Workspace usa backdrop movil propio", workspace.includes("production-mobile-backdrop") && css.includes(".production-mobile-backdrop"), "production backdrop");
-check("Workspace conserva X y salida auxiliar sin boton redundante", workspace.includes("aria-label=\"Cerrar menu\"") && workspace.includes("Volver al modulo") && !workspace.includes(">\n                  Cerrar menu\n                </button>"), "drawer close controls");
+check("Workspace conserva X sin boton redundante", workspace.includes("aria-label=\"Cerrar menu\"") && !workspace.includes("Volver al modulo") && !workspace.includes(">\n                  Cerrar menu\n                </button>"), "drawer close controls");
 check("Workspace no cierra drawer en pointerdown interno", !workspace.includes("onPointerDownCapture") && !workerWorkspace.includes("onPointerDownCapture"), "no premature drawer close");
 check("Worker conserva acciones moviles principales", workerWorkspace.includes("production-topbar") && workerWorkspace.includes("worker-actions") && workerWorkspace.includes("Cerrar sesion"), "worker mobile actions");
 check("Worker usa drawer movil cerrable", workerWorkspace.includes("worker-mobile-drawer") && workerWorkspace.includes("setDrawerOpen(false)") && workerWorkspace.includes("data-worker-section"), "worker drawer");
-check("Worker conserva X sin boton redundante", workerWorkspace.includes("aria-label=\"Cerrar menu\"") && workerWorkspace.includes("Volver al modulo") && !workerWorkspace.includes(">\n              Cerrar menu\n            </button>"), "worker close controls");
+check("Worker conserva X sin boton redundante", workerWorkspace.includes("aria-label=\"Cerrar menu\"") && !workerWorkspace.includes("Volver al modulo") && !workerWorkspace.includes(">\n              Cerrar menu\n            </button>"), "worker close controls");
 check("Workspace precarga modulos visibles", workspace.includes("preloadModuleChunks") && workspace.includes("preloadVisibleModules") && workspace.includes("visibleModules"), "module preload");
 
 check("CSS oculta overflow horizontal global", css.includes("overflow-x: hidden") && css.includes(".app-shell") && css.includes("overflow-x: hidden;"), "overflow shell");

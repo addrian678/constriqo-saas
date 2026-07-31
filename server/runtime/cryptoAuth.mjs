@@ -5,6 +5,7 @@ const SESSION_TOKEN_BYTES = 32;
 const TOTP_SECRET_BYTES = 20;
 const TOTP_STEP_SECONDS = 30;
 const TOTP_DIGITS = 6;
+const TOTP_VERIFY_WINDOW_STEPS = 2;
 const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 export function generateSessionToken() {
@@ -44,8 +45,12 @@ export function createTotpAuthUri({ issuer, accountName, secret }) {
   return `otpauth://totp/${label}?${query.toString()}`;
 }
 
-export function verifyTotpCode({ secret, code, now = Date.now(), window = 1 }) {
-  const normalizedCode = String(code || "").replace(/\s+/g, "");
+export function normalizeTotpCode(code) {
+  return String(code || "").replace(/\D/gu, "").slice(0, TOTP_DIGITS);
+}
+
+export function verifyTotpCode({ secret, code, now = Date.now(), window = TOTP_VERIFY_WINDOW_STEPS }) {
+  const normalizedCode = normalizeTotpCode(code);
   if (!/^\d{6}$/u.test(normalizedCode)) {
     return false;
   }
